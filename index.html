@@ -160,7 +160,38 @@ body:not(.home) { padding-top: 68px; }
   transition: transform .2s, border-color .2s, box-shadow .2s; text-align: left; font: inherit; padding: 0;
 }
 .room:hover { transform: translateY(-4px); border-color: rgba(214,178,106,.5); box-shadow: 0 14px 30px rgba(0,0,0,.45); }
-.room-cover { aspect-ratio: 4 / 3; position: relative; background: var(--wall-2); overflow: hidden; }
+.room-cover { aspect-ratio: 3 / 4; position: relative; background: var(--wall-2); overflow: hidden; }
+.room-cover img { object-position: top; }
+.badge.played { background: rgba(214,178,106,.92); color: #1A1012; }
+.challengers { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* 排行榜 */
+.rank-wrap { display: grid; grid-template-columns: 1fr 340px; gap: 24px; align-items: start; }
+.rank-board, .my-rec { background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); padding: 22px; }
+.rank-list { list-style: none; margin: 16px 0 0; padding: 0; display: grid; gap: 6px; }
+.rank-row { display: grid; grid-template-columns: 40px 40px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); }
+.rank-row:nth-child(-n+3) { background: linear-gradient(90deg, rgba(214,178,106,.14), var(--ink-2)); }
+.rank-row.me-row { outline: 1px solid var(--gold); }
+.rank-row .avatar-img, .rank-row .avatar-svg { width: 40px; height: 40px; }
+.rank-no { font: 700 20px var(--serif); text-align: center; color: var(--gold); }
+.rank-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rank-date { font-size: 12px; color: var(--muted); }
+.rank-time { font: 700 18px var(--serif); color: var(--gold); letter-spacing: .05em; font-variant-numeric: tabular-nums; }
+.rank-empty { color: var(--muted); text-align: center; padding: 40px 0; }
+.my-rec h3 { font-size: 20px; margin: 0; }
+.my-rec .muted, .muted { color: var(--muted); font-size: 14px; }
+.my-rec > .btn { margin-top: 14px; width: 100%; }
+.my-head { display: flex; align-items: center; gap: 12px; }
+.my-head .avatar-img, .my-head .avatar-svg { width: 48px; height: 48px; }
+.my-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0; }
+.my-stats div { background: var(--ink-2); border-radius: 8px; padding: 10px; text-align: center; }
+.my-stats b { display: block; font: 700 26px var(--serif); color: var(--gold); }
+.my-stats span { font-size: 12px; color: var(--muted); }
+.my-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.my-list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 0; border-top: 1px dashed rgba(239,230,210,.12); font-size: 14px; }
+.my-list small { display: block; color: var(--muted); font-size: 12px; }
+.my-list b { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.my-list b.ok { color: var(--moss); }
 .room-cover img, .room-cover svg { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s ease; }
 .room:hover .room-cover img { transform: scale(1.05); }
 .room-no { position: absolute; left: 12px; top: 12px; background: rgba(13,10,11,.75); color: var(--gold); font: 700 13px var(--serif); padding: 2px 10px; border-radius: 999px; letter-spacing: .1em; border: 1px solid var(--line); }
@@ -318,11 +349,14 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .toast[data-type="error"] { background: #F0A090; }
 
 @media (max-width: 960px) {
+  .rank-wrap { grid-template-columns: 1fr; }
   .rooms { grid-auto-columns: minmax(260px, calc((100% - 24px) / 2)); }
   .cats { grid-template-columns: repeat(2, 1fr); }
   .about { grid-template-columns: 1fr; gap: 36px; }
 }
 @media (max-width: 760px) {
+  .rank-row { grid-template-columns: 32px 40px 1fr auto; gap: 10px; }
+  .rank-date { display: none; }
   .menu-btn { display: flex; }
   .nav {
     display: none; position: absolute; top: 68px; left: 0; right: 0; flex-direction: column; gap: 0;
@@ -403,8 +437,26 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       </div>
     </section>
 
+    <!-- 排行榜 -->
+    <section class="section alt" id="ranking">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">RANKING</span>
+          <h2>逃脫排行榜</h2>
+          <p>每位玩家只取最快的一次。誰能最快逃出去？</p>
+        </div>
+        <div class="rank-wrap">
+          <div class="rank-board">
+            <div class="filters" id="rank-tabs" role="group" aria-label="選擇密室"></div>
+            <ol class="rank-list" id="rank-list"><li class="rank-empty">讀取中…</li></ol>
+          </div>
+          <aside class="my-rec" id="my-rec"></aside>
+        </div>
+      </div>
+    </section>
+
     <!-- 關於我們 -->
-    <section class="section alt" id="about">
+    <section class="section" id="about">
       <div class="container about">
         <div class="about-art" aria-hidden="true">
           <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
@@ -437,7 +489,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     </section>
 
     <!-- 遊戲方式 -->
-    <section class="section" id="how">
+    <section class="section alt" id="how">
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">HOW TO PLAY</span>
@@ -468,7 +520,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     </section>
 
     <!-- 密室類別 -->
-    <section class="section alt" id="cats">
+    <section class="section" id="cats">
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">CATEGORIES</span>
@@ -485,7 +537,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     </section>
 
     <!-- 常見問題 -->
-    <section class="section" id="faq">
+    <section class="section alt" id="faq">
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">Q &amp; A</span>
@@ -539,6 +591,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <h4>導覽</h4>
           <ul>
             <li><a href="#rooms">密室主題</a></li>
+            <li><a href="#ranking">排行榜</a></li>
             <li><a href="#how">遊戲方式</a></li>
             <li><a href="#about">關於我們</a></li>
             <li><a href="#faq">Q&amp;A</a></li>
@@ -842,21 +895,39 @@ const LOGO_SVG = `
   </svg>`;
 
 // ================= 登入狀態 =================
-let user = null, profile = null, games = [], cleared = new Set();
+let user = null, profile = null, games = [], stats = {};
+// 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
+let mine = {};
 const isPlayer = () => !!(user && profile);
+
+function fmtTime(s) {
+  const h = s / 3600 | 0, m = (s % 3600) / 60 | 0, x = s % 60, p = (n) => String(n).padStart(2, '0');
+  return (h ? h + ':' + p(m) : p(m)) + ':' + p(x);
+}
 
 async function loadAuth() {
   const { data } = await supabase.auth.getSession();
   user = data.session?.user ?? null;
   profile = null;
-  cleared = new Set();
+  mine = {};
   if (user) {
     const { data: p, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) console.error(error);
     profile = p;
-    const { data: recs } = await supabase.from('play_records').select('game_id').eq('user_id', user.id).eq('status', 'cleared');
-    cleared = new Set((recs ?? []).map(r => r.game_id));
+    const { data: recs } = await supabase.from('play_records')
+      .select('game_id,status,clear_time_sec,created_at').eq('user_id', user.id);
+    for (const r of recs ?? []) {
+      const m = mine[r.game_id] ??= { plays: 0, best: null, last: r.created_at };
+      m.plays++;
+      if (r.created_at > m.last) m.last = r.created_at;
+      if (r.status === 'cleared' && r.clear_time_sec != null && (m.best == null || r.clear_time_sec < m.best)) m.best = r.clear_time_sec;
+    }
   }
+}
+
+async function loadStats() {
+  const { data } = await supabase.rpc('get_game_stats');
+  stats = Object.fromEntries((data ?? []).map(s => [s.game_id, s]));
 }
 
 // ================= 頂部導覽列 =================
@@ -876,6 +947,7 @@ function renderHeader() {
       <a class="logo" href="#top" aria-label="第柒門 首頁">${LOGO_SVG}<span>第柒門</span></a>
       <nav class="nav" id="nav">
         <a href="#rooms">密室主題</a>
+        <a href="#ranking">排行榜</a>
         <a href="#how">遊戲方式</a>
         <a href="#about">關於我們</a>
         <a href="#faq">Q&amp;A</a>
@@ -994,10 +1066,13 @@ function renderRooms(tag = currentTag) {
   listEl.innerHTML = list.map((g) => {
     const i = games.indexOf(g);
     const open = isOpen(g);
-    const badge = cleared.has(g.id) ? '<span class="badge cleared">已逃脫</span>'
+    const m = mine[g.id], st = stats[g.id];
+    const badge = m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
+      : m ? '<span class="badge played">玩過</span>'
       : !open ? '<span class="badge soon">即將開放</span>'
       : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-    const cta = !open ? '敬請期待' : isPlayer() ? '進入密室 →' : '註冊後即可遊玩 →';
+    const cta = !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+    const challenge = st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
     return `
       <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
         <div class="room-cover">
@@ -1010,6 +1085,7 @@ function renderRooms(tag = currentTag) {
           <h4>${escapeHTML(g.title)}</h4>
           ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
           <p class="desc">${escapeHTML(g.description ?? '')}</p>
+          ${challenge}
           <div class="meta">
             <span>${players(g)}・${g.duration_min} 分鐘</span>
             <span>難度${locks(g.difficulty)}</span>
@@ -1222,15 +1298,73 @@ function route() {
 }
 window.addEventListener('hashchange', route);
 
+// ================= 排行榜 =================
+let rankSlug = '';
+const MEDALS = ['🥇', '🥈', '🥉'];
+async function renderRanking(slug = rankSlug) {
+  const open = games.filter(isOpen);
+  const tabs = $('#rank-tabs'), list = $('#rank-list');
+  if (!open.length) {
+    tabs.innerHTML = '';
+    list.innerHTML = '<li class="rank-empty">密室開放後，這裡會列出最快逃脫的玩家。</li>';
+    return;
+  }
+  rankSlug = open.some(g => g.slug === slug) ? slug : open[0].slug;
+  tabs.innerHTML = open.map(g =>
+    `<button class="chip" type="button" data-slug="${escapeHTML(g.slug)}" aria-pressed="${g.slug === rankSlug}">${escapeHTML(g.title)}</button>`).join('');
+  list.innerHTML = '<li class="rank-empty">讀取中…</li>';
+  const { data, error } = await supabase.rpc('get_leaderboard', { p_slug: rankSlug, p_limit: 10 });
+  if (error) { list.innerHTML = `<li class="rank-empty">讀取排行榜失敗：${escapeHTML(error.message)}</li>`; return; }
+  if (!data.length) {
+    list.innerHTML = '<li class="rank-empty">還沒有人成功逃脫。第一個名字，會是你嗎？</li>';
+    return;
+  }
+  list.innerHTML = data.map(r => `
+    <li class="rank-row ${profile && r.username === profile.username ? 'me-row' : ''}">
+      <span class="rank-no">${MEDALS[r.rank - 1] ?? r.rank}</span>
+      ${avatarHTML(r, 40)}
+      <span class="rank-name">${escapeHTML(r.username)}</span>
+      <span class="rank-date">${new Date(r.cleared_at).toLocaleDateString('zh-TW')}</span>
+      <span class="rank-time">${fmtTime(r.best_sec)}</span>
+    </li>`).join('');
+}
+$('#rank-tabs').addEventListener('click', (e) => {
+  const b = e.target.closest('.chip');
+  if (b) renderRanking(b.dataset.slug);
+});
+
+// 我的紀錄
+function renderMine() {
+  const el = $('#my-rec');
+  if (!isPlayer()) {
+    el.innerHTML = `<h3>我的紀錄</h3>
+      <p class="muted">註冊並建立角色後，你玩過的密室與逃脫時間都會記錄在這裡，也能登上排行榜。</p>
+      <a class="btn btn-gold" href="${user ? '#character' : '#signup'}">${user ? '建立角色' : '免費建立角色'}</a>`;
+    return;
+  }
+  const played = games.filter(g => mine[g.id]);
+  const escaped = played.filter(g => mine[g.id].best != null);
+  el.innerHTML = `
+    <div class="my-head">${avatarHTML(profile, 48)}<div><h3>${escapeHTML(profile.username)}</h3><span class="muted">我的紀錄</span></div></div>
+    <div class="my-stats"><div><b>${played.length}</b><span>玩過</span></div><div><b>${escaped.length}</b><span>成功逃脫</span></div></div>
+    ${played.length ? `<ul class="my-list">${played.map(g => {
+      const m = mine[g.id];
+      return `<li><span>${escapeHTML(g.title)}<small>挑戰 ${m.plays} 次</small></span>
+        <b class="${m.best != null ? 'ok' : ''}">${m.best != null ? '最佳 ' + fmtTime(m.best) : '尚未逃脫'}</b></li>`;
+    }).join('')}</ul>` : '<p class="muted">還沒有遊玩紀錄。挑一間密室，推門進去吧。</p>'}`;
+}
+
 function renderAll() {
   renderHeader();
   renderHero();
   renderRooms();
+  renderMine();
+  renderRanking();
 }
 
 // ================= 啟動 =================
 $('#year').textContent = new Date().getFullYear();
-await Promise.all([loadAuth(), loadGames()]);
+await Promise.all([loadAuth(), loadGames(), loadStats()]);
 renderAll();
 
 // 剛從驗證信回來、還沒建角色 → 直接帶去建立角色
@@ -1238,6 +1372,9 @@ if (user && !profile && !['login', 'signup', 'character'].includes(location.hash
   location.hash = 'character';
 }
 route();
+
+// 從密室按「上一頁」回來時，重新讀取最新紀錄
+window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
 // 從密室網頁被擋回來時（?need=player&room=xxx），直接跳出註冊提示
 const params = new URLSearchParams(location.search);
