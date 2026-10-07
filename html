@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的角色｜第柒門</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container char-page">
+    <h1 id="page-title">建立你的角色</h1>
+    <p class="lead">取個名字、挑選外觀，也可以上傳自己的頭像照片。建立完成就能進入密室。</p>
+
+    <div class="char-grid">
+      <aside class="preview">
+        <div class="preview-figure" id="preview"></div>
+        <div class="preview-name" id="preview-name"></div>
+        <button class="btn btn-ghost" id="random" type="button">隨機外觀</button>
+
+        <div class="avatar-upload">
+          <div id="avatar-thumb"></div>
+          <div>
+            <div>頭像</div>
+            <div class="hint">PNG / JPG / WebP，2MB 以內。沒上傳就用角色臉當頭像。</div>
+            <div class="links">
+              <button class="link-btn" id="pick-avatar" type="button">上傳圖片</button>
+              <button class="link-btn" id="clear-avatar" type="button" hidden>改用角色臉</button>
+            </div>
+            <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div class="field">
+          <label for="username">角色名稱（2–20 字）</label>
+          <input id="username" maxlength="20" autocomplete="nickname" placeholder="例如：夜行偵探">
+        </div>
+        <div id="options"></div>
+        <p class="form-msg" id="msg" aria-live="polite"></p>
+        <div class="save-bar">
+          <button class="btn btn-gold" id="save" type="button">儲存角色</button>
+          <a class="btn btn-ghost" href="index.html">回到大廳</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="simple">© 第柒門 線上密室逃脫</footer>
+
+  <script type="module">
+    import { supabase, mountHeader, avatarHTML, toast } from './js/app.js';
+    import { OPTIONS, DEFAULT_APPEARANCE, renderAvatar, randomAppearance } from './js/avatar.js';
+
+    const { user, profile } = await mountHeader();
+    if (!user) { location.href = 'login.html?mode=signup'; throw new Error('需要登入'); }
+
+    const $ = (s) => document.querySelector(s);
+    const msg = (t, type = 'error') => { $('#msg').textContent = t; $('#msg').dataset.type = type; };
+
+    let appearance = { ...DEFAULT_APPEARANCE, ...(profile?.appearance ?? {}) };
+    let avatarUrl = profile?.avatar_url ?? null;
+    let pendingFile = null;     // 新選的圖片（儲存時才上傳）
+    let pendingPreview = null;
+
+    if (profile) {
+      $('#page-title').textContent = '編輯你的角色';
+      $('#username').value = profile.username;
+    }
+
+    // 產生選項按鈕
+    $('#options').innerHTML = Object.entries(OPTIONS).map(([key, opt]) => `
+      <div class="opt-group">
+        <h3>${opt.label}</h3>
+        <div class="${opt.type === 'color' ? 'swatches' : 'choices'}" data-key="${key}" role="group" aria-label="${opt.label}">
+          ${opt.items.map(item => opt.type === 'color'
+            ? `<button type="button" class="swatch" data-value="${item}" style="background:${item}" aria-label="${opt.label} ${item}"></button>`
+            : `<button type="button" class="choice" data-value="${item.id}">${item.name}</button>`
+          ).join('')}
+        </div>
+      </div>`).join('');
+
+    $('#options').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-value]');
+      if (!btn) return;
+      appearance[btn.parentElement.dataset.key] = btn.dataset.value;
+      update();
+    });
+
+    $('#random').onclick = () => { appearance = randomAppearance(); update(); };
+    $('#username').addEventListener('input', update);
+
+    // 頭像上傳
+    $('#pick-avatar').onclick = () => $('#avatar-file').click();
+    $('#avatar-file').onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { toast('圖片超過 2MB，請換一張小一點的。', 'error'); return; }
+      pendingFile = file;
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+      pendingPreview = URL.createObjectURL(file);
+      update();
+    };
+    $('#clear-avatar').onclick = () => { pendingFile = null; pendingPreview = null; avatarUrl = null; update(); };
+
+    function update() {
+      $('#preview').innerHTML = renderAvatar(appearance, { size: 320 });
+      $('#preview-name').textContent = $('#username').value.trim() || '未命名';
+      document.querySelectorAll('[data-key]').forEach(group => {
+        group.querySelectorAll('[data-value]').forEach(b =>
+          b.setAttribute('aria-pressed', appearance[group.dataset.key] === b.dataset.value));
+      });
+      const shownUrl = pendingPreview ?? avatarUrl;
+      $('#avatar-thumb').innerHTML = avatarHTML({ avatar_url: shownUrl, appearance, username: '' }, 64);
+      $('#clear-avatar').hidden = !shownUrl;
+    }
+    update();
+
+    $('#save').onclick = async () => {
+      const username = $('#username').value.trim();
+      if (username.length < 2) return msg('角色名稱至少要 2 個字。');
+
+      $('#save').disabled = true;
+      msg('儲存中…', 'ok');
+
+      try {
+        let finalUrl = avatarUrl;
+        if (pendingFile) {
+          const ext = pendingFile.name.split('.').pop().toLowerCase();
+          const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+          const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type });
+          if (upErr) throw upErr;
+          finalUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+        }
+
+        const { error } = await supabase.from('profiles').upsert({
+          id: user.id, username, appearance, avatar_url: finalUrl,
+        });
+        if (error) {
+          if (error.code === '23505') throw new Error('這個角色名稱已經有人用了，換一個吧。');
+          throw error;
+        }
+
+        avatarUrl = finalUrl; pendingFile = null; pendingPreview = null;
+        msg('');
+        toast('角色已儲存');
+        setTimeout(() => location.href = 'index.html#rooms', 700);
+      } catch (err) {
+        msg(err.message || '儲存失敗，請再試一次。');
+      } finally {
+        $('#save').disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>密室｜第柒門</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="container game-page" id="main"><p class="empty">正在打開門鎖…</p></main>
+
+  <script type="module">
+    import { supabase, mountHeader, escapeHTML, toast } from './js/app.js';
+
+    const { user, profile } = await mountHeader();
+    const main = document.querySelector('#main');
+    const slug = new URLSearchParams(location.search).get('room');
+
+    const locked = (title, text, cta = '<a class="btn btn-gold" href="index.html#rooms">回到大廳</a>') => {
+      main.innerHTML = `<div class="game-locked"><h1>${title}</h1><p>${text}</p><div class="btns">${cta}</div></div>`;
+    };
+
+    const { data: game } = slug
+      ? await supabase.from('games').select('*').eq('slug', slug).maybeSingle()
+      : { data: null };
+
+    if (!game) {
+      locked('找不到這間密室', '可能網址打錯了，回大廳重新挑一間吧。');
+    } else if (game.status !== 'available') {
+      document.title = `${game.title}｜第柒門`;
+      locked(escapeHTML(game.title), '這間密室還在佈置中，開放後就能進入。');
+    } else if (!user) {
+      // 沒有帳號：不能玩
+      locked('門鎖著，需要鑰匙', '訪客可以逛大廳，但要進入密室必須先免費註冊並建立角色。',
+        `<a class="btn btn-gold" href="login.html?mode=signup">免費註冊並建立角色</a>
+         <a class="btn btn-ghost" href="login.html">我已經有帳號</a>`);
+    } else if (!profile) {
+      locked('還差一步：建立角色', '建立角色後，才能用他的身分走進密室。',
+        `<a class="btn btn-gold" href="character.html">建立角色</a>`);
+    } else {
+      document.title = `${game.title}｜第柒門`;
+      main.innerHTML = `
+        <div class="game-top">
+          <h1>${escapeHTML(game.title)}</h1>
+          <div class="timer" id="timer" aria-live="off">00:00</div>
+          <a class="btn btn-ghost" href="index.html#rooms">離開密室</a>
+        </div>
+        <iframe class="game-frame" id="frame" title="${escapeHTML(game.title)}"
+          src="games/${encodeURIComponent(game.slug)}/index.html"
+          allow="fullscreen; autoplay"></iframe>`;
+
+      // 建立遊玩紀錄
+      const { data: record } = await supabase.from('play_records')
+        .insert({ user_id: user.id, game_id: game.id }).select().single();
+
+      // 計時
+      const start = Date.now();
+      const timerEl = document.querySelector('#timer');
+      const tick = setInterval(() => {
+        const s = Math.floor((Date.now() - start) / 1000);
+        timerEl.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+      }, 1000);
+
+      // 遊戲通關時，從 iframe 內呼叫：
+      // window.parent.postMessage({ type: 'escape-room:cleared' }, '*')
+      window.addEventListener('message', async (e) => {
+        if (e.source !== document.querySelector('#frame').contentWindow) return;
+        if (e.data?.type !== 'escape-room:cleared' || !record) return;
+        clearInterval(tick);
+        const secs = Math.floor((Date.now() - start) / 1000);
+        await supabase.from('play_records')
+          .update({ status: 'cleared', clear_time_sec: secs }).eq('id', record.id);
+        toast(`成功逃脫！用時 ${timerEl.textContent}`);
+      });
+
+      // 遊戲需要玩家資料時可以讀這個
+      document.querySelector('#frame').addEventListener('load', (e) => {
+        e.target.contentWindow.postMessage({
+          type: 'escape-room:player',
+          player: { username: profile.username, appearance: profile.appearance, avatar_url: profile.avatar_url },
+        }, '*');
+      });
+    }
+  </script>
+</body>
+</html><!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>第柒門｜線上密室逃脫</title>
+  <meta name="description" content="第柒門 線上密室逃脫。建立你的角色，挑一間密室，在時間內解開謎題逃出來。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="home">
+  <header id="site-header"></header>
+
+  <!-- 主視覺 -->
+  <section class="hero">
+    <div class="hero-content">
+      <div id="hero-me"></div>
+      <div class="hero-kicker">第 柒 門 ・ 線 上 密 室</div>
+      <h1 id="hero-title">推開第七扇門</h1>
+      <p id="hero-text">門後是另一個世界。建立你的角色，挑一間密室走進去，找出線索、解開機關，在時間內逃出來。</p>
+      <div class="hero-actions" id="hero-actions">
+        <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
+      </div>
+    </div>
+    <div class="doors-row" aria-hidden="true">
+      <div class="mini-door"></div><div class="mini-door"></div><div class="mini-door"></div>
+      <div class="mini-door seventh"><span>柒</span></div>
+      <div class="mini-door"></div><div class="mini-door"></div><div class="mini-door"></div>
+    </div>
+    <a class="scroll-cue" href="#rooms">SCROLL ↓</a>
+  </section>
+
+  <main>
+    <!-- 密室主題 -->
+    <section class="section" id="rooms">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">ROOMS</span>
+          <h2>密室主題</h2>
+          <p>第柒門原創線上密室，等你推門而入</p>
+        </div>
+        <div class="row-head">
+          <div class="filters" id="filters" role="group" aria-label="依類別篩選"></div>
+          <div class="row-tools">
+            <button class="arrow" data-dir="-1" aria-label="上一個">‹</button>
+            <button class="arrow" data-dir="1" aria-label="下一個">›</button>
+          </div>
+        </div>
+        <div class="rooms" id="room-list"><p class="empty">正在打開門鎖…</p></div>
+      </div>
+    </section>
+
+    <!-- 關於我們 -->
+    <section class="section alt" id="about">
+      <div class="container about">
+        <div class="about-art" aria-hidden="true">
+          <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <radialGradient id="ag" cx="50%" cy="65%" r="60%">
+                <stop offset="0" stop-color="#F3D48E"/><stop offset=".45" stop-color="#8C5A24"/><stop offset="1" stop-color="#1A0E0C"/>
+              </radialGradient>
+            </defs>
+            <rect width="400" height="400" fill="#140C0E"/>
+            <path d="M120 400 V190 Q120 90 200 90 Q280 90 280 190 V400 Z" fill="url(#ag)"/>
+            <path d="M120 400 V190 Q120 90 200 90 L200 400 Z" fill="#2B1A1C" transform="skewY(4)" transform-origin="120 400"/>
+            <path d="M120 400 V190 Q120 90 200 90 Q280 90 280 190 V400" fill="none" stroke="#D6B26A" stroke-width="5"/>
+            <text x="240" y="160" font-family="Noto Serif TC, serif" font-size="44" font-weight="700" fill="#5A3A12" text-anchor="middle">柒</text>
+            <path d="M150 400 L200 300 L250 400 Z" fill="#F3D48E" opacity=".18"/>
+          </svg>
+        </div>
+        <div>
+          <span class="eyebrow">ABOUT US</span>
+          <h2>歡迎來到第柒門</h2>
+          <p>傳說每個人的一生中都會遇到六扇門，而第七扇門，通往一個你從未見過的世界。</p>
+          <p>第柒門是一間專做線上密室逃脫的工作室。每一間密室都是我們親手設計的原創故事：從場景、謎題到機關，只要打開瀏覽器，就能在家推門入局。</p>
+          <p>建立屬於你的角色、換上你喜歡的造型，用他的身分踏進每一個故事。</p>
+          <div class="stats">
+            <div><b id="stat-rooms">–</b><span>間原創密室</span></div>
+            <div><b>24H</b><span>隨時都能推門</span></div>
+            <div><b>免下載</b><span>瀏覽器直接玩</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 遊戲方式 -->
+    <section class="section" id="how">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">HOW TO PLAY</span>
+          <h2>什麼是線上密室逃脫？</h2>
+          <p>觀察場景、蒐集線索、破解機關，在時間內逃出房間。</p>
+        </div>
+        <div class="steps">
+          <div class="step">
+            <span class="num">01</span>
+            <div class="step-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg></div>
+            <h3>建立角色</h3>
+            <p>免費註冊，取一個名字，挑選髮型、服裝與配件，也能上傳自己的頭像。</p>
+          </div>
+          <div class="step">
+            <span class="num">02</span>
+            <div class="step-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 22V9a6 6 0 0 1 12 0v13"/><circle cx="14.5" cy="14" r="1" fill="currentColor"/><path d="M3 22h18"/></svg></div>
+            <h3>挑選密室</h3>
+            <p>依照主題與難度挑一扇門。門一關上，計時就開始。</p>
+          </div>
+          <div class="step">
+            <span class="num">03</span>
+            <div class="step-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></div>
+            <h3>解謎逃脫</h3>
+            <p>點擊場景找線索、組合道具、破解密碼，成功逃脫就會留下你的通關紀錄。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 密室類別 -->
+    <section class="section alt" id="cats">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">CATEGORIES</span>
+          <h2>密室類別</h2>
+          <p>四種風格，找到你最想推開的那扇門</p>
+        </div>
+        <div class="cats">
+          <button class="cat cat-1" data-cat="新手"><span class="glyph">初</span><h3>新手</h3><p>第一次玩密室？從這裡開始，難度友善、提示充足。</p></button>
+          <button class="cat cat-2" data-cat="解謎"><span class="glyph">謎</span><h3>解謎</h3><p>環環相扣的機關與密碼，考驗你的觀察力與邏輯。</p></button>
+          <button class="cat cat-3" data-cat="恐怖"><span class="glyph">懼</span><h3>恐怖</h3><p>燈光忽明忽暗，門外好像有什麼東西⋯⋯敢一個人進來嗎？</p></button>
+          <button class="cat cat-4" data-cat="劇情"><span class="glyph">故</span><h3>劇情</h3><p>每條線索都是故事的碎片，拼起來才會知道真相。</p></button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 常見問題 -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">Q &amp; A</span>
+          <h2>常見問題</h2>
+        </div>
+        <div class="faq">
+          <details>
+            <summary>不註冊可以玩嗎？</summary>
+            <p>不註冊也可以瀏覽網站、查看所有密室介紹；但要進入密室遊玩，必須先免費註冊並建立角色，這樣才能記錄你的逃脫時間。</p>
+          </details>
+          <details>
+            <summary>需要下載什麼軟體嗎？可以用手機玩嗎？</summary>
+            <p>不用下載，打開瀏覽器就能玩。電腦、平板、手機都可以，但建議使用較大的螢幕，比較容易看清楚場景裡的線索。</p>
+          </details>
+          <details>
+            <summary>一間密室大約要玩多久？</summary>
+            <p>每間密室卡片上都有標示建議時長，大多在 20～45 分鐘之間。遊戲中畫面上方會顯示計時。</p>
+          </details>
+          <details>
+            <summary>玩到一半離開會怎樣？</summary>
+            <p>可以隨時離開密室。下次重新進門時會重新開始計時，成功逃脫後才會留下通關紀錄。</p>
+          </details>
+          <details>
+            <summary>角色外觀和頭像之後可以改嗎？</summary>
+            <p>可以。登入後點右上角的頭像就能進入「我的角色」，隨時更換造型或重新上傳頭像照片。</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- 行動呼籲 -->
+    <section class="cta">
+      <div class="eyebrow">YOUR TURN</div>
+      <h2 id="cta-title">這一次，換你推開門</h2>
+      <p id="cta-text">準備好走進第七扇門後的世界了嗎？</p>
+      <div id="cta-actions"><a class="btn btn-gold btn-lg" href="login.html?mode=signup">免費建立角色</a></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="foot-grid">
+        <div>
+          <a class="logo" href="index.html" style="margin-bottom:12px">
+            <svg viewBox="0 0 32 36" width="26" height="30" aria-hidden="true"><path d="M3 35 V14 Q3 2 16 2 Q29 2 29 14 V35" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="22.5" cy="22" r="1.8" fill="currentColor"/></svg>
+            <span>第柒門</span>
+          </a>
+          <p style="margin:0;max-width:22em">原創線上密室逃脫。打開瀏覽器，推開第七扇門。</p>
+        </div>
+        <div>
+          <h4>導覽</h4>
+          <ul>
+            <li><a href="#rooms">密室主題</a></li>
+            <li><a href="#how">遊戲方式</a></li>
+            <li><a href="#about">關於我們</a></li>
+            <li><a href="#faq">Q&amp;A</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>玩家</h4>
+          <ul>
+            <li><a href="login.html?mode=signup">註冊</a></li>
+            <li><a href="login.html">登入</a></li>
+            <li><a href="character.html">我的角色</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">© <span id="year"></span> 第柒門 版權所有</div>
+    </div>
+  </footer>
+
+  <script type="module">
+    import { supabase, mountHeader, escapeHTML, avatarHTML, showGate, toast } from './js/app.js';
+
+    document.querySelector('#year').textContent = new Date().getFullYear();
+    const { user, profile } = await mountHeader();
+    const isPlayer = !!(user && profile);
+
+    // 主視覺與行動呼籲：依登入狀態切換
+    const actions = document.querySelector('#hero-actions');
+    const ctaActions = document.querySelector('#cta-actions');
+    if (!user) {
+      actions.innerHTML = `<a class="btn btn-gold btn-lg" href="login.html?mode=signup">免費建立角色</a>
+                           <a class="btn btn-ghost btn-lg" href="#rooms">先逛逛密室</a>`;
+    } else if (!profile) {
+      document.querySelector('#hero-title').textContent = '還差一步：建立你的角色';
+      document.querySelector('#hero-text').textContent = '取個名字、挑一套造型，就能用他的身分走進密室。';
+      actions.innerHTML = `<a class="btn btn-gold btn-lg" href="character.html">建立角色</a>`;
+      ctaActions.innerHTML = `<a class="btn btn-gold btn-lg" href="character.html">建立角色</a>`;
+    } else {
+      document.querySelector('#hero-me').innerHTML =
+        `<a class="hero-me" href="character.html" style="text-decoration:none">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}</span></a>`;
+      document.querySelector('#hero-title').textContent = '今晚，要推開哪一扇門？';
+      document.querySelector('#hero-text').textContent = '挑一間密室，門一關上，計時就開始。';
+      actions.innerHTML = `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
+                           <a class="btn btn-ghost btn-lg" href="character.html">換個造型</a>`;
+      document.querySelector('#cta-title').textContent = `${profile.username}，下一扇門在等你`;
+      ctaActions.innerHTML = `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>`;
+    }
+
+    // 讀取密室列表
+    const listEl = document.querySelector('#room-list');
+    const { data: games, error } = await supabase.from('games').select('*').order('sort_order');
+    if (error) {
+      listEl.innerHTML = `<p class="empty">讀取密室失敗：${escapeHTML(error.message)}</p>`;
+      throw error;
+    }
+    document.querySelector('#stat-rooms').textContent = games.length;
+
+    // 已通關的密室
+    let cleared = new Set();
+    if (user) {
+      const { data: recs } = await supabase.from('play_records').select('game_id').eq('user_id', user.id).eq('status', 'cleared');
+      cleared = new Set((recs ?? []).map(r => r.game_id));
+    }
+
+    // 沒有封面圖時的預設門
+    const HUES = [['#3A1418', '#8E1F2A'], ['#16202E', '#2F4A6C'], ['#1E2618', '#4E6440'], ['#2A1E10', '#7A5A28']];
+    const coverArt = (g, i) => {
+      const [bg, door] = HUES[i % HUES.length];
+      return `
+      <svg viewBox="0 0 320 240" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+        <defs><radialGradient id="cg${i}" cx="50%" cy="80%" r="70%"><stop offset="0" stop-color="${door}"/><stop offset="1" stop-color="${bg}"/></radialGradient></defs>
+        <rect width="320" height="240" fill="url(#cg${i})"/>
+        <path d="M110 240 V110 Q110 50 160 50 Q210 50 210 110 V240" fill="#0D0A0B" opacity=".55"/>
+        <path d="M110 240 V110 Q110 50 160 50 Q210 50 210 110 V240" fill="none" stroke="#D6B26A" stroke-width="3"/>
+        <circle cx="194" cy="158" r="5" fill="#D6B26A"/>
+        <text x="160" y="120" font-family="Noto Serif TC, serif" font-size="30" font-weight="700" fill="#D6B26A" text-anchor="middle" opacity=".85">${String(g.sort_order).padStart(2, '0')}</text>
+      </svg>`;
+    };
+
+    const locks = (d) => `<span class="locks" aria-label="難度 ${d} / 5">${[1,2,3,4,5].map(i => `<i class="${i <= d ? 'on' : ''}"></i>`).join('')}</span>`;
+    const players = (g) => g.min_players === g.max_players ? `${g.min_players} 人` : `${g.min_players}～${g.max_players} 人`;
+    const isNew = (g) => Date.now() - new Date(g.created_at).getTime() < 1000 * 60 * 60 * 24 * 30;
+
+    let current = '';
+    function render(tag) {
+      current = tag;
+      const list = tag ? games.filter(g => (g.tags ?? []).includes(tag)) : games;
+      if (!list.length) {
+        listEl.innerHTML = `<p class="empty">「${escapeHTML(tag)}」類別的密室正在佈置中，敬請期待。</p>`;
+        return;
+      }
+      listEl.innerHTML = list.map((g) => {
+        const i = games.indexOf(g);
+        const open = g.status === 'available';
+        const badge = cleared.has(g.id) ? '<span class="badge cleared">已逃脫</span>'
+          : !open ? '<span class="badge soon">即將開放</span>'
+          : isNew(g) ? '<span class="badge new">NEW</span>' : '';
+        const cta = !open ? '敬請期待' : isPlayer ? '進入密室 →' : '註冊後即可遊玩 →';
+        return `
+          <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
+            <div class="room-cover">
+              ${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, i)}
+              <span class="room-no">No.${String(g.sort_order).padStart(2, '0')}</span>
+              ${badge}
+            </div>
+            <div class="room-body">
+              <div class="tags">${(g.tags ?? []).map(t => `<span>#${escapeHTML(t)}</span>`).join('')}</div>
+              <h4>${escapeHTML(g.title)}</h4>
+              ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
+              <p class="desc">${escapeHTML(g.description ?? '')}</p>
+              <div class="meta">
+                <span>${players(g)}・${g.duration_min} 分鐘</span>
+                <span>難度${locks(g.difficulty)}</span>
+              </div>
+              <div class="room-cta">${cta}</div>
+            </div>
+          </button>`;
+      }).join('');
+      listEl.scrollLeft = 0;
+    }
+
+    // 點擊密室：沒有角色就跳提示，有角色才能進去
+    listEl.addEventListener('click', (e) => {
+      const card = e.target.closest('.room');
+      if (!card) return;
+      const g = games.find(x => x.slug === card.dataset.slug);
+      if (g.status !== 'available') return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
+      if (!isPlayer) return showGate(user, g.title);
+      location.href = `game.html?room=${encodeURIComponent(g.slug)}`;
+    });
+
+    // 類別篩選
+    const tags = [...new Set(['新手', '解謎', '恐怖', '劇情', ...games.flatMap(g => g.tags ?? [])])];
+    const filtersEl = document.querySelector('#filters');
+    filtersEl.innerHTML = ['全部', ...tags].map((t, i) =>
+      `<button class="chip" data-tag="${i ? escapeHTML(t) : ''}" aria-pressed="${i === 0}">${escapeHTML(t)}</button>`).join('');
+    const setFilter = (tag) => {
+      filtersEl.querySelectorAll('.chip').forEach(b => b.setAttribute('aria-pressed', b.dataset.tag === tag));
+      render(tag);
+    };
+    filtersEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (btn) setFilter(btn.dataset.tag);
+    });
+    document.querySelectorAll('.cat').forEach(c => c.addEventListener('click', () => {
+      setFilter(c.dataset.cat);
+      document.querySelector('#rooms').scrollIntoView();
+    }));
+
+    // 左右箭頭
+    document.querySelectorAll('.arrow').forEach(a => a.addEventListener('click', () => {
+      listEl.scrollBy({ left: Number(a.dataset.dir) * listEl.clientWidth * 0.9, behavior: 'smooth' });
+    }));
+
+    render('');
+  </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>登入｜第柒門</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container">
+    <div class="auth-wrap">
+      <h1 id="title">歡迎回來</h1>
+      <p class="lead" id="lead">登入後繼續你的逃脫。</p>
+      <div class="panel">
+        <div class="tabs" role="tablist">
+          <button role="tab" id="tab-login" aria-selected="true">登入</button>
+          <button role="tab" id="tab-signup" aria-selected="false">註冊</button>
+        </div>
+        <form id="auth-form" novalidate>
+          <div class="field">
+            <label for="email">電子郵件</label>
+            <input id="email" type="email" autocomplete="email" required>
+          </div>
+          <div class="field">
+            <label for="password">密碼（至少 6 個字元）</label>
+            <input id="password" type="password" autocomplete="current-password" minlength="6" required>
+          </div>
+          <p class="form-msg" id="msg" aria-live="polite"></p>
+          <button class="btn btn-gold" style="width:100%" id="submit" type="submit">登入</button>
+        </form>
+        <p class="auth-note">註冊完成後，會帶你去建立角色。</p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="simple">© 第柒門 線上密室逃脫</footer>
+
+  <script type="module">
+    import { supabase, mountHeader, getUser, getProfile } from './js/app.js';
+
+    await mountHeader();
+
+    // 已登入就直接導走
+    const existing = await getUser();
+    if (existing) {
+      location.href = (await getProfile(existing.id)) ? 'index.html' : 'character.html';
+    }
+
+    let mode = new URLSearchParams(location.search).get('mode') === 'signup' ? 'signup' : 'login';
+    const $ = (s) => document.querySelector(s);
+    const msg = (text, type = 'error') => { $('#msg').textContent = text; $('#msg').dataset.type = type; };
+
+    function setMode(m) {
+      mode = m;
+      $('#tab-login').setAttribute('aria-selected', m === 'login');
+      $('#tab-signup').setAttribute('aria-selected', m === 'signup');
+      $('#title').textContent = m === 'login' ? '歡迎回來' : '取得你的鑰匙';
+      $('#lead').textContent = m === 'login' ? '登入後繼續你的逃脫。' : '免費註冊，接著建立你的角色就能進入密室。';
+      $('#submit').textContent = m === 'login' ? '登入' : '註冊';
+      $('#password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+      msg('');
+    }
+    $('#tab-login').onclick = () => setMode('login');
+    $('#tab-signup').onclick = () => setMode('signup');
+    setMode(mode);
+
+    const errorText = (e) => {
+      const m = e.message || '';
+      if (m.includes('Invalid login credentials')) return '電子郵件或密碼不正確。';
+      if (m.includes('Email not confirmed')) return '這個帳號還沒完成信箱驗證，請先到信箱點擊驗證連結。';
+      if (m.includes('already registered')) return '這個電子郵件已經註冊過了，請直接登入。';
+      if (m.includes('Password')) return '密碼至少需要 6 個字元。';
+      return m;
+    };
+
+    $('#auth-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = $('#email').value.trim();
+      const password = $('#password').value;
+      if (!email || password.length < 6) return msg('請輸入電子郵件，以及至少 6 個字元的密碼。');
+
+      $('#submit').disabled = true;
+      msg('處理中…', 'ok');
+
+      if (mode === 'login') {
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        $('#submit').disabled = false;
+        if (error) return msg(errorText(error));
+        const profile = await getProfile(data.user.id);
+        location.href = profile ? 'index.html' : 'character.html';
+      } else {
+        const { data, error } = await supabase.auth.signUp({
+          email, password,
+          options: { emailRedirectTo: new URL('character.html', location.href).href },
+        });
+        $('#submit').disabled = false;
+        if (error) return msg(errorText(error));
+        if (data.session) {
+          location.href = 'character.html';
+        } else {
+          msg('註冊成功！請到信箱點擊驗證連結，驗證後就會回到這裡建立角色。', 'ok');
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+
+# 第柒門｜線上密室逃脫
+
+純 HTML + JavaScript，不需要編譯，直接用 GitHub Pages 部署。後端用 Supabase（登入、角色資料、頭像、遊玩紀錄）。
+
+## 頁面
+- `index.html`：大廳首頁（訪客可瀏覽所有密室；要遊玩必須註冊並建立角色）
+- `login.html`：登入 / 註冊
+- `character.html`：建立 / 編輯角色、選外觀、上傳頭像
+- `game.html?room=<slug>`：遊玩頁，載入 `games/<slug>/index.html`（未登入或沒有角色會被擋下）
+
+## 檔案結構（每個檔案要分開放，不能全部貼進 index.html）
+```
+index.html  login.html  character.html  game.html
+css/style.css
+js/app.js  js/avatar.js  js/config.js
+games/README.md
+supabase/schema.sql
+```
+
+## 部署
+1. 把整個資料夾內容放到 repo 根目錄並推上 GitHub
+2. repo → Settings → Pages → Source 選 `main` 分支、`/ (root)`
+3. Supabase → Authentication → URL Configuration：
+   - Site URL 填 `https://hao-yuliu.github.io/escape-room/`
+   - Redirect URLs 加上 `https://hao-yuliu.github.io/escape-room/**`
+
+資料庫結構在 `supabase/schema.sql`（已經套用到 Supabase 專案，不用再跑一次）。
