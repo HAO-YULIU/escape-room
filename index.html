@@ -1,3 +1,308 @@
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+
+// Supabase 連線設定（publishable key 本來就是公開用的，可以放在前端）
+export const SUPABASE_URL = 'https://umlnwzpmjxktfzjvcbts.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_8J3VI8dijlCccHQbXPfCQQ_v_O0Au3w';
+
+export const BRAND = '第柒門';
+export const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+export async function getUser() {
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user ?? null;
+}
+
+export async function getProfile(userId) {
+  const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
+  if (error) console.error(error);
+  return data;
+}
+
+// 頭像：有上傳圖片就用圖片，沒有就用角色外觀
+export function avatarHTML(profile, size = 40) {
+  if (profile?.avatar_url) {
+    return `<img class="avatar-img" src="${escapeHTML(profile.avatar_url)}" alt="${escapeHTML(profile.username)} 的頭像" width="${size}" height="${size}">`;
+  }
+  return `<span class="avatar-svg" style="width:${size}px;height:${size}px">${renderAvatar(profile?.appearance, { size })}</span>`;
+}
+
+export function escapeHTML(s = '') {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+export function toast(msg, type = 'info') {
+  let el = document.querySelector('.toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.className = 'toast';
+    el.setAttribute('role', 'status');
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.dataset.type = type;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+// 品牌標誌：拱門裡的「柒」
+export const LOGO_SVG = `
+  <svg viewBox="0 0 32 36" width="26" height="30" aria-hidden="true">
+    <path d="M3 35 V14 Q3 2 16 2 Q29 2 29 14 V35" fill="none" stroke="currentColor" stroke-width="2.4"/>
+    <circle cx="22.5" cy="22" r="1.8" fill="currentColor"/>
+  </svg>`;
+
+// 每一頁共用的頂部導覽列
+export async function mountHeader() {
+  const header = document.querySelector('#site-header');
+  const user = await getUser();
+  const profile = user ? await getProfile(user.id) : null;
+
+  const right = user
+    ? `<a class="me" href="character.html" title="編輯角色">
+         ${avatarHTML(profile, 36)}
+         <span>${escapeHTML(profile?.username ?? '尚未建立角色')}</span>
+       </a>
+       <button class="btn btn-ghost btn-sm" id="logout">登出</button>`
+    : `<a class="btn btn-ghost btn-sm" href="login.html">登入</a>
+       <a class="btn btn-gold btn-sm" href="login.html?mode=signup">註冊</a>`;
+
+  header.innerHTML = `
+    <div class="header-inner">
+      <a class="logo" href="index.html" aria-label="${BRAND} 首頁">${LOGO_SVG}<span>${BRAND}</span></a>
+      <nav class="nav" id="nav">
+        <a href="index.html#rooms">密室主題</a>
+        <a href="index.html#how">遊戲方式</a>
+        <a href="index.html#about">關於我們</a>
+        <a href="index.html#faq">Q&amp;A</a>
+        ${user ? '<a href="character.html">我的角色</a>' : ''}
+      </nav>
+      <div class="header-right">${right}</div>
+      <button class="menu-btn" id="menu-btn" aria-label="選單" aria-expanded="false" aria-controls="nav">
+        <span></span><span></span><span></span>
+      </button>
+    </div>`;
+
+  const menuBtn = header.querySelector('#menu-btn');
+  const nav = header.querySelector('#nav');
+  menuBtn.addEventListener('click', () => {
+    const open = nav.classList.toggle('open');
+    menuBtn.setAttribute('aria-expanded', open);
+  });
+  nav.addEventListener('click', (e) => {
+    if (e.target.closest('a')) { nav.classList.remove('open'); menuBtn.setAttribute('aria-expanded', false); }
+  });
+
+  // 往下捲時讓導覽列變實色
+  const onScroll = () => header.classList.toggle('scrolled', window.scrollY > 20);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  header.querySelector('#logout')?.addEventListener('click', async () => {
+    await supabase.auth.signOut();
+    location.href = 'index.html';
+  });
+
+  return { user, profile };
+}
+
+// 沒有帳號 / 沒有角色時跳出的提示
+export function showGate(user, roomTitle = '') {
+  let dlg = document.querySelector('#gate');
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'gate';
+    dlg.className = 'gate';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('click', (e) => { if (e.target === dlg || e.target.closest('[data-close]')) dlg.close(); });
+  }
+  const needAccount = !user;
+  dlg.innerHTML = `
+    <div class="gate-inner">
+      <button class="gate-x" data-close aria-label="關閉">×</button>
+      <div class="gate-door">${LOGO_SVG}</div>
+      <h2>${needAccount ? '門鎖著，需要鑰匙' : '還差一步：建立角色'}</h2>
+      <p>${roomTitle ? `想進入「${escapeHTML(roomTitle)}」？` : ''}${needAccount
+        ? '訪客可以自由逛大廳，但要推門遊玩，必須先免費註冊並建立你的角色。'
+        : '你已經登入了，建立一個角色，就能用他的身分走進密室。'}</p>
+      <div class="gate-actions">
+        ${needAccount
+          ? `<a class="btn btn-gold" href="login.html?mode=signup">免費註冊並建立角色</a>
+             <a class="btn btn-ghost" href="login.html">我已經有帳號</a>`
+          : `<a class="btn btn-gold" href="character.html">建立角色</a>
+             <button class="btn btn-ghost" data-close>先逛逛</button>`}
+      </div>
+    </div>`;
+  dlg.showModal();
+}
+
+// 角色外觀：選項定義 + SVG 繪製
+export const OPTIONS = {
+  skin: { label: '膚色', type: 'color', items: ['#F6D7BD', '#EBC09A', '#D29C72', '#A86F4A', '#6E4429'] },
+  hair: {
+    label: '髮型', type: 'choice',
+    items: [
+      { id: 'short', name: '短髮' }, { id: 'long', name: '長髮' }, { id: 'ponytail', name: '馬尾' },
+      { id: 'spiky', name: '刺蝟頭' }, { id: 'bob', name: '鮑伯頭' }, { id: 'bald', name: '光頭' },
+    ],
+  },
+  hairColor: { label: '髮色', type: 'color', items: ['#1E1A18', '#5A3A22', '#A8692F', '#D9B66B', '#B8B8B8', '#8E3B46'] },
+  eyes: {
+    label: '眼睛', type: 'choice',
+    items: [{ id: 'round', name: '圓眼' }, { id: 'happy', name: '笑眼' }, { id: 'sharp', name: '銳利' }, { id: 'sleepy', name: '睏睏' }],
+  },
+  outfit: {
+    label: '服裝', type: 'choice',
+    items: [
+      { id: 'coat', name: '偵探風衣' }, { id: 'hoodie', name: '連帽衫' }, { id: 'suit', name: '西裝' },
+      { id: 'labcoat', name: '實驗袍' }, { id: 'vest', name: '探險背心' },
+    ],
+  },
+  outfitColor: { label: '服裝顏色', type: 'color', items: ['#8A6A45', '#2F4A5C', '#5B6E4F', '#7A2E2E', '#3B3346', '#C9A255'] },
+  accessory: {
+    label: '配件', type: 'choice',
+    items: [
+      { id: 'none', name: '無' }, { id: 'glasses', name: '眼鏡' }, { id: 'monocle', name: '單片眼鏡' },
+      { id: 'hat', name: '偵探帽' }, { id: 'headphones', name: '耳機' },
+    ],
+  },
+};
+
+export const DEFAULT_APPEARANCE = {
+  skin: '#EBC09A', hair: 'short', hairColor: '#1E1A18', eyes: 'round',
+  outfit: 'coat', outfitColor: '#8A6A45', accessory: 'none',
+};
+
+export function randomAppearance() {
+  const a = {};
+  for (const [key, opt] of Object.entries(OPTIONS)) {
+    const list = opt.items;
+    const pick = list[Math.floor(Math.random() * list.length)];
+    a[key] = opt.type === 'color' ? pick : pick.id;
+  }
+  return a;
+}
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (v) => Math.max(0, Math.min(255, v + amt));
+  const r = c(n >> 16), g = c((n >> 8) & 255), b = c(n & 255);
+  return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+function hairBack(style, c) {
+  if (style === 'long') return `<path d="M52 100 Q50 48 100 46 Q150 48 148 100 L152 182 Q126 192 100 188 Q74 192 48 182 Z" fill="${c}"/>`;
+  if (style === 'ponytail') return `<path d="M140 78 Q178 86 170 140 Q166 168 150 176 Q160 140 142 108 Z" fill="${c}"/>`;
+  if (style === 'bob') return `<path d="M50 104 Q48 50 100 48 Q152 50 150 104 L152 140 Q140 150 128 146 L72 146 Q60 150 48 140 Z" fill="${c}"/>`;
+  return '';
+}
+
+function hairFront(style, c) {
+  switch (style) {
+    case 'short':
+    case 'ponytail':
+      return `<path d="M54 104 Q50 50 100 48 Q150 50 146 104 Q140 80 122 74 Q104 84 80 76 Q62 82 54 104 Z" fill="${c}"/>`;
+    case 'long':
+      return `<path d="M54 110 Q50 50 100 48 Q150 50 146 110 Q138 76 112 70 Q92 88 64 84 Q58 94 54 110 Z" fill="${c}"/>`;
+    case 'bob':
+      return `<path d="M52 108 Q50 50 100 48 Q150 50 148 108 Q146 84 138 78 L62 78 Q54 84 52 108 Z" fill="${c}"/>`;
+    case 'spiky':
+      return `<path d="M54 102 L52 70 L66 78 L68 46 L84 64 L96 38 L106 62 L122 42 L128 66 L144 54 L142 80 L150 76 L146 102 Q130 80 100 78 Q70 80 54 102 Z" fill="${c}"/>`;
+    default:
+      return '';
+  }
+}
+
+function eyes(style) {
+  const ink = '#2A211C';
+  switch (style) {
+    case 'happy':
+      return `<path d="M76 110 Q84 100 92 110 M108 110 Q116 100 124 110" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    case 'sharp':
+      return `<path d="M74 108 Q84 100 94 106 Q84 114 74 108 Z M106 106 Q116 100 126 108 Q116 114 106 106 Z" fill="${ink}"/>
+              <path d="M72 96 L94 100 M128 96 L106 100" stroke="${ink}" stroke-width="3.5" stroke-linecap="round"/>`;
+    case 'sleepy':
+      return `<path d="M76 108 L92 108 M108 108 L124 108" stroke="${ink}" stroke-width="4" stroke-linecap="round"/>
+              <path d="M76 104 Q84 100 92 104 M108 104 Q116 100 124 104" stroke="${ink}" stroke-width="2" fill="none" opacity=".5"/>`;
+    default:
+      return `<circle cx="84" cy="107" r="5.5" fill="${ink}"/><circle cx="116" cy="107" r="5.5" fill="${ink}"/>
+              <circle cx="86" cy="105" r="1.8" fill="#fff"/><circle cx="118" cy="105" r="1.8" fill="#fff"/>`;
+  }
+}
+
+function outfit(style, c) {
+  const body = `M24 240 Q26 184 100 174 Q174 184 176 240 Z`;
+  const dark = shade(c, -35), light = shade(c, 30);
+  switch (style) {
+    case 'hoodie':
+      return `<path d="${body}" fill="${c}"/>
+        <path d="M62 184 Q100 210 138 184 Q130 172 100 170 Q70 172 62 184 Z" fill="${dark}"/>
+        <path d="M90 196 L88 226 M110 196 L112 226" stroke="${light}" stroke-width="3" stroke-linecap="round"/>
+        <path d="M70 224 L130 224 L126 240 L74 240 Z" fill="${dark}" opacity=".6"/>`;
+    case 'suit':
+      return `<path d="${body}" fill="${c}"/>
+        <path d="M82 176 L100 230 L118 176 Q100 172 82 176 Z" fill="#F2EEE6"/>
+        <path d="M96 182 L104 182 L107 214 L100 226 L93 214 Z" fill="#7A2E2E"/>
+        <path d="M82 176 L74 196 L92 202 Z M118 176 L126 196 L108 202 Z" fill="${dark}"/>`;
+    case 'labcoat':
+      return `<path d="${body}" fill="#F4F2EC"/>
+        <path d="M84 176 L100 220 L116 176 Q100 172 84 176 Z" fill="${c}"/>
+        <path d="M84 176 L72 200 L96 214 Z M116 176 L128 200 L104 214 Z" fill="#E1DDD3"/>
+        <rect x="124" y="214" width="20" height="14" rx="2" fill="none" stroke="#C9C3B6" stroke-width="2"/>
+        <path d="M130 210 L130 222" stroke="#2F4A5C" stroke-width="3"/>`;
+    case 'vest':
+      return `<path d="${body}" fill="#E7DCC4"/>
+        <path d="M30 240 Q32 192 82 178 L94 240 Z M170 240 Q168 192 118 178 L106 240 Z" fill="${c}"/>
+        <rect x="52" y="208" width="22" height="16" rx="2" fill="${dark}"/>
+        <rect x="126" y="208" width="22" height="16" rx="2" fill="${dark}"/>`;
+    default: // coat
+      return `<path d="${body}" fill="${c}"/>
+        <path d="M86 176 L100 214 L114 176 Q100 172 86 176 Z" fill="#E9DFC7"/>
+        <path d="M86 176 L66 194 L84 200 L76 214 L100 236 Z M114 176 L134 194 L116 200 L124 214 L100 236 Z" fill="${light}"/>
+        <circle cx="94" cy="224" r="3" fill="${dark}"/><circle cx="106" cy="224" r="3" fill="${dark}"/>`;
+  }
+}
+
+function accessory(style) {
+  switch (style) {
+    case 'glasses':
+      return `<g fill="none" stroke="#2A211C" stroke-width="3"><circle cx="84" cy="107" r="13"/><circle cx="116" cy="107" r="13"/>
+              <path d="M97 106 Q100 103 103 106 M71 104 L56 100 M129 104 L144 100"/></g>`;
+    case 'monocle':
+      return `<circle cx="116" cy="107" r="14" fill="#fff" fill-opacity=".15" stroke="#C9A255" stroke-width="3"/>
+              <path d="M128 116 Q136 140 128 168" stroke="#C9A255" stroke-width="1.5" fill="none"/>`;
+    case 'hat':
+      return `<ellipse cx="100" cy="66" rx="66" ry="12" fill="#5A4632"/>
+              <path d="M58 66 Q60 22 100 20 Q140 22 142 66 Z" fill="#6E5640"/>
+              <path d="M60 56 L140 56 L141 64 L59 64 Z" fill="#2A211C"/>`;
+    case 'headphones':
+      return `<path d="M52 108 Q50 40 100 38 Q150 40 148 108" stroke="#2A211C" stroke-width="7" fill="none"/>
+              <rect x="40" y="96" width="18" height="30" rx="8" fill="#3B3346"/>
+              <rect x="142" y="96" width="18" height="30" rx="8" fill="#3B3346"/>`;
+    default:
+      return '';
+  }
+}
+
+export function renderAvatar(appearance = {}, { size = 200, background = true } = {}) {
+  const a = { ...DEFAULT_APPEARANCE, ...appearance };
+  const skinDark = shade(a.skin, -25);
+  return `<svg viewBox="0 0 200 240" width="${size}" height="${size * 1.2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="角色外觀">
+    ${background ? `<rect width="200" height="240" fill="var(--avatar-bg, #2A1A1D)"/>` : ''}
+    ${hairBack(a.hair, a.hairColor)}
+    <rect x="88" y="140" width="24" height="40" fill="${skinDark}"/>
+    ${outfit(a.outfit, a.outfitColor)}
+    <circle cx="56" cy="110" r="9" fill="${a.skin}"/><circle cx="144" cy="110" r="9" fill="${a.skin}"/>
+    <ellipse cx="100" cy="104" rx="45" ry="50" fill="${a.skin}"/>
+    <ellipse cx="74" cy="124" rx="7" ry="4" fill="#E58C7A" opacity=".35"/>
+    <ellipse cx="126" cy="124" rx="7" ry="4" fill="#E58C7A" opacity=".35"/>
+    ${eyes(a.eyes)}
+    <path d="M90 132 Q100 140 110 132" stroke="#7A3B2E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    ${hairFront(a.hair, a.hairColor)}
+    ${accessory(a.accessory)}
+  </svg>`;
+}
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
@@ -6,7 +311,7 @@
   <title>我的角色｜第柒門</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header id="site-header"></header>
@@ -53,8 +358,7 @@
   <footer class="simple">© 第柒門 線上密室逃脫</footer>
 
   <script type="module">
-    import { supabase, mountHeader, avatarHTML, toast } from './js/app.js';
-    import { OPTIONS, DEFAULT_APPEARANCE, renderAvatar, randomAppearance } from './js/avatar.js';
+    import { supabase, mountHeader, avatarHTML, toast, OPTIONS, DEFAULT_APPEARANCE, renderAvatar, randomAppearance } from './app.js';
 
     const { user, profile } = await mountHeader();
     if (!user) { location.href = 'login.html?mode=signup'; throw new Error('需要登入'); }
@@ -158,95 +462,51 @@
   </script>
 </body>
 </html>
+
+// 第柒門 密室守門員：放在每一個密室網頁裡
+// <script type="module" src="https://hao-yuliu.github.io/escape-room/guard.js?room=room-01"></script>
+//
+// 1. 沒登入 / 沒角色 → 送回大廳並跳出註冊提示
+// 2. 有角色 → 開始計時、建立遊玩紀錄，發出 'sevendoor:ready' 事件（帶玩家資料）
+// 3. 通關時在遊戲裡執行：document.dispatchEvent(new Event('sevendoor:cleared'))
+import { supabase, getUser, getProfile } from './app.js';
+
+const LOBBY = new URL('./index.html', import.meta.url).href;
+const slug = new URL(import.meta.url).searchParams.get('room');
+
+// 驗證完成前先把畫面遮起來，避免訪客看到遊戲內容
+const cover = document.createElement('style');
+cover.textContent = 'body{visibility:hidden}';
+document.head.appendChild(cover);
+
+const user = await getUser();
+const profile = user ? await getProfile(user.id) : null;
+
+if (!user || !profile) {
+  location.replace(`${LOBBY}?need=player&room=${encodeURIComponent(slug ?? '')}#rooms`);
+} else {
+  cover.remove();
+
+  const { data: game } = await supabase.from('games').select('id').eq('slug', slug).maybeSingle();
+  const { data: record } = game
+    ? await supabase.from('play_records').insert({ user_id: user.id, game_id: game.id }).select().single()
+    : { data: null };
+  const start = Date.now();
+
+  const player = { username: profile.username, appearance: profile.appearance, avatar_url: profile.avatar_url };
+  window.SevenDoor = { player, lobby: LOBBY, elapsed: () => Math.floor((Date.now() - start) / 1000) };
+  document.dispatchEvent(new CustomEvent('sevendoor:ready', { detail: { player } }));
+
+  let done = false;
+  document.addEventListener('sevendoor:cleared', async () => {
+    if (done || !record) return;
+    done = true;
+    await supabase.from('play_records')
+      .update({ status: 'cleared', clear_time_sec: window.SevenDoor.elapsed() }).eq('id', record.id);
+  });
+}
+
 <!DOCTYPE html>
-<html lang="zh-Hant">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>密室｜第柒門</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
-</head>
-<body>
-  <header id="site-header"></header>
-  <main class="container game-page" id="main"><p class="empty">正在打開門鎖…</p></main>
-
-  <script type="module">
-    import { supabase, mountHeader, escapeHTML, toast } from './js/app.js';
-
-    const { user, profile } = await mountHeader();
-    const main = document.querySelector('#main');
-    const slug = new URLSearchParams(location.search).get('room');
-
-    const locked = (title, text, cta = '<a class="btn btn-gold" href="index.html#rooms">回到大廳</a>') => {
-      main.innerHTML = `<div class="game-locked"><h1>${title}</h1><p>${text}</p><div class="btns">${cta}</div></div>`;
-    };
-
-    const { data: game } = slug
-      ? await supabase.from('games').select('*').eq('slug', slug).maybeSingle()
-      : { data: null };
-
-    if (!game) {
-      locked('找不到這間密室', '可能網址打錯了，回大廳重新挑一間吧。');
-    } else if (game.status !== 'available') {
-      document.title = `${game.title}｜第柒門`;
-      locked(escapeHTML(game.title), '這間密室還在佈置中，開放後就能進入。');
-    } else if (!user) {
-      // 沒有帳號：不能玩
-      locked('門鎖著，需要鑰匙', '訪客可以逛大廳，但要進入密室必須先免費註冊並建立角色。',
-        `<a class="btn btn-gold" href="login.html?mode=signup">免費註冊並建立角色</a>
-         <a class="btn btn-ghost" href="login.html">我已經有帳號</a>`);
-    } else if (!profile) {
-      locked('還差一步：建立角色', '建立角色後，才能用他的身分走進密室。',
-        `<a class="btn btn-gold" href="character.html">建立角色</a>`);
-    } else {
-      document.title = `${game.title}｜第柒門`;
-      main.innerHTML = `
-        <div class="game-top">
-          <h1>${escapeHTML(game.title)}</h1>
-          <div class="timer" id="timer" aria-live="off">00:00</div>
-          <a class="btn btn-ghost" href="index.html#rooms">離開密室</a>
-        </div>
-        <iframe class="game-frame" id="frame" title="${escapeHTML(game.title)}"
-          src="games/${encodeURIComponent(game.slug)}/index.html"
-          allow="fullscreen; autoplay"></iframe>`;
-
-      // 建立遊玩紀錄
-      const { data: record } = await supabase.from('play_records')
-        .insert({ user_id: user.id, game_id: game.id }).select().single();
-
-      // 計時
-      const start = Date.now();
-      const timerEl = document.querySelector('#timer');
-      const tick = setInterval(() => {
-        const s = Math.floor((Date.now() - start) / 1000);
-        timerEl.textContent = `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-      }, 1000);
-
-      // 遊戲通關時，從 iframe 內呼叫：
-      // window.parent.postMessage({ type: 'escape-room:cleared' }, '*')
-      window.addEventListener('message', async (e) => {
-        if (e.source !== document.querySelector('#frame').contentWindow) return;
-        if (e.data?.type !== 'escape-room:cleared' || !record) return;
-        clearInterval(tick);
-        const secs = Math.floor((Date.now() - start) / 1000);
-        await supabase.from('play_records')
-          .update({ status: 'cleared', clear_time_sec: secs }).eq('id', record.id);
-        toast(`成功逃脫！用時 ${timerEl.textContent}`);
-      });
-
-      // 遊戲需要玩家資料時可以讀這個
-      document.querySelector('#frame').addEventListener('load', (e) => {
-        e.target.contentWindow.postMessage({
-          type: 'escape-room:player',
-          player: { username: profile.username, appearance: profile.appearance, avatar_url: profile.avatar_url },
-        }, '*');
-      });
-    }
-  </script>
-</body>
-</html><!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
@@ -255,7 +515,7 @@
   <meta name="description" content="第柒門 線上密室逃脫。建立你的角色，挑一間密室，在時間內解開謎題逃出來。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body class="home">
   <header id="site-header"></header>
@@ -454,7 +714,7 @@
   </footer>
 
   <script type="module">
-    import { supabase, mountHeader, escapeHTML, avatarHTML, showGate, toast } from './js/app.js';
+    import { supabase, mountHeader, escapeHTML, avatarHTML, showGate, toast } from './app.js';
 
     document.querySelector('#year').textContent = new Date().getFullYear();
     const { user, profile } = await mountHeader();
@@ -527,7 +787,7 @@
       }
       listEl.innerHTML = list.map((g) => {
         const i = games.indexOf(g);
-        const open = g.status === 'available';
+        const open = g.status === 'available' && !!g.play_url;
         const badge = cleared.has(g.id) ? '<span class="badge cleared">已逃脫</span>'
           : !open ? '<span class="badge soon">即將開放</span>'
           : isNew(g) ? '<span class="badge new">NEW</span>' : '';
@@ -555,15 +815,22 @@
       listEl.scrollLeft = 0;
     }
 
-    // 點擊密室：沒有角色就跳提示，有角色才能進去
+    // 點擊密室：沒有角色就跳提示，有角色才跳到該密室的網頁
     listEl.addEventListener('click', (e) => {
       const card = e.target.closest('.room');
       if (!card) return;
       const g = games.find(x => x.slug === card.dataset.slug);
-      if (g.status !== 'available') return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
+      if (g.status !== 'available' || !g.play_url) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
       if (!isPlayer) return showGate(user, g.title);
-      location.href = `game.html?room=${encodeURIComponent(g.slug)}`;
+      location.href = g.play_url;
     });
+
+    // 從密室網頁被擋回來時（?need=player&room=xxx），直接跳出註冊提示
+    const params = new URLSearchParams(location.search);
+    if (params.get('need') === 'player' && !isPlayer) {
+      const g = games.find(x => x.slug === params.get('room'));
+      showGate(user, g?.title ?? '');
+    }
 
     // 類別篩選
     const tags = [...new Set(['新手', '解謎', '恐怖', '劇情', ...games.flatMap(g => g.tags ?? [])])];
@@ -601,7 +868,7 @@
   <title>登入｜第柒門</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header id="site-header"></header>
@@ -635,7 +902,7 @@
   <footer class="simple">© 第柒門 線上密室逃脫</footer>
 
   <script type="module">
-    import { supabase, mountHeader, getUser, getProfile } from './js/app.js';
+    import { supabase, mountHeader, getUser, getProfile } from './app.js';
 
     await mountHeader();
 
@@ -705,30 +972,393 @@
 </body>
 </html>
 
-# 第柒門｜線上密室逃脫
+# 第柒門｜線上密室逃脫 大廳
 
-純 HTML + JavaScript，不需要編譯，直接用 GitHub Pages 部署。後端用 Supabase（登入、角色資料、頭像、遊玩紀錄）。
+純 HTML + JavaScript，用 GitHub Pages 部署，後端是 Supabase（登入、角色、頭像、遊玩紀錄）。
+這個 repo 只放「大廳」；每一間密室是另外的網頁，玩家點擊後跳轉過去。
 
-## 頁面
-- `index.html`：大廳首頁（訪客可瀏覽所有密室；要遊玩必須註冊並建立角色）
+## 檔案（全部放在 repo 根目錄，不用資料夾）
+- `index.html`：大廳首頁（訪客可以看；要玩必須註冊並建立角色）
 - `login.html`：登入 / 註冊
-- `character.html`：建立 / 編輯角色、選外觀、上傳頭像
-- `game.html?room=<slug>`：遊玩頁，載入 `games/<slug>/index.html`（未登入或沒有角色會被擋下）
+- `character.html`：建立角色、選外觀、上傳頭像
+- `style.css`：全站樣式
+- `app.js`：Supabase 設定、共用功能、角色外觀繪製
+- `guard.js`：給密室網頁用的守門員（見下方）
 
-## 檔案結構（每個檔案要分開放，不能全部貼進 index.html）
-```
-index.html  login.html  character.html  game.html
-css/style.css
-js/app.js  js/avatar.js  js/config.js
-games/README.md
-supabase/schema.sql
+## 新增一間密室
+1. 另外開一個 repo（例如 `room-01`），放密室遊戲，開啟 GitHub Pages
+   → 網址會是 `https://hao-yuliu.github.io/room-01/`
+2. 在密室的 `index.html` `<head>` 裡加這一行（`room=` 填 slug）：
+   ```html
+   <script type="module" src="https://hao-yuliu.github.io/escape-room/guard.js?room=room-01"></script>
+   ```
+3. Supabase → Table Editor → `games`：該列填 `play_url`（密室網址），`status` 改成 `available`，
+   有封面就填 `cover_url`
+
+> 密室網頁一定要放在同一個 GitHub 帳號底下（`hao-yuliu.github.io/...`），才會共用登入狀態。
+
+### 在密室遊戲裡可以用
+```js
+// 拿到玩家資料（名字、外觀、頭像）
+document.addEventListener('sevendoor:ready', (e) => console.log(e.detail.player));
+
+// 通關時呼叫，會記錄逃脫時間
+document.dispatchEvent(new Event('sevendoor:cleared'));
+
+// 回大廳的網址
+location.href = window.SevenDoor.lobby;
 ```
 
 ## 部署
-1. 把整個資料夾內容放到 repo 根目錄並推上 GitHub
-2. repo → Settings → Pages → Source 選 `main` 分支、`/ (root)`
-3. Supabase → Authentication → URL Configuration：
-   - Site URL 填 `https://hao-yuliu.github.io/escape-room/`
-   - Redirect URLs 加上 `https://hao-yuliu.github.io/escape-room/**`
+1. repo → Settings → Pages → Source 選 `main` 分支、`/ (root)`
+2. Supabase → Authentication → URL Configuration：
+   - Site URL：`https://hao-yuliu.github.io/escape-room/`
+   - Redirect URLs：`https://hao-yuliu.github.io/**`
 
-資料庫結構在 `supabase/schema.sql`（已經套用到 Supabase 專案，不用再跑一次）。
+:root {
+  --ink: #0D0A0B;
+  --ink-2: #151012;
+  --wall: #1C1416;
+  --wall-2: #261A1D;
+  --line: rgba(214,178,106,.18);
+  --gold: #D6B26A;
+  --gold-dark: #8C6D33;
+  --crimson: #8E1F2A;
+  --crimson-2: #B32B38;
+  --parchment: #EFE6D2;
+  --muted: #A79C93;
+  --moss: #8BA77F;
+  --avatar-bg: #2A1A1D;
+  --radius: 10px;
+  --serif: 'Noto Serif TC', 'Songti TC', serif;
+  --sans: 'Noto Sans TC', 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body {
+  font-family: var(--sans);
+  color: var(--parchment);
+  background: var(--ink);
+  min-height: 100vh;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+a { color: inherit; }
+img { max-width: 100%; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
+h1, h2, h3 { font-family: var(--serif); font-weight: 700; line-height: 1.3; margin: 0; }
+
+.container { width: min(1200px, 100% - 32px); margin-inline: auto; }
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font: 500 15px var(--sans); padding: 11px 24px; border-radius: 999px;
+  border: 1px solid transparent; cursor: pointer; text-decoration: none; white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s, transform .15s;
+}
+.btn-sm { padding: 7px 16px; font-size: 14px; }
+.btn-lg { padding: 14px 34px; font-size: 17px; }
+.btn-gold { background: linear-gradient(180deg, #E4C47F, var(--gold)); color: #1A1012; font-weight: 700; }
+.btn-gold:hover { background: #EBCF91; transform: translateY(-1px); }
+.btn-crimson { background: var(--crimson); color: var(--parchment); }
+.btn-crimson:hover { background: var(--crimson-2); }
+.btn-ghost { background: transparent; color: var(--parchment); border-color: rgba(239,230,210,.28); }
+.btn-ghost:hover { border-color: var(--gold); color: var(--gold); }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .5; cursor: not-allowed; transform: none; }
+
+/* Header */
+#site-header { position: fixed; inset: 0 0 auto; z-index: 20; transition: background .25s, border-color .25s; border-bottom: 1px solid transparent; }
+#site-header.scrolled, body:not(.home) #site-header { background: rgba(13,10,11,.92); backdrop-filter: blur(10px); border-color: var(--line); }
+body:not(.home) { padding-top: 68px; }
+.header-inner { width: min(1200px, 100% - 32px); margin-inline: auto; display: flex; align-items: center; gap: 32px; height: 68px; }
+.logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--gold); font: 700 22px var(--serif); letter-spacing: .18em; }
+.nav { display: flex; gap: 26px; }
+.nav a { text-decoration: none; color: var(--parchment); opacity: .8; font-size: 15px; letter-spacing: .05em; }
+.nav a:hover { opacity: 1; color: var(--gold); }
+.header-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.me { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.menu-btn { display: none; background: none; border: 0; width: 40px; height: 40px; padding: 10px 8px; cursor: pointer; flex-direction: column; justify-content: space-between; }
+.menu-btn span { display: block; height: 2px; background: var(--parchment); border-radius: 2px; }
+.avatar-img, .avatar-svg { border-radius: 50%; overflow: hidden; display: inline-block; flex-shrink: 0; border: 2px solid var(--gold-dark); object-fit: cover; background: var(--avatar-bg); }
+.avatar-svg svg { width: 100%; height: auto; display: block; transform: scale(1.35) translateY(4%); }
+
+/* ===== Hero ===== */
+.hero {
+  position: relative; min-height: 100vh; min-height: 100svh; display: grid; place-items: center;
+  text-align: center; overflow: hidden; padding: 110px 16px 220px;
+  background:
+    radial-gradient(ellipse 50% 60% at 50% 72%, rgba(214,178,106,.22), transparent 70%),
+    radial-gradient(ellipse 90% 70% at 50% 0%, rgba(142,31,42,.45), transparent 70%),
+    linear-gradient(180deg, #1A0D10 0%, var(--ink) 100%);
+}
+.hero::before, .hero::after { /* 兩側紅色布幕 */
+  content: ''; position: absolute; top: 0; bottom: 0; width: 16vw; max-width: 220px; z-index: 0;
+  background: repeating-linear-gradient(90deg, #5A1018 0 14px, #7E1A25 14px 26px, #4A0D14 26px 40px);
+  box-shadow: inset -30px 0 40px rgba(0,0,0,.55);
+}
+.hero::before { left: 0; border-bottom-right-radius: 100% 40%; }
+.hero::after { right: 0; transform: scaleX(-1); border-bottom-right-radius: 100% 40%; }
+.hero-content { position: relative; z-index: 2; max-width: 760px; }
+.hero-kicker { color: var(--gold); letter-spacing: .5em; font-size: 14px; margin-bottom: 18px; }
+.hero h1 { font-size: clamp(38px, 7vw, 76px); letter-spacing: .08em; text-shadow: 0 4px 30px rgba(0,0,0,.6); }
+.hero p { color: #D9CDBB; font-size: clamp(16px, 2vw, 19px); margin: 20px auto 34px; max-width: 34em; }
+.hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.hero-me { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 22px; padding: 6px 18px 6px 6px; border-radius: 999px; background: rgba(0,0,0,.35); border: 1px solid var(--line); }
+
+/* 七扇門 */
+.doors-row {
+  position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); z-index: 1;
+  display: flex; align-items: flex-end; gap: clamp(8px, 1.6vw, 22px); width: min(980px, 92vw);
+}
+.mini-door {
+  flex: 1; aspect-ratio: 1 / 1.9; border-radius: 999px 999px 0 0; position: relative;
+  background: linear-gradient(180deg, #2A1B1E, #140D0F); border: 2px solid #3A2A22; border-bottom: 0;
+}
+.mini-door::after { content: ''; position: absolute; right: 16%; top: 58%; width: 9%; aspect-ratio: 1; border-radius: 50%; background: #5C4A33; }
+.mini-door:nth-child(1), .mini-door:nth-child(7) { transform: scale(.72); transform-origin: bottom; opacity: .55; }
+.mini-door:nth-child(2), .mini-door:nth-child(6) { transform: scale(.82); transform-origin: bottom; opacity: .7; }
+.mini-door:nth-child(3), .mini-door:nth-child(5) { transform: scale(.92); transform-origin: bottom; opacity: .85; }
+.mini-door.seventh {
+  flex: 1.25; border-color: var(--gold); overflow: hidden;
+  background: linear-gradient(180deg, #FFF0C8, #E3B868 50%, #9C6A2A);
+  box-shadow: 0 0 60px rgba(228,190,110,.55), 0 0 140px rgba(228,190,110,.3);
+}
+.mini-door.seventh::before { /* 半開的門板 */
+  content: ''; position: absolute; inset: 0 0 0 0; background: linear-gradient(90deg, #2A1B1E, #3A2629);
+  transform-origin: left; transform: perspective(400px) rotateY(-38deg); border-radius: inherit;
+  animation: doorSwing 6s ease-in-out infinite alternate;
+}
+.mini-door.seventh::after { display: none; }
+.mini-door.seventh span { position: absolute; top: 16%; left: 50%; transform: translateX(-50%); font: 700 clamp(14px, 2vw, 22px) var(--serif); color: #5A3A12; z-index: 0; }
+@keyframes doorSwing { from { transform: perspective(300px) rotateY(-50deg); } to { transform: perspective(300px) rotateY(-68deg); } }
+.scroll-cue { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); z-index: 3; color: var(--muted); font-size: 12px; letter-spacing: .3em; text-decoration: none; }
+
+/* ===== Sections ===== */
+.section { padding: 96px 0; position: relative; }
+.section.alt { background: var(--ink-2); }
+.section-head { text-align: center; margin-bottom: 44px; }
+.section-head .eyebrow { color: var(--crimson-2); letter-spacing: .4em; font-size: 13px; font-weight: 700; display: block; margin-bottom: 8px; }
+.section-head h2 { font-size: clamp(28px, 4vw, 40px); letter-spacing: .08em; }
+.section-head p { color: var(--muted); margin: 10px 0 0; }
+.section-head h2::after { content: ''; display: block; width: 56px; height: 2px; margin: 16px auto 0; background: linear-gradient(90deg, transparent, var(--gold), transparent); }
+
+/* 密室列（橫向捲動） */
+.row-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+.row-head h3 { font-size: 22px; letter-spacing: .06em; }
+.row-head h3 small { font: 400 14px var(--sans); color: var(--muted); margin-left: 10px; letter-spacing: 0; }
+.row-tools { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font: 14px var(--sans); padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(239,230,210,.2); background: transparent; color: var(--muted); cursor: pointer; }
+.chip:hover { color: var(--parchment); }
+.chip[aria-pressed="true"] { background: var(--crimson); color: var(--parchment); border-color: var(--crimson); }
+.arrow { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(239,230,210,.25); background: transparent; color: var(--parchment); cursor: pointer; font-size: 18px; }
+.arrow:hover { border-color: var(--gold); color: var(--gold); }
+
+.rooms {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(270px, calc((100% - 72px) / 4));
+  gap: 24px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px 2px 20px; scrollbar-width: thin; scrollbar-color: var(--gold-dark) transparent;
+}
+.room {
+  scroll-snap-align: start; position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit;
+  background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; cursor: pointer;
+  transition: transform .2s, border-color .2s, box-shadow .2s; text-align: left; font: inherit; padding: 0;
+}
+.room:hover { transform: translateY(-4px); border-color: rgba(214,178,106,.5); box-shadow: 0 14px 30px rgba(0,0,0,.45); }
+.room-cover { aspect-ratio: 4 / 3; position: relative; background: var(--wall-2); overflow: hidden; }
+.room-cover img, .room-cover svg { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s ease; }
+.room:hover .room-cover img { transform: scale(1.05); }
+.room-no { position: absolute; left: 12px; top: 12px; background: rgba(13,10,11,.75); color: var(--gold); font: 700 13px var(--serif); padding: 2px 10px; border-radius: 999px; letter-spacing: .1em; border: 1px solid var(--line); }
+.badge { position: absolute; right: 12px; top: 12px; font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; }
+.badge.soon { background: rgba(239,230,210,.9); color: var(--ink); }
+.badge.new { background: var(--crimson-2); color: #fff; }
+.badge.cleared { background: var(--moss); color: var(--ink); }
+.room.locked .room-cover::after { content: ''; position: absolute; inset: 0; background: rgba(13,10,11,.35); }
+.room-body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.tags { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; color: var(--gold); }
+.room-body h4 { font: 700 20px var(--serif); margin: 0; letter-spacing: .04em; }
+.room-body .sub { color: var(--muted); font-size: 13px; margin: -4px 0 0; }
+.room-body .desc { color: var(--muted); font-size: 14px; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.meta { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--muted); border-top: 1px dashed rgba(239,230,210,.14); padding-top: 10px; margin-top: auto; }
+.locks { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 4px; }
+.locks i { width: 8px; height: 10px; border-radius: 2px; background: rgba(239,230,210,.18); display: inline-block; }
+.locks i.on { background: var(--crimson-2); }
+.room-cta { font-size: 14px; font-weight: 700; color: var(--gold); }
+.room.locked .room-cta { color: var(--muted); font-weight: 400; }
+.empty { text-align: center; color: var(--muted); padding: 50px 0; grid-column: 1 / -1; width: 100%; }
+
+/* 關於我們 */
+.about { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.about-art { aspect-ratio: 1; max-width: 440px; width: 100%; margin-inline: auto; border-radius: 50% 50% var(--radius) var(--radius); overflow: hidden; border: 2px solid var(--gold-dark); box-shadow: 0 0 0 10px rgba(214,178,106,.06); }
+.about-art svg { width: 100%; height: 100%; display: block; }
+.about h2 { font-size: clamp(26px, 3.4vw, 36px); margin: 8px 0 18px; letter-spacing: .06em; }
+.about p { color: #CFC4B2; margin: 0 0 14px; }
+.about .eyebrow { color: var(--crimson-2); letter-spacing: .4em; font-size: 13px; font-weight: 700; }
+.stats { display: flex; gap: 36px; margin-top: 26px; flex-wrap: wrap; }
+.stats b { display: block; font: 700 30px var(--serif); color: var(--gold); }
+.stats span { font-size: 13px; color: var(--muted); }
+
+/* 遊戲方式 */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; counter-reset: s; }
+.step { background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); padding: 34px 28px; position: relative; overflow: hidden; }
+.step .num { font: 700 64px/1 var(--serif); color: transparent; -webkit-text-stroke: 1px var(--gold-dark); position: absolute; right: 18px; top: 14px; opacity: .8; }
+.step h3 { font-size: 22px; margin-bottom: 10px; color: var(--gold); }
+.step p { color: var(--muted); margin: 0; }
+.step-icon { width: 54px; height: 54px; border-radius: 50%; background: rgba(142,31,42,.25); border: 1px solid rgba(179,43,56,.5); display: grid; place-items: center; margin-bottom: 18px; color: var(--gold); }
+
+/* 密室類別 */
+.cats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+.cat {
+  position: relative; min-height: 220px; border-radius: var(--radius); overflow: hidden; padding: 24px; display: flex; flex-direction: column; justify-content: flex-end;
+  text-align: left; border: 1px solid var(--line); cursor: pointer; color: var(--parchment); font: inherit; transition: transform .2s, border-color .2s;
+}
+.cat:hover { transform: translateY(-4px); border-color: var(--gold); }
+.cat h3 { font-size: 24px; letter-spacing: .1em; margin-bottom: 6px; }
+.cat p { margin: 0; font-size: 14px; color: #D9CDBB; }
+.cat .glyph { position: absolute; top: 14px; right: 18px; font: 700 64px/1 var(--serif); opacity: .16; }
+.cat-1 { background: linear-gradient(160deg, #2E3B2B, #141A13); }
+.cat-2 { background: linear-gradient(160deg, #2A3346, #12151D); }
+.cat-3 { background: linear-gradient(160deg, #4A1219, #170709); }
+.cat-4 { background: linear-gradient(160deg, #4A3A1E, #1A140A); }
+
+/* FAQ */
+.faq { max-width: 820px; margin-inline: auto; display: grid; gap: 12px; }
+.faq details { background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); }
+.faq summary { cursor: pointer; padding: 18px 22px; font-weight: 500; list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: '+'; color: var(--gold); font-size: 22px; line-height: 1; transition: transform .2s; }
+.faq details[open] summary::after { transform: rotate(45deg); }
+.faq details p { margin: 0; padding: 0 22px 20px; color: var(--muted); }
+
+/* CTA */
+.cta {
+  text-align: center; padding: 110px 16px;
+  background: radial-gradient(ellipse 60% 80% at 50% 100%, rgba(214,178,106,.18), transparent 70%), linear-gradient(180deg, var(--ink-2), #1E0B0F);
+  border-top: 1px solid var(--line);
+}
+.cta .eyebrow { color: var(--gold); letter-spacing: .4em; font-size: 13px; }
+.cta h2 { font-size: clamp(30px, 5vw, 48px); margin: 12px 0; letter-spacing: .08em; }
+.cta p { color: var(--muted); margin: 0 0 30px; }
+
+/* Footer */
+.site-footer { background: #080607; border-top: 1px solid var(--line); padding: 56px 0 28px; color: var(--muted); font-size: 14px; }
+.foot-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 40px; }
+.site-footer h4 { color: var(--parchment); font: 700 15px var(--serif); margin: 0 0 14px; letter-spacing: .1em; }
+.site-footer ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.site-footer a { text-decoration: none; }
+.site-footer a:hover { color: var(--gold); }
+.copyright { text-align: center; border-top: 1px solid rgba(239,230,210,.06); margin-top: 40px; padding-top: 22px; font-size: 13px; }
+footer.simple { text-align: center; color: var(--muted); font-size: 13px; padding: 24px 0 40px; border-top: 1px solid rgba(239,230,210,.08); }
+
+/* 進門提示對話框 */
+.gate { border: 1px solid var(--gold-dark); border-radius: 14px; padding: 0; background: var(--wall); color: var(--parchment); width: min(440px, calc(100% - 32px)); }
+.gate::backdrop { background: rgba(5,3,4,.75); backdrop-filter: blur(4px); }
+.gate-inner { padding: 36px 30px 30px; text-align: center; position: relative; }
+.gate-x { position: absolute; right: 12px; top: 8px; background: none; border: 0; color: var(--muted); font-size: 26px; cursor: pointer; }
+.gate-door { color: var(--gold); margin-bottom: 10px; }
+.gate-door svg { width: 46px; height: 52px; }
+.gate h2 { font-size: 24px; margin-bottom: 10px; }
+.gate p { color: var(--muted); margin: 0 0 24px; }
+.gate-actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* Forms / panels */
+.panel { background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px; }
+.auth-wrap { max-width: 420px; margin: 64px auto; }
+.auth-wrap h1 { font-size: 30px; text-align: center; margin-bottom: 8px; }
+.auth-wrap .lead { text-align: center; color: var(--muted); margin: 0 0 24px; }
+.auth-note { font-size: 13px; color: var(--muted); text-align: center; margin: 16px 0 0; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 24px; border-bottom: 1px solid rgba(239,230,210,.15); }
+.tabs button { background: none; border: none; color: var(--muted); font: 500 16px var(--sans); padding: 10px; cursor: pointer; border-bottom: 2px solid transparent; }
+.tabs button[aria-selected="true"] { color: var(--gold); border-color: var(--gold); }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 18px; }
+.field label { font-size: 14px; color: var(--muted); }
+.field input {
+  font: 16px var(--sans); padding: 11px 14px; border-radius: 8px;
+  background: var(--ink); border: 1px solid rgba(239,230,210,.18); color: var(--parchment);
+}
+.field input:focus { outline: none; border-color: var(--gold); }
+.form-msg { font-size: 14px; min-height: 1.5em; margin: 0 0 12px; }
+.form-msg[data-type="error"] { color: #F0A090; }
+.form-msg[data-type="ok"] { color: var(--moss); }
+
+/* Character editor */
+.char-page { padding: 48px 0 80px; }
+.char-page h1 { font-size: 32px; margin-bottom: 6px; }
+.char-page .lead { color: var(--muted); margin: 0 0 32px; }
+.char-grid { display: grid; grid-template-columns: 320px 1fr; gap: 32px; align-items: start; }
+.preview { position: sticky; top: 92px; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+.preview-figure { width: 100%; border-radius: 160px 160px var(--radius) var(--radius); overflow: hidden; border: 3px solid var(--gold-dark); box-shadow: 0 0 40px rgba(214,178,106,.15); }
+.preview-figure svg { width: 100%; height: auto; display: block; }
+.preview-name { font: 700 22px var(--serif); min-height: 1.3em; }
+.avatar-upload { display: flex; align-items: center; gap: 14px; width: 100%; padding-top: 18px; border-top: 1px dashed rgba(239,230,210,.15); }
+.avatar-upload .avatar-img, .avatar-upload .avatar-svg { width: 64px; height: 64px; }
+.avatar-upload .hint { font-size: 13px; color: var(--muted); }
+.avatar-upload .links { display: flex; gap: 12px; margin-top: 4px; }
+.link-btn { background: none; border: none; color: var(--gold); font: 14px var(--sans); cursor: pointer; padding: 0; text-decoration: underline; }
+
+.opt-group { margin-bottom: 26px; }
+.opt-group h3 { font: 500 15px var(--sans); color: var(--muted); margin-bottom: 10px; }
+.swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+.swatch { width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; box-shadow: inset 0 0 0 2px rgba(0,0,0,.2); }
+.swatch[aria-pressed="true"] { border-color: var(--parchment); box-shadow: 0 0 0 3px var(--gold); }
+.choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.choice { font: 14px var(--sans); padding: 8px 16px; border-radius: 8px; background: var(--ink); color: var(--parchment); border: 1px solid rgba(239,230,210,.18); cursor: pointer; }
+.choice[aria-pressed="true"] { border-color: var(--gold); color: var(--gold); background: rgba(214,178,106,.08); }
+.save-bar { display: flex; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+
+/* Game page */
+.game-page { padding: 32px 0 60px; }
+.game-top { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
+.game-top h1 { font-size: 28px; }
+.timer { font: 700 20px var(--serif); color: var(--gold); letter-spacing: .1em; }
+.game-frame { width: 100%; aspect-ratio: 16 / 9; border: 2px solid var(--gold-dark); border-radius: var(--radius); background: #000; display: block; }
+.game-locked { text-align: center; padding: 80px 20px; }
+.game-locked h1 { font-size: 30px; margin-bottom: 12px; }
+.game-locked p { color: var(--muted); margin-bottom: 28px; }
+.game-locked .btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+/* Toast */
+.toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); opacity: 0; background: var(--parchment); color: var(--ink); padding: 10px 20px; border-radius: 8px; font-size: 15px; transition: .25s; pointer-events: none; z-index: 50; }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast[data-type="error"] { background: #F0A090; }
+
+@media (max-width: 960px) {
+  .rooms { grid-auto-columns: minmax(260px, calc((100% - 24px) / 2)); }
+  .cats { grid-template-columns: repeat(2, 1fr); }
+  .about { grid-template-columns: 1fr; gap: 36px; }
+}
+@media (max-width: 760px) {
+  .menu-btn { display: flex; }
+  .nav {
+    display: none; position: absolute; top: 68px; left: 0; right: 0; flex-direction: column; gap: 0;
+    background: rgba(13,10,11,.97); border-bottom: 1px solid var(--line); padding: 8px 16px 16px;
+  }
+  .nav.open { display: flex; }
+  .nav a { padding: 12px 4px; border-bottom: 1px solid rgba(239,230,210,.06); }
+  #site-header:has(.nav.open) { background: rgba(13,10,11,.97); }
+  .header-inner { gap: 12px; }
+  .me span { display: none; }
+  .hero { padding-bottom: 170px; }
+  .hero::before, .hero::after { width: 12vw; }
+  .section { padding: 72px 0; }
+  .rooms { grid-auto-columns: 80%; }
+  .steps { grid-template-columns: 1fr; }
+  .foot-grid { grid-template-columns: 1fr 1fr; }
+  .foot-grid > :first-child { grid-column: 1 / -1; }
+  .char-grid { grid-template-columns: 1fr; }
+  .preview { position: static; }
+  .preview-figure { max-width: 240px; }
+}
+@media (max-width: 420px) {
+  .logo { font-size: 18px; letter-spacing: .1em; }
+  .header-right .btn-sm { padding: 6px 12px; }
+  .scroll-cue { display: none; }
+  .cats { grid-template-columns: 1fr; }
+  .cat { min-height: 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  * { transition: none !important; animation: none !important; }
+}
