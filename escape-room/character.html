@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>我的角色｜第柒門</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header id="site-header"></header>
+
+  <main class="container char-page">
+    <h1 id="page-title">建立你的角色</h1>
+    <p class="lead">取個名字、挑選外觀，也可以上傳自己的頭像照片。建立完成就能進入密室。</p>
+
+    <div class="char-grid">
+      <aside class="preview">
+        <div class="preview-figure" id="preview"></div>
+        <div class="preview-name" id="preview-name"></div>
+        <button class="btn btn-ghost" id="random" type="button">隨機外觀</button>
+
+        <div class="avatar-upload">
+          <div id="avatar-thumb"></div>
+          <div>
+            <div>頭像</div>
+            <div class="hint">PNG / JPG / WebP，2MB 以內。沒上傳就用角色臉當頭像。</div>
+            <div class="links">
+              <button class="link-btn" id="pick-avatar" type="button">上傳圖片</button>
+              <button class="link-btn" id="clear-avatar" type="button" hidden>改用角色臉</button>
+            </div>
+            <input type="file" id="avatar-file" accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div class="field">
+          <label for="username">角色名稱（2–20 字）</label>
+          <input id="username" maxlength="20" autocomplete="nickname" placeholder="例如：夜行偵探">
+        </div>
+        <div id="options"></div>
+        <p class="form-msg" id="msg" aria-live="polite"></p>
+        <div class="save-bar">
+          <button class="btn btn-gold" id="save" type="button">儲存角色</button>
+          <a class="btn btn-ghost" href="index.html">回到大廳</a>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="simple">© 第柒門 線上密室逃脫</footer>
+
+  <script type="module">
+    import { supabase, mountHeader, avatarHTML, toast } from './js/app.js';
+    import { OPTIONS, DEFAULT_APPEARANCE, renderAvatar, randomAppearance } from './js/avatar.js';
+
+    const { user, profile } = await mountHeader();
+    if (!user) { location.href = 'login.html?mode=signup'; throw new Error('需要登入'); }
+
+    const $ = (s) => document.querySelector(s);
+    const msg = (t, type = 'error') => { $('#msg').textContent = t; $('#msg').dataset.type = type; };
+
+    let appearance = { ...DEFAULT_APPEARANCE, ...(profile?.appearance ?? {}) };
+    let avatarUrl = profile?.avatar_url ?? null;
+    let pendingFile = null;     // 新選的圖片（儲存時才上傳）
+    let pendingPreview = null;
+
+    if (profile) {
+      $('#page-title').textContent = '編輯你的角色';
+      $('#username').value = profile.username;
+    }
+
+    // 產生選項按鈕
+    $('#options').innerHTML = Object.entries(OPTIONS).map(([key, opt]) => `
+      <div class="opt-group">
+        <h3>${opt.label}</h3>
+        <div class="${opt.type === 'color' ? 'swatches' : 'choices'}" data-key="${key}" role="group" aria-label="${opt.label}">
+          ${opt.items.map(item => opt.type === 'color'
+            ? `<button type="button" class="swatch" data-value="${item}" style="background:${item}" aria-label="${opt.label} ${item}"></button>`
+            : `<button type="button" class="choice" data-value="${item.id}">${item.name}</button>`
+          ).join('')}
+        </div>
+      </div>`).join('');
+
+    $('#options').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-value]');
+      if (!btn) return;
+      appearance[btn.parentElement.dataset.key] = btn.dataset.value;
+      update();
+    });
+
+    $('#random').onclick = () => { appearance = randomAppearance(); update(); };
+    $('#username').addEventListener('input', update);
+
+    // 頭像上傳
+    $('#pick-avatar').onclick = () => $('#avatar-file').click();
+    $('#avatar-file').onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) { toast('圖片超過 2MB，請換一張小一點的。', 'error'); return; }
+      pendingFile = file;
+      if (pendingPreview) URL.revokeObjectURL(pendingPreview);
+      pendingPreview = URL.createObjectURL(file);
+      update();
+    };
+    $('#clear-avatar').onclick = () => { pendingFile = null; pendingPreview = null; avatarUrl = null; update(); };
+
+    function update() {
+      $('#preview').innerHTML = renderAvatar(appearance, { size: 320 });
+      $('#preview-name').textContent = $('#username').value.trim() || '未命名';
+      document.querySelectorAll('[data-key]').forEach(group => {
+        group.querySelectorAll('[data-value]').forEach(b =>
+          b.setAttribute('aria-pressed', appearance[group.dataset.key] === b.dataset.value));
+      });
+      const shownUrl = pendingPreview ?? avatarUrl;
+      $('#avatar-thumb').innerHTML = avatarHTML({ avatar_url: shownUrl, appearance, username: '' }, 64);
+      $('#clear-avatar').hidden = !shownUrl;
+    }
+    update();
+
+    $('#save').onclick = async () => {
+      const username = $('#username').value.trim();
+      if (username.length < 2) return msg('角色名稱至少要 2 個字。');
+
+      $('#save').disabled = true;
+      msg('儲存中…', 'ok');
+
+      try {
+        let finalUrl = avatarUrl;
+        if (pendingFile) {
+          const ext = pendingFile.name.split('.').pop().toLowerCase();
+          const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+          const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type });
+          if (upErr) throw upErr;
+          finalUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+        }
+
+        const { error } = await supabase.from('profiles').upsert({
+          id: user.id, username, appearance, avatar_url: finalUrl,
+        });
+        if (error) {
+          if (error.code === '23505') throw new Error('這個角色名稱已經有人用了，換一個吧。');
+          throw error;
+        }
+
+        avatarUrl = finalUrl; pendingFile = null; pendingPreview = null;
+        msg('');
+        toast('角色已儲存');
+        setTimeout(() => location.href = 'index.html#rooms', 700);
+      } catch (err) {
+        msg(err.message || '儲存失敗，請再試一次。');
+      } finally {
+        $('#save').disabled = false;
+      }
+    };
+  </script>
+</body>
+</html>
