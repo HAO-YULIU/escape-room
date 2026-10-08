@@ -228,6 +228,29 @@ body:not(.home) { padding-top: 68px; }
 .locks i.half { background: linear-gradient(90deg, var(--crimson-2) 50%, rgba(239,230,210,.18) 50%); }
 .room-cta { font-size: 14px; font-weight: 700; color: var(--gold); }
 .room.locked .room-cta { color: var(--muted); font-weight: 400; }
+.room-date { font-size: 12px; color: var(--muted); margin: 0; letter-spacing: .04em; }
+.room-rank { position: absolute; left: 12px; bottom: 12px; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font: 900 18px var(--serif); color: #12142A; background: linear-gradient(180deg, #F6E7BE, var(--gold)); box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+.room-rank.r2 { background: linear-gradient(180deg, #eef0f6, #b9bfcc); }
+.room-rank.r3 { background: linear-gradient(180deg, #f1cfae, #c08a5c); }
+.monthly { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.monthly .room { scroll-snap-align: none; }
+.month-note { text-align: center; color: var(--muted); font-size: 13px; margin: 18px 0 0; }
+.spot { display: grid; grid-template-columns: minmax(220px, 340px) 1fr; gap: 0; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0;
+  background: linear-gradient(135deg, rgba(139,124,230,.14), rgba(8,10,20,.6) 60%); border: 1px solid rgba(232,212,160,.35); border-radius: 18px; overflow: hidden;
+  box-shadow: 0 18px 50px rgba(0,0,0,.45), 0 0 60px rgba(139,124,230,.12); transition: transform .3s ease, border-color .3s ease; }
+.spot:hover { transform: translateY(-4px); border-color: rgba(232,212,160,.6); }
+.spot-cover { position: relative; aspect-ratio: 3 / 4; background: var(--wall-2); overflow: hidden; }
+.spot-cover img, .spot-cover svg { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.spot-body { padding: 32px 36px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+.spot-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--crimson-2); font-weight: 700; letter-spacing: .3em; font-size: 13px; }
+.spot-kicker::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--crimson-2); box-shadow: 0 0 10px var(--crimson-2); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+.spot-body h3 { font: 900 clamp(26px, 3.4vw, 40px) var(--serif); margin: 0; letter-spacing: .06em; }
+.spot-body .sub { color: var(--gold); margin: -4px 0 0; }
+.spot-body .desc { color: var(--muted); margin: 0; line-height: 1.8; }
+.spot-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--parchment); border-top: 1px dashed rgba(239,230,210,.14); padding-top: 14px; }
+.spot-facts span { color: var(--muted); margin-right: 6px; }
+.spot .btn { align-self: flex-start; margin-top: 6px; }
 .empty { text-align: center; color: var(--muted); padding: 50px 0; grid-column: 1 / -1; width: 100%; }
 
 /* 關於我們 */
@@ -380,6 +403,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .rank-wrap { grid-template-columns: 1fr; }
   .rooms { grid-auto-columns: minmax(260px, calc((100% - 24px) / 2)); }
   .cats { grid-template-columns: repeat(2, 1fr); }
+  .monthly { grid-template-columns: repeat(2, 1fr); }
   .about { grid-template-columns: 1fr; gap: 36px; }
 }
 @media (max-width: 760px) {
@@ -400,6 +424,10 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .whispers { display: none; }
   .section { padding: 72px 0; }
   .rooms { grid-auto-columns: 80%; }
+  .monthly { grid-template-columns: 1fr; }
+  .spot { grid-template-columns: 1fr; }
+  .spot-cover { aspect-ratio: 4 / 3; }
+  .spot-body { padding: 22px 20px 24px; }
   .steps { grid-template-columns: 1fr; }
   .foot-grid { grid-template-columns: 1fr 1fr; }
   .foot-grid > :first-child { grid-column: 1 / -1; }
@@ -485,6 +513,31 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </div>
         </div>
         <div class="rooms" id="room-list"><p class="empty">正在打開門鎖…</p></div>
+      </div>
+    </section>
+
+    <!-- 全新主題：最新上線的密室，直到下一款上線才換 -->
+    <section class="section alt" id="newest" hidden>
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">NEW THEME</span>
+          <h2>全新主題</h2>
+          <p>夜語工作室最新上線的密室</p>
+        </div>
+        <div id="newest-box"></div>
+      </div>
+    </section>
+
+    <!-- 每月推薦：這個月最多人玩的三款 -->
+    <section class="section" id="monthly">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">MONTHLY PICKS</span>
+          <h2 id="monthly-title">每月推薦密室</h2>
+          <p>這個月最多人推門而入的三間密室</p>
+        </div>
+        <div class="monthly" id="monthly-list"><p class="empty">正在統計本月人氣…</p></div>
+        <p class="month-note">依本月挑戰的玩家人數排名，每月 1 日重新計算。</p>
       </div>
     </section>
 
@@ -663,6 +716,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <h4>導覽</h4>
           <ul>
             <li><a href="#rooms">密室主題</a></li>
+            <li><a href="#monthly">每月推薦</a></li>
             <li><a href="#ranking">排行榜</a></li>
             <li><a href="#how">遊戲方式</a></li>
             <li><a href="#about">關於我們</a></li>
@@ -965,7 +1019,7 @@ const LOGO_SVG = `
   <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M20 3 A13 13 0 1 0 29 22 A10.5 10.5 0 1 1 20 3 Z" fill="currentColor"/><path d="M24 6 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1 Z" fill="currentColor" opacity=".8"/></svg>`;
 
 // ================= 登入狀態 =================
-let user = null, profile = null, games = [], stats = {};
+let user = null, profile = null, games = [], stats = {}, monthly = [];
 // 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
 let mine = {}, myRecs = [], achCodes = new Set();
 const isPlayer = () => !!(user && profile);
@@ -1005,8 +1059,9 @@ async function loadAuth() {
 }
 
 async function loadStats() {
-  const { data } = await supabase.rpc('get_game_stats');
+  const [{ data }, { data: top }] = await Promise.all([supabase.rpc('get_game_stats'), supabase.rpc('get_monthly_top', { lim: 3 })]);
   stats = Object.fromEntries((data ?? []).map(s => [s.game_id, s]));
+  monthly = top ?? [];
 }
 
 // ================= 頂部導覽列 =================
@@ -1026,6 +1081,7 @@ function renderHeader() {
       <a class="logo" href="#top" aria-label="夜語工作室 首頁">${LOGO_SVG}<span>夜語工作室</span></a>
       <nav class="nav" id="nav">
         <a href="#rooms">密室主題</a>
+        <a href="#monthly">每月推薦</a>
         <a href="#ranking">排行榜</a>
         <a href="#how">遊戲方式</a>
         <a href="#about">關於我們</a>
@@ -1139,8 +1195,46 @@ const coverArt = (g, i) => {
 };
 const locks = (d) => { d = Number(d) || 0; return `<span class="locks" aria-label="難度 ${d} / 5">${[1,2,3,4,5].map(i => `<i class="${i <= d ? 'on' : i - 0.5 <= d ? 'half' : ''}"></i>`).join('')}</span>`; };
 const players = (g) => g.min_players === g.max_players ? `${g.min_players} 人` : `${g.min_players}～${g.max_players} 人`;
-const isNew = (g) => Date.now() - new Date(g.created_at).getTime() < 1000 * 60 * 60 * 24 * 30;
+const fmtDate = (d) => d ? d.slice(0, 10).replaceAll('-', '/').replace(/\/0(\d)/g, '/$1') : '';
+const released = (g) => g.release_date ?? g.created_at;
+const isNew = (g) => Date.now() - new Date(released(g)).getTime() < 1000 * 60 * 60 * 24 * 30;
+// 最新上線的那一款：有新的上線日期才會換掉
+const newestGame = () => games.filter(isOpen).sort((a, b) => String(released(b)).localeCompare(String(released(a))))[0];
 const isOpen = (g) => g.status === 'available' && !!g.play_url;
+
+function roomCard(g, rank = 0, note = '') {
+  const i = games.indexOf(g);
+  const open = isOpen(g);
+  const m = mine[g.id], st = stats[g.id];
+  const badge = m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
+    : m ? '<span class="badge played">玩過</span>'
+    : !open ? '<span class="badge soon">即將開放</span>'
+    : isNew(g) ? '<span class="badge new">NEW</span>' : '';
+  const cta = !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const challenge = note ? `<p class="challengers">${note}</p>` : st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
+  return `
+    <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
+      <div class="room-cover">
+        ${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, i)}
+        <span class="room-no">No.${String(g.sort_order).padStart(2, '0')}</span>
+        ${badge}
+        ${rank ? `<span class="room-rank r${rank}" aria-label="本月第 ${rank} 名">${rank}</span>` : ''}
+      </div>
+      <div class="room-body">
+        <div class="tags">${(g.tags ?? []).map(t => `<span>#${escapeHTML(t)}</span>`).join('')}</div>
+        <h4>${escapeHTML(g.title)}</h4>
+        ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
+        <p class="desc">${escapeHTML(g.description ?? '')}</p>
+        ${challenge}
+        ${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)} 上線</p>` : ''}
+        <div class="meta">
+          <span>${players(g)}・${g.duration_min} 分鐘</span>
+          <span>難度${locks(g.difficulty)}</span>
+        </div>
+        <div class="room-cta">${cta}</div>
+      </div>
+    </button>`;
+}
 
 const listEl = $('#room-list');
 let currentTag = '';
@@ -1151,49 +1245,22 @@ function renderRooms(tag = currentTag) {
     listEl.innerHTML = `<p class="empty">${tag ? `「${escapeHTML(tag)}」類別的密室正在佈置中，敬請期待。` : '密室正在佈置中，敬請期待。'}</p>`;
     return;
   }
-  listEl.innerHTML = list.map((g) => {
-    const i = games.indexOf(g);
-    const open = isOpen(g);
-    const m = mine[g.id], st = stats[g.id];
-    const badge = m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
-      : m ? '<span class="badge played">玩過</span>'
-      : !open ? '<span class="badge soon">即將開放</span>'
-      : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-    const cta = !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
-    const challenge = st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
-    return `
-      <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
-        <div class="room-cover">
-          ${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, i)}
-          <span class="room-no">No.${String(g.sort_order).padStart(2, '0')}</span>
-          ${badge}
-        </div>
-        <div class="room-body">
-          <div class="tags">${(g.tags ?? []).map(t => `<span>#${escapeHTML(t)}</span>`).join('')}</div>
-          <h4>${escapeHTML(g.title)}</h4>
-          ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
-          <p class="desc">${escapeHTML(g.description ?? '')}</p>
-          ${challenge}
-          <div class="meta">
-            <span>${players(g)}・${g.duration_min} 分鐘</span>
-            <span>難度${locks(g.difficulty)}</span>
-          </div>
-          <div class="room-cta">${cta}</div>
-        </div>
-      </button>`;
-  }).join('');
+  listEl.innerHTML = list.map(g => roomCard(g)).join('');
   listEl.scrollLeft = 0;
 }
 
 // 點擊密室：沒有角色就跳提示，有角色才跳到該密室的網頁
-listEl.addEventListener('click', (e) => {
-  const card = e.target.closest('.room');
+function onRoomClick(e) {
+  const card = e.target.closest('.room, .spot');
   if (!card) return;
   const g = games.find(x => x.slug === card.dataset.slug);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
   location.href = g.play_url;
-});
+}
+listEl.addEventListener('click', onRoomClick);
+$('#newest-box').addEventListener('click', onRoomClick);
+$('#monthly-list').addEventListener('click', onRoomClick);
 
 // 類別篩選
 const filtersEl = $('#filters');
@@ -1556,10 +1623,53 @@ function renderMine() {
     <div class="ach-box">${renderAch()}</div>`;
 }
 
+function renderNewest() {
+  const g = newestGame();
+  $('#newest').hidden = !g;
+  if (!g) return;
+  const m = mine[g.id];
+  const cta = !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '立即推門 →';
+  $('#newest-box').innerHTML = `
+    <button class="spot" data-slug="${escapeHTML(g.slug)}" type="button">
+      <div class="spot-cover">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g))}</div>
+      <div class="spot-body">
+        <span class="spot-kicker">NEW　最新上線</span>
+        <div class="tags">${(g.tags ?? []).map(t => `<span>#${escapeHTML(t)}</span>`).join('')}</div>
+        <h3>${escapeHTML(g.title)}</h3>
+        ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
+        <p class="desc">${escapeHTML(g.description ?? '')}</p>
+        <div class="spot-facts">
+          <div><span>上線</span>${fmtDate(released(g))}</div>
+          <div><span>人數</span>${players(g)}</div>
+          <div><span>時長</span>${g.duration_min} 分鐘</div>
+          <div><span>難度</span>${locks(g.difficulty)}</div>
+        </div>
+        <span class="btn btn-gold">${cta}</span>
+      </div>
+    </button>`;
+}
+
+function renderMonthly() {
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
+  $('#monthly-title').textContent = `${now.getMonth() + 1} 月推薦密室`;
+  const byId = Object.fromEntries(monthly.map(r => [r.game_id, r]));
+  const top = monthly.map(r => games.find(g => g.id === r.game_id)).filter(g => g && isOpen(g));
+  // 本月還不到三款有人玩：用最新上線的補滿
+  for (const g of games.filter(isOpen).sort((a, b) => String(released(b)).localeCompare(String(released(a))))) {
+    if (top.length >= 3) break;
+    if (!top.includes(g)) top.push(g);
+  }
+  $('#monthly-list').innerHTML = top.length
+    ? top.map((g, i) => roomCard(g, i + 1, byId[g.id] ? `🔥 本月 ${byId[g.id].players} 人挑戰` : '✨ 本月等你來挑戰')).join('')
+    : '<p class="empty">密室正在佈置中，敬請期待。</p>';
+}
+
 function renderAll() {
   renderHeader();
   renderHero();
   renderRooms();
+  renderNewest();
+  renderMonthly();
   renderMine();
   renderRanking();
 }
