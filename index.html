@@ -225,6 +225,7 @@ body:not(.home) { padding-top: 68px; }
 .locks { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 4px; }
 .locks i { width: 8px; height: 10px; border-radius: 2px; background: rgba(239,230,210,.18); display: inline-block; }
 .locks i.on { background: var(--crimson-2); }
+.locks i.half { background: linear-gradient(90deg, var(--crimson-2) 50%, rgba(239,230,210,.18) 50%); }
 .room-cta { font-size: 14px; font-weight: 700; color: var(--gold); }
 .room.locked .room-cta { color: var(--muted); font-weight: 400; }
 .empty { text-align: center; color: var(--muted); padding: 50px 0; grid-column: 1 / -1; width: 100%; }
@@ -1136,7 +1137,7 @@ const coverArt = (g, i) => {
     <text x="160" y="120" font-family="Noto Serif TC, serif" font-size="30" font-weight="700" fill="#E8D4A0" text-anchor="middle" opacity=".85">${String(g.sort_order).padStart(2, '0')}</text>
   </svg>`;
 };
-const locks = (d) => `<span class="locks" aria-label="難度 ${d} / 5">${[1,2,3,4,5].map(i => `<i class="${i <= d ? 'on' : ''}"></i>`).join('')}</span>`;
+const locks = (d) => { d = Number(d) || 0; return `<span class="locks" aria-label="難度 ${d} / 5">${[1,2,3,4,5].map(i => `<i class="${i <= d ? 'on' : i - 0.5 <= d ? 'half' : ''}"></i>`).join('')}</span>`; };
 const players = (g) => g.min_players === g.max_players ? `${g.min_players} 人` : `${g.min_players}～${g.max_players} 人`;
 const isNew = (g) => Date.now() - new Date(g.created_at).getTime() < 1000 * 60 * 60 * 24 * 30;
 const isOpen = (g) => g.status === 'available' && !!g.play_url;
