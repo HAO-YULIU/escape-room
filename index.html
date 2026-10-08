@@ -1459,7 +1459,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { school2: 7 };
+const ENDING_COUNT = { school2: 7, love: 7 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -1492,6 +1492,20 @@ const ACH = [
   { code: 's2_arg', game: 'school2', icon: '🌐', title: '另一邊的網路', desc: '解開一條路線上所有的 ARG 謎題' },
   { code: 's2_love', game: 'school2', icon: '🎀', title: '她唯一的人', desc: '???', secret: 1 },
   { code: 's2_nohint', game: 'school2', icon: '🤐', title: '小羽，不用了', desc: '零提示通關第二章' },
+  { code: 'lv_e1', game: 'love', icon: '💍', title: '老闆娘與機關王', desc: 'END 01', test: c => c.end('love', 'e1') },
+  { code: 'lv_e2', game: 'love', icon: '🤝', title: '比戀愛更難的是友情', desc: 'END 02', test: c => c.end('love', 'e2') },
+  { code: 'lv_e3', game: 'love', icon: '💌', title: '最後一封情書', desc: 'END 03', test: c => c.end('love', 'e3') },
+  { code: 'lv_e4', game: 'love', icon: '🌈', title: '下一場，換我心動', desc: 'END 04', test: c => c.end('love', 'e4') },
+  { code: 'lv_e5', game: 'love', icon: '🎭', title: '最會看戲的人', desc: 'END 05', test: c => c.end('love', 'e5') },
+  { code: 'lv_e6', game: 'love', icon: '🏚', title: '倒了，就重新開始', desc: 'END 06', test: c => c.end('love', 'e6') },
+  { code: 'lv_et', game: 'love', icon: '👑', title: '解我們', desc: 'TRUE END', secret: 1, test: c => c.end('love', 'et') },
+  { code: 'lv_all', game: 'love', icon: '📜', title: '六個人的故事', desc: '收集大直真嬛傳的全部結局', test: c => (c.endings.love?.size ?? 0) >= 7 },
+  { code: 'lv_fast', game: 'love', icon: '⏱', title: '下班前收工', desc: '120 分鐘內通關大直真嬛傳', test: c => c.cl('love').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
+  { code: 'lv_nohint', game: 'love', icon: '🙅‍♀️', title: '令萓，不用紙條了', desc: '零提示通關大直真嬛傳' },
+  { code: 'lv_frag', game: 'love', icon: '✉️', title: '寄件人還在', desc: '找齊匿名信的五個碎片' },
+  { code: 'lv_ear', game: 'love', icon: '👂', title: '牆壁有耳', desc: '兩次偷聽都沒有被發現' },
+  { code: 'lv_obj', game: 'love', icon: '⚖️', title: '異議！', desc: '三次對質都一次命中' },
+  { code: 'lv_rank', game: 'love', icon: '🏯', title: '皇貴妃', desc: '解開全部 54 道謎題' },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(games.map(g => [g.id, g.slug]));
