@@ -1500,13 +1500,13 @@ const ACH = [
   { code: 'lv_e5', game: 'love', icon: '🎭', title: '最會看戲的人', desc: 'END 05', test: c => c.end('love', 'e5') },
   { code: 'lv_e6', game: 'love', icon: '🏚', title: '倒了，就重新開始', desc: 'END 06', test: c => c.end('love', 'e6') },
   { code: 'lv_et', game: 'love', icon: '👑', title: '解我們', desc: 'TRUE END', secret: 1, test: c => c.end('love', 'et') },
-  { code: 'lv_all', game: 'love', icon: '📜', title: '六個人的故事', desc: '收集大直真嬛傳的全部結局', test: c => (c.endings.love?.size ?? 0) >= 7 },
-  { code: 'lv_fast', game: 'love', icon: '⏱', title: '下班前收工', desc: '120 分鐘內通關大直真嬛傳', test: c => c.cl('love').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
-  { code: 'lv_nohint', game: 'love', icon: '🙅‍♀️', title: '令萓，不用紙條了', desc: '零提示通關大直真嬛傳' },
+  { code: 'lv_all', game: 'love', icon: '📜', title: '六個人的故事', desc: '收集大直愛情摩天輪的全部結局', test: c => (c.endings.love?.size ?? 0) >= 7 },
+  { code: 'lv_fast', game: 'love', icon: '⏱', title: '下班前收工', desc: '120 分鐘內通關大直愛情摩天輪', test: c => c.cl('love').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
+  { code: 'lv_nohint', game: 'love', icon: '🙅‍♀️', title: '令萓，不用紙條了', desc: '零提示通關大直愛情摩天輪' },
   { code: 'lv_frag', game: 'love', icon: '✉️', title: '寄件人還在', desc: '找齊匿名信的五個碎片' },
   { code: 'lv_ear', game: 'love', icon: '👂', title: '牆壁有耳', desc: '兩次偷聽都沒有被發現' },
   { code: 'lv_obj', game: 'love', icon: '⚖️', title: '異議！', desc: '三次對質都一次命中' },
-  { code: 'lv_rank', game: 'love', icon: '🏯', title: '皇貴妃', desc: '解開全部 54 道謎題' },
+  { code: 'lv_rank', game: 'love', icon: '🎡', title: '抵達頂點', desc: '解開全部 54 道謎題' },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(games.map(g => [g.id, g.slug]));
