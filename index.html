@@ -192,6 +192,17 @@ body:not(.home) { padding-top: 68px; }
 .my-list small { display: block; color: var(--muted); font-size: 12px; }
 .my-list b { font-size: 13px; color: var(--muted); white-space: nowrap; }
 .my-list b.ok { color: var(--moss); }
+.ach-box { margin-top: 18px; border-top: 1px solid var(--ink-2); padding-top: 12px; }
+.ach-head { display: flex; justify-content: space-between; align-items: baseline; }
+.ach-head h4 { margin: 0; color: var(--gold); }
+.ach-group { margin-top: 10px; }
+.ach-group > small { color: var(--muted); font-size: 12px; letter-spacing: .1em; }
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 4px; }
+.ach { background: var(--ink-2); border-radius: 8px; padding: 8px 10px; opacity: .38; filter: grayscale(1); display: grid; grid-template-columns: 28px 1fr; column-gap: 6px; }
+.ach.ok { opacity: 1; filter: none; box-shadow: inset 0 0 0 1px var(--gold); }
+.ach i { grid-row: span 2; font-style: normal; font-size: 22px; line-height: 28px; text-align: center; }
+.ach b { font-size: 13px; }
+.ach span { font-size: 11px; color: var(--muted); line-height: 1.4; }
 .my-stats.four { grid-template-columns: repeat(4, 1fr); }
 .my-stats.four b { font-size: 22px; }
 .rank-meta { display: block; font-size: 11px; color: var(--muted); font-weight: 400; overflow: hidden; text-overflow: ellipsis; }
@@ -900,7 +911,7 @@ const LOGO_SVG = `
 // ================= 登入狀態 =================
 let user = null, profile = null, games = [], stats = {};
 // 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
-let mine = {};
+let mine = {}, myRecs = [], achCodes = new Set();
 const isPlayer = () => !!(user && profile);
 
 function fmtTime(s) {
@@ -918,9 +929,13 @@ async function loadAuth() {
     if (error) console.error(error);
     profile = p;
     const { data: recs } = await supabase.from('play_records')
-      .select('game_id,status,clear_time_sec,created_at,deaths,hints,borrows').eq('user_id', user.id);
+      .select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending').eq('user_id', user.id);
+    myRecs = recs ?? [];
+    const { data: ach } = await supabase.from('user_achievements').select('code').eq('user_id', user.id);
+    achCodes = new Set((ach ?? []).map(a => a.code));
     for (const r of recs ?? []) {
-      const m = mine[r.game_id] ??= { plays: 0, clears: 0, best: null, bestRec: null, last: r.created_at, deaths: 0, hints: 0 };
+      const m = mine[r.game_id] ??= { plays: 0, clears: 0, best: null, bestRec: null, last: r.created_at, deaths: 0, hints: 0, endings: new Set() };
+      if (r.ending && r.status === 'cleared') m.endings.add(r.ending);
       m.plays++;
       m.deaths += r.deaths ?? 0;
       m.hints += r.hints ?? 0;
@@ -1358,6 +1373,66 @@ function runMeta(r) {
   return parts.join('・');
 }
 
+// ================= 成就 =================
+// 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
+const ENDING_COUNT = { school2: 7 };
+const ACH = [
+  { code: 'g_start', game: null, icon: '🚪', title: '推開第一扇門', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
+  { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
+  { code: 'g_all', game: null, icon: '👑', title: '第柒門的常客', desc: '逃出所有開放中的密室', test: c => c.openSlugs.length > 0 && c.openSlugs.every(s => c.cleared.some(r => r.slug === s)) },
+  { code: 'g_nodeath', game: null, icon: '🛡', title: '毫髮無傷', desc: '零死亡逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths) },
+  { code: 'g_nohint', game: null, icon: '🧠', title: '靠自己', desc: '零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.hints) },
+  { code: 'g_perfect', game: null, icon: '💎', title: '完美主義', desc: '零死亡、零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths && !r.hints) },
+  { code: 'g_night', game: null, icon: '🌙', title: '夜貓子', desc: '在凌晨 0 點到 4 點之間逃出密室', test: c => c.cleared.some(r => { const h = new Date(r.updated_at || r.created_at).getHours(); return h < 4; }) },
+  { code: 'g_retry', game: null, icon: '🔁', title: '鍥而不捨', desc: '同一間密室挑戰 5 次以上', test: c => Object.values(c.bySlug).some(a => a.length >= 5) },
+  { code: 'q1_clear', game: 'qianchan-school', icon: '🏫', title: '她不說話', desc: '逃出千嬋高級中學', test: c => c.cl('qianchan-school').length > 0 },
+  { code: 'q1_nodeath', game: 'qianchan-school', icon: '❤️', title: '八條命都在', desc: '零死亡逃出千嬋高級中學', test: c => c.cl('qianchan-school').some(r => !r.deaths) },
+  { code: 'q1_fast', game: 'qianchan-school', icon: '⏱', title: '在天亮之前', desc: '90 分鐘內逃出千嬋高級中學', test: c => c.cl('qianchan-school').some(r => r.clear_time_sec <= 5400) },
+  { code: 'pp_clear', game: 'pupu', icon: '🧻', title: '蜜月完成', desc: '完成「屎」瓦帝尼', test: c => c.cl('pupu').length > 0 },
+  { code: 'pp_fast', game: 'pupu', icon: '✈️', title: '準時登機', desc: '60 分鐘內完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => r.clear_time_sec <= 3600) },
+  { code: 'pp_rich', game: 'pupu', icon: '💰', title: '財務自由', desc: '沒跟耕卉借錢就完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => !r.borrows) },
+  { code: 'pp_nohint', game: 'pupu', icon: '🙅', title: '一毛都不給郝翔', desc: '沒買任何提示就完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => !r.hints) },
+  { code: 's2_e1', game: 'school2', icon: '🌫', title: '妳會再來的', desc: '結局一：沒有帶聖安', test: c => c.end('school2', 'e1') },
+  { code: 's2_e2', game: 'school2', icon: '🤝', title: '最後的同行者', desc: 'TRUE END', test: c => c.end('school2', 'e2') },
+  { code: 's2_e3', game: 'school2', icon: '🚶', title: '我們晚點見', desc: '結局三', test: c => c.end('school2', 'e3') },
+  { code: 's2_e4', game: 'school2', icon: '📱', title: '她現在是我', desc: '結局四', test: c => c.end('school2', 'e4') },
+  { code: 's2_e5', game: 'school2', icon: '💥', title: 'Bang。', desc: '結局五：逃跑失敗', test: c => c.end('school2', 'e5') },
+  { code: 's2_e6', game: 'school2', icon: '📻', title: '謝謝', desc: '結局六：邦瑜真正被放下', test: c => c.end('school2', 'e6') },
+  { code: 's2_eh', game: 'school2', icon: '🤫', title: '噓', desc: '隱藏真結局', secret: 1, test: c => c.end('school2', 'eh') },
+  { code: 's2_all', game: 'school2', icon: '📚', title: '七個結局', desc: '收集第二章的全部結局', test: c => (c.endings.school2?.size ?? 0) >= 7 },
+  { code: 's2_nodeath', game: 'school2', icon: '🕯', title: '靈魂不滅', desc: '零死亡通關第二章', test: c => c.cl('school2').some(r => !r.deaths) },
+  { code: 's2_fast', game: 'school2', icon: '⏱', title: '兩百分鐘', desc: '200 分鐘內通關第二章', test: c => c.cl('school2').some(r => r.clear_time_sec <= 12000) },
+  { code: 's2_who', game: 'school2', icon: '❓', title: 'B-13 是誰', desc: '猜出陌生帳號的身分' },
+  { code: 's2_jz', game: 'school2', icon: '📼', title: 'BANG', desc: '找齊寯志的 7 份資料' },
+  { code: 's2_truth', game: 'school2', icon: '🧩', title: '有人聽見了', desc: '找齊邦瑜的 5 個真相碎片' },
+  { code: 's2_arg', game: 'school2', icon: '🌐', title: '另一邊的網路', desc: '解開一條路線上所有的 ARG 謎題' },
+  { code: 's2_love', game: 'school2', icon: '🎀', title: '她唯一的人', desc: '???', secret: 1 },
+  { code: 's2_nohint', game: 'school2', icon: '🤐', title: '小羽，不用了', desc: '零提示通關第二章' },
+];
+function achContext() {
+  const slugOf = Object.fromEntries(games.map(g => [g.id, g.slug]));
+  const recs = myRecs.map(r => ({ ...r, slug: slugOf[r.game_id] }));
+  const cleared = recs.filter(r => r.status === 'cleared');
+  const bySlug = {}, endings = {};
+  for (const r of recs) (bySlug[r.slug] ??= []).push(r);
+  for (const r of cleared) if (r.ending) (endings[r.slug] ??= new Set()).add(r.ending);
+  return { recs, cleared, bySlug, endings, openSlugs: games.filter(isOpen).map(g => g.slug),
+    cl: s => cleared.filter(r => r.slug === s), end: (s, e) => !!endings[s]?.has(e) };
+}
+function renderAch() {
+  const c = achContext();
+  const got = a => achCodes.has(a.code) || (a.test && a.test(c));
+  const groups = [[null, '第柒門'], ...games.filter(g => ACH.some(a => a.game === g.slug)).map(g => [g.slug, g.title])];
+  const n = ACH.filter(got).length;
+  return `<div class="ach-head"><h4>🏆 成就</h4><span class="muted">${n} / ${ACH.length}</span></div>` + groups.map(([slug, name]) => {
+    const list = ACH.filter(a => a.game === slug);
+    return `<div class="ach-group"><small>${escapeHTML(name)}</small><div class="ach-grid">${list.map(a => {
+      const ok = got(a), hide = a.secret && !ok;
+      return `<div class="ach ${ok ? 'ok' : ''}" title="${escapeHTML(hide ? '隱藏成就' : a.desc)}"><i>${hide ? '🔒' : a.icon}</i><b>${hide ? '？？？' : escapeHTML(a.title)}</b><span>${hide ? '隱藏成就' : escapeHTML(a.desc)}</span></div>`;
+    }).join('')}</div></div>`;
+  }).join('');
+}
+
 // 我的紀錄
 function renderMine() {
   const el = $('#my-rec');
@@ -1376,9 +1451,10 @@ function renderMine() {
     <div class="my-stats four"><div><b>${played.length}</b><span>玩過</span></div><div><b>${escaped.length}</b><span>成功逃脫</span></div><div><b>${totalDeaths}</b><span>總死亡</span></div><div><b>${totalHints}</b><span>總提示</span></div></div>
     ${played.length ? `<ul class="my-list">${played.map(g => {
       const m = mine[g.id];
-      return `<li><span>${escapeHTML(g.title)}<small>挑戰 ${m.plays} 次・通關 ${m.clears} 次</small>${m.bestRec ? `<small>最佳那次：${runMeta(m.bestRec)}</small>` : ''}</span>
+      return `<li><span>${escapeHTML(g.title)}<small>挑戰 ${m.plays} 次・通關 ${m.clears} 次${ENDING_COUNT[g.slug] ? `・結局 ${m.endings.size} / ${ENDING_COUNT[g.slug]}` : ''}</small>${m.bestRec ? `<small>最佳那次：${runMeta(m.bestRec)}</small>` : ''}</span>
         <b class="${m.best != null ? 'ok' : ''}">${m.best != null ? '最佳 ' + fmtTime(m.best) : '尚未逃脫'}</b></li>`;
-    }).join('')}</ul>` : '<p class="muted">還沒有遊玩紀錄。挑一間密室，推門進去吧。</p>'}`;
+    }).join('')}</ul>` : '<p class="muted">還沒有遊玩紀錄。挑一間密室，推門進去吧。</p>'}
+    <div class="ach-box">${renderAch()}</div>`;
 }
 
 function renderAll() {
