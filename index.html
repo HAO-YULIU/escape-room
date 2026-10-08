@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>第柒門｜線上密室逃脫</title>
-  <meta name="description" content="第柒門 線上密室逃脫。建立你的角色，挑一間密室，在時間內解開謎題逃出來。">
+  <title>夜語工作室｜線上密室逃脫</title>
+  <meta name="description" content="夜語工作室 線上密室逃脫。建立你的角色，挑一間密室，在時間內解開謎題逃出來。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
   <style>
@@ -438,7 +438,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         <div class="section-head">
           <span class="eyebrow">ROOMS</span>
           <h2>密室主題</h2>
-          <p>第柒門原創線上密室，等你推門而入</p>
+          <p>夜語工作室原創線上密室，等你推門而入</p>
         </div>
         <div class="row-head">
           <div class="filters" id="filters" role="group" aria-label="依類別篩選"></div>
@@ -489,9 +489,9 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         </div>
         <div>
           <span class="eyebrow">ABOUT US</span>
-          <h2>歡迎來到第柒門</h2>
+          <h2>歡迎來到夜語工作室</h2>
           <p>傳說每個人的一生中都會遇到六扇門，而第七扇門，通往一個你從未見過的世界。</p>
-          <p>第柒門是一間專做線上密室逃脫的工作室。每一間密室都是我們親手設計的原創故事：從場景、謎題到機關，只要打開瀏覽器，就能在家推門入局。</p>
+          <p>夜語工作室專做線上密室逃脫。每一間密室都是我們親手設計的原創故事：從場景、謎題到機關，只要打開瀏覽器，就能在家推門入局。</p>
           <p>建立屬於你的角色、換上你喜歡的造型，用他的身分踏進每一個故事。</p>
           <div class="stats">
             <div><b id="stat-rooms">–</b><span>間原創密室</span></div>
@@ -597,7 +597,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         <div>
           <a class="logo" href="#top" style="margin-bottom:12px">
             <svg viewBox="0 0 32 36" width="26" height="30" aria-hidden="true"><path d="M3 35 V14 Q3 2 16 2 Q29 2 29 14 V35" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="22.5" cy="22" r="1.8" fill="currentColor"/></svg>
-            <span>第柒門</span>
+            <span>夜語工作室</span>
           </a>
           <p style="margin:0;max-width:22em">原創線上密室逃脫。打開瀏覽器，推開第七扇門。</p>
         </div>
@@ -620,7 +620,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </ul>
         </div>
       </div>
-      <div class="copyright">© <span id="year"></span> 第柒門 版權所有</div>
+      <div class="copyright">© <span id="year"></span> 夜語工作室 版權所有</div>
     </div>
   </footer>
 
@@ -653,7 +653,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         </div>
       </div>
     </main>
-    <footer class="simple">© 第柒門 線上密室逃脫</footer>
+    <footer class="simple">© 夜語工作室 線上密室逃脫</footer>
   </div>
 
   <!-- ===== 建立 / 編輯角色 ===== -->
@@ -693,7 +693,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         </section>
       </div>
     </main>
-    <footer class="simple">© 第柒門 線上密室逃脫</footer>
+    <footer class="simple">© 夜語工作室 線上密室逃脫</footer>
   </div>
 
   <script type="module">
@@ -967,7 +967,7 @@ function renderHeader() {
 
   header.innerHTML = `
     <div class="header-inner">
-      <a class="logo" href="#top" aria-label="第柒門 首頁">${LOGO_SVG}<span>第柒門</span></a>
+      <a class="logo" href="#top" aria-label="夜語工作室 首頁">${LOGO_SVG}<span>夜語工作室</span></a>
       <nav class="nav" id="nav">
         <a href="#rooms">密室主題</a>
         <a href="#ranking">排行榜</a>
@@ -1379,7 +1379,7 @@ const ENDING_COUNT = { school2: 7 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '推開第一扇門', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
-  { code: 'g_all', game: null, icon: '👑', title: '第柒門的常客', desc: '逃出所有開放中的密室', test: c => c.openSlugs.length > 0 && c.openSlugs.every(s => c.cleared.some(r => r.slug === s)) },
+  { code: 'g_all', game: null, icon: '👑', title: '夜語工作室的常客', desc: '逃出所有開放中的密室', test: c => c.openSlugs.length > 0 && c.openSlugs.every(s => c.cleared.some(r => r.slug === s)) },
   { code: 'g_nodeath', game: null, icon: '🛡', title: '毫髮無傷', desc: '零死亡逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths) },
   { code: 'g_nohint', game: null, icon: '🧠', title: '靠自己', desc: '零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.hints) },
   { code: 'g_perfect', game: null, icon: '💎', title: '完美主義', desc: '零死亡、零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths && !r.hints) },
@@ -1422,7 +1422,7 @@ function achContext() {
 function renderAch() {
   const c = achContext();
   const got = a => achCodes.has(a.code) || (a.test && a.test(c));
-  const groups = [[null, '第柒門'], ...games.filter(g => ACH.some(a => a.game === g.slug)).map(g => [g.slug, g.title])];
+  const groups = [[null, '夜語工作室'], ...games.filter(g => ACH.some(a => a.game === g.slug)).map(g => [g.slug, g.title])];
   const n = ACH.filter(got).length;
   return `<div class="ach-head"><h4>🏆 成就</h4><span class="muted">${n} / ${ACH.length}</span></div>` + groups.map(([slug, name]) => {
     const list = ACH.filter(a => a.game === slug);
