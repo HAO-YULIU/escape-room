@@ -236,22 +236,40 @@ body:not(.home) { padding-top: 68px; }
 .monthly { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); gap: 20px; justify-content: center; }
 .monthly .room { scroll-snap-align: none; }
 .month-note { text-align: center; color: var(--muted); font-size: 13px; margin: 18px 0 0; }
-.spot { display: grid; grid-template-columns: minmax(160px, 230px) 1fr; gap: 0; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0;
-  background: linear-gradient(135deg, rgba(139,124,230,.14), rgba(8,10,20,.6) 60%); border: 1px solid rgba(232,212,160,.35); border-radius: 18px; overflow: hidden;
-  box-shadow: 0 18px 50px rgba(0,0,0,.45), 0 0 60px rgba(139,124,230,.12); transition: transform .3s ease, border-color .3s ease; }
-.spot:hover { transform: translateY(-4px); border-color: rgba(232,212,160,.6); }
-.spot-cover { position: relative; aspect-ratio: 3 / 4; background: var(--wall-2); overflow: hidden; }
+/* 全新主題：電影院首映海報風 */
+.spot { position: relative; display: grid; grid-template-columns: minmax(170px, 250px) 1fr 120px; align-items: center; gap: 0; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0; isolation: isolate;
+  background: #0B0D1A; border: 1px solid rgba(232,212,160,.4); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.5), 0 0 70px rgba(139,124,230,.14); transition: transform .3s ease, border-color .3s ease; }
+.spot:hover { transform: translateY(-4px); border-color: rgba(232,212,160,.7); }
+.spot-bg { position: absolute; inset: 0; z-index: -2; overflow: hidden; }
+.spot-bg img { width: 100%; height: 100%; object-fit: cover; filter: blur(28px) saturate(1.3) brightness(.45); transform: scale(1.3); }
+.spot::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, rgba(8,10,20,.35), rgba(8,10,20,.82) 55%, rgba(8,10,20,.6)), repeating-linear-gradient(135deg, rgba(232,212,160,.035) 0 2px, transparent 2px 14px); }
+.spot-marquee { position: absolute; left: 0; right: 0; top: 0; height: 14px; z-index: 1; background: radial-gradient(circle, #FFE7A8 0 2.6px, rgba(255,231,168,.25) 3.5px, transparent 4.5px) 0 50% / 22px 14px repeat-x; animation: bulbs 1.2s steps(2) infinite; opacity: .9; }
+.spot-marquee::after { content: ''; position: absolute; left: 0; right: 0; top: calc(100% + 0px); height: 1px; background: rgba(232,212,160,.25); }
+@keyframes bulbs { 50% { background-position: 11px 50%; } }
+.spot-poster { position: relative; padding: 34px 0 26px 30px; }
+.spot-cover { position: relative; aspect-ratio: 3 / 4; border-radius: 8px; overflow: hidden; transform: rotate(-3deg); border: 3px solid #E8D4A0; box-shadow: 0 20px 40px rgba(0,0,0,.6), 0 0 40px rgba(232,212,160,.18); transition: transform .4s ease; background: var(--wall-2); }
+.spot:hover .spot-cover { transform: rotate(0) scale(1.02); }
 .spot-cover img, .spot-cover svg { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
-.spot-body { padding: 32px 36px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
-.spot-kicker { display: inline-flex; align-items: center; gap: 8px; color: var(--crimson-2); font-weight: 700; letter-spacing: .3em; font-size: 13px; }
+.spot-ribbon { position: absolute; left: 18px; top: 26px; z-index: 2; background: var(--crimson-2); color: #fff; font: 900 13px var(--serif); letter-spacing: .2em; padding: 4px 12px; transform: rotate(-12deg); box-shadow: 0 4px 12px rgba(0,0,0,.5); }
+.spot-body { padding: 36px 30px 30px 36px; display: flex; flex-direction: column; gap: 12px; justify-content: center; }
+.spot-kicker { display: inline-flex; align-items: center; gap: 8px; color: #FFD9A0; font-weight: 700; letter-spacing: .3em; font-size: 12px; }
 .spot-kicker::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--crimson-2); box-shadow: 0 0 10px var(--crimson-2); animation: pulse 1.6s ease-in-out infinite; }
 @keyframes pulse { 50% { opacity: .3; } }
-.spot-body h3 { font: 900 clamp(26px, 3.4vw, 40px) var(--serif); margin: 0; letter-spacing: .06em; }
+.spot-body h3 { font: 900 clamp(28px, 3.6vw, 44px) var(--serif); margin: 0; letter-spacing: .08em; text-shadow: 0 3px 18px rgba(0,0,0,.7); }
 .spot-body .sub { color: var(--gold); margin: -4px 0 0; }
-.spot-body .desc { color: var(--muted); margin: 0; line-height: 1.8; }
-.spot-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--parchment); border-top: 1px dashed rgba(239,230,210,.14); padding-top: 14px; }
+.spot-body .desc { color: #CFCBE0; margin: 0; line-height: 1.8; max-width: 560px; }
+.spot-facts { display: flex; flex-wrap: wrap; gap: 8px 22px; font-size: 14px; color: var(--parchment); border-top: 1px dashed rgba(239,230,210,.18); padding-top: 14px; }
 .spot-facts span { color: var(--muted); margin-right: 6px; }
 .spot .btn { align-self: flex-start; margin-top: 6px; }
+.spot-ticket { align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; margin: 26px 18px 22px 0; padding: 14px 6px; border-radius: 10px; text-align: center;
+  background: linear-gradient(180deg, #F2E3BC, #D9BE7E); color: #2A1E12; position: relative; box-shadow: 0 10px 24px rgba(0,0,0,.45);
+  -webkit-mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat;
+          mask: radial-gradient(circle 9px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 9px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; }
+.spot-ticket small { font-size: 10px; letter-spacing: .2em; color: #6A5030; }
+.spot-ticket b { font: 900 20px var(--serif); letter-spacing: .06em; }
+.spot-ticket i { width: 70%; border-top: 2px dashed rgba(42,30,18,.4); margin: 8px 0; }
+.spot-ticket em { font-style: normal; font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+.spot-ticket strong { font: 900 34px/1 var(--serif); color: var(--crimson); }
 .empty { text-align: center; color: var(--muted); padding: 50px 0; grid-column: 1 / -1; width: 100%; }
 
 /* 關於我們 */
@@ -427,8 +445,15 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .rooms { grid-auto-columns: 54%; }
   .monthly { grid-template-columns: repeat(2, minmax(0, 200px)); }
   .spot { grid-template-columns: 1fr; }
-  .spot-cover { aspect-ratio: 3 / 4; width: min(62%, 230px); margin: 18px auto 0; border-radius: 12px; }
-  .spot-body { padding: 22px 20px 24px; }
+  .spot-poster { padding: 34px 0 0; width: min(58%, 220px); margin: 0 auto; }
+  .spot-ribbon { left: -8px; }
+  .spot-body { padding: 22px 20px 16px; }
+  .spot-ticket { flex-direction: row; flex-wrap: nowrap; justify-content: center; gap: 6px; margin: 0 20px 22px; padding: 10px 12px; -webkit-mask: none; mask: none; white-space: nowrap; }
+  .spot-ticket small:first-child { display: none; }
+  .spot-ticket b { font-size: 17px; }
+  .spot-ticket i { width: 0; height: 18px; border-top: 0; border-left: 2px dashed rgba(42,30,18,.4); margin: 0 4px; }
+  .spot-ticket strong { font-size: 22px; }
+  .spot-ticket em { margin: 0; }
   .steps { grid-template-columns: 1fr; }
   .foot-grid { grid-template-columns: 1fr 1fr; }
   .foot-grid > :first-child { grid-column: 1 / -1; }
@@ -1649,22 +1674,32 @@ function renderNewest() {
   if (!g) return;
   const m = mine[g.id];
   const cta = !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '立即推門 →';
+  const days = Math.max(1, Math.floor((Date.now() - new Date(released(g)).getTime()) / 864e5) + 1);
+  const cover = g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g));
   $('#newest-box').innerHTML = `
     <button class="spot" data-slug="${escapeHTML(g.slug)}" type="button">
-      <div class="spot-cover">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g))}</div>
+      <div class="spot-bg" aria-hidden="true">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="">` : ''}</div>
+      <div class="spot-marquee" aria-hidden="true"></div>
+      <div class="spot-poster"><div class="spot-cover">${cover}</div><span class="spot-ribbon">NEW</span></div>
       <div class="spot-body">
-        <span class="spot-kicker">NEW　最新上線</span>
+        <span class="spot-kicker">NOW SHOWING　最新上線</span>
         <div class="tags">${(g.tags ?? []).filter(t => CATS.includes(t)).map(t => `<span>#${escapeHTML(t)}</span>`).join('')}</div>
         <h3>${escapeHTML(g.title)}</h3>
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         <div class="spot-facts">
-          <div><span>上線</span>${fmtDate(released(g))}</div>
           <div><span>人數</span>${players(g)}</div>
           <div><span>時長</span>${g.duration_min} 分鐘</div>
           <div><span>難度</span>${locks(g.difficulty)}</div>
         </div>
         <span class="btn btn-gold">${cta}</span>
+      </div>
+      <div class="spot-ticket" aria-hidden="true">
+        <small>ADMIT ONE</small>
+        <b>No.${String(g.sort_order).padStart(2, '0')}</b>
+        <i></i>
+        <small>上線</small><em>${fmtDate(released(g))}</em>
+        <small>第</small><strong>${days}</strong><small>天</small>
       </div>
     </button>`;
 }
