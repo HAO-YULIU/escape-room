@@ -1527,7 +1527,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { school2: 7, love: 7 };
+const ENDING_COUNT = { school2: 7, love: 7, bang: 11 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -1574,6 +1574,23 @@ const ACH = [
   { code: 'lv_ear', game: 'love', icon: '👂', title: '牆壁有耳', desc: '兩次偷聽都沒有被發現' },
   { code: 'lv_obj', game: 'love', icon: '⚖️', title: '異議！', desc: '三次對質都一次命中' },
   { code: 'lv_rank', game: 'love', icon: '🎡', title: '抵達頂點', desc: '解開全部 54 道謎題' },
+  { code: 'bg_pb', game: 'bang', icon: '🔮', title: '越南公主・彈珠王', desc: '1 人：通過甄妮的彈珠試煉', test: c => c.end('bang', 'pb') },
+  { code: 'bg_xq_w', game: 'bang', icon: '♟', title: '尊嚴之戰・勝者', desc: '2 人：大盤象棋獲勝', test: c => c.end('bang', 'xq_w') },
+  { code: 'bg_xq_l', game: 'bang', icon: '😩', title: '完全法克', desc: '2 人：大盤象棋輸了', test: c => c.end('bang', 'xq_l') },
+  { code: 'bg_xq_d', game: 'bang', icon: '🤝', title: '握手言和', desc: '2 人：大盤象棋和棋', secret: 1, test: c => c.end('bang', 'xq_d') },
+  { code: 'bg_cd1', game: 'bang', icon: '🃏', title: '台灣遊戲大賽冠軍', desc: '3 人：撲克牌大會第一名', test: c => c.end('bang', 'cd1') },
+  { code: 'bg_cd2', game: 'bang', icon: '🥈', title: '撲克牌大會・亞軍', desc: '3 人：撲克牌大會第二名', test: c => c.end('bang', 'cd2') },
+  { code: 'bg_cd3', game: 'bang', icon: '🥉', title: '撲克牌大會・季軍', desc: '3 人：撲克牌大會第三名', test: c => c.end('bang', 'cd3') },
+  { code: 'bg_mj1', game: 'bang', icon: '🀄', title: '麻將之王', desc: '4 人：麻將最終決戰第一名', test: c => c.end('bang', 'mj1') },
+  { code: 'bg_mj2', game: 'bang', icon: '🀅', title: '麻將・第二名', desc: '4 人：麻將最終決戰第二名', test: c => c.end('bang', 'mj2') },
+  { code: 'bg_mj3', game: 'bang', icon: '🀆', title: '麻將・第三名', desc: '4 人：麻將最終決戰第三名', test: c => c.end('bang', 'mj3') },
+  { code: 'bg_mj4', game: 'bang', icon: '🧋', title: '請大家喝飲料', desc: '4 人：麻將最終決戰最後一名', test: c => c.end('bang', 'mj4') },
+  { code: 'bg_all', game: 'bang', icon: '🇻🇳', title: '神人。', desc: '收集越南公主的全部 11 個結局', test: c => (c.endings.bang?.size ?? 0) >= 11 },
+  { code: 'bg_fast', game: 'bang', icon: '⏱', title: '兩日遊不加班', desc: '100 分鐘內通關越南公主', test: c => c.cl('bang').some(r => r.clear_time_sec != null && r.clear_time_sec <= 6000) },
+  { code: 'bg_nohint', game: 'bang', icon: '😇', title: '博育，不用了', desc: '零提示通關越南公主', test: c => c.cl('bang').some(r => !r.hints) },
+  { code: 'bg_nolost', game: 'bang', icon: '🗺️', title: '從來沒迷路', desc: '一次都沒迷路通關越南公主', test: c => c.cl('bang').some(r => !r.deaths) },
+  { code: 'bg_nowrong', game: 'bang', icon: '🎯', title: 'Bang!', desc: '一次都沒答錯通關越南公主' },
+  { code: 'bg_party', game: 'bang', icon: '👨‍👩‍👧‍👦', title: '四個屁孩', desc: '4 人連線通關越南公主' },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(games.map(g => [g.id, g.slug]));
