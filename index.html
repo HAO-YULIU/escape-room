@@ -1308,7 +1308,7 @@ async function loadGames() {
 // ================= 最新消息 =================
 async function loadNews() {
   const el = $('#news-list');
-  const { data, error } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(5);
+  const { data, error } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(8);
   if (error || !data?.length) { el.innerHTML = `<p class="empty">${error ? '讀取消息失敗' : '目前還沒有消息。'}</p>`; return; }
   el.innerHTML = data.map(n => {
     const d = new Date(n.published_at);
