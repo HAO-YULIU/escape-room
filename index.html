@@ -151,6 +151,8 @@ body:not(.home) { padding-top: 68px; }
 .chip[aria-pressed="true"] { background: var(--crimson); color: var(--parchment); border-color: var(--crimson); }
 .arrow { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(239,230,210,.25); background: transparent; color: var(--parchment); cursor: pointer; font-size: 18px; }
 .arrow:hover { border-color: var(--gold); color: var(--gold); }
+.arrow:disabled { opacity: .3; cursor: default; border-color: rgba(239,230,210,.25); color: var(--parchment); }
+.page-no { min-width: 48px; text-align: center; font-size: 13px; color: var(--muted); letter-spacing: .08em; }
 
 .rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 18px; padding: 6px 2px 10px; }
 .room-search { font: 14px var(--sans); padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(239,230,210,.2); background: rgba(8,10,20,.5); color: var(--parchment); width: 180px; }
@@ -1249,7 +1251,10 @@ const released = (g) => g.release_date ?? g.created_at;
 const isNew = (g) => Date.now() - new Date(released(g)).getTime() < 1000 * 60 * 60 * 24 * 30;
 // 最新上線的那一款：有新的上線日期才會換掉
 const newestGame = () => games.filter(isOpen).sort((a, b) => String(released(b)).localeCompare(String(released(a))))[0];
-const isOpen = (g) => g.status === 'available' && !!g.play_url;
+// 有上線日期的，要等到那天（台灣時間）才開放；在那之前大廳會先顯示「幾月幾日上線」
+const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
+const upcoming = (g) => !!g.play_url && !!g.release_date && g.release_date.slice(0, 10) > today();
+const isOpen = (g) => !!g.play_url && ['available', 'coming_soon'].includes(g.status) && !upcoming(g);
 
 function roomCard(g, rank = 0, note = '') {
   const i = games.indexOf(g);
@@ -1257,9 +1262,10 @@ function roomCard(g, rank = 0, note = '') {
   const m = mine[g.id], st = stats[g.id];
   const badge = m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
     : m ? '<span class="badge played">玩過</span>'
+    : upcoming(g) ? `<span class="badge soon">${fmtDate(g.release_date).slice(5)} 上線</span>`
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-  const cta = !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const cta = upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   const challenge = note ? `<p class="challengers">${note}</p>` : st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
     <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
@@ -1286,8 +1292,9 @@ function roomCard(g, rank = 0, note = '') {
 }
 
 const listEl = $('#room-list');
-let currentTag = '', roomQuery = '', roomSort = 'no', roomShow = 12;
-const ROOM_PAGE = 12;
+// 一次顯示幾間：電腦 12、手機 6，按「顯示更多」再往下加
+const roomStep = () => matchMedia('(max-width: 760px)').matches ? 6 : 12;
+let currentTag = '', roomQuery = '', roomSort = 'no', roomShow = roomStep();
 function sortRooms(list) {
   const a = list.slice(), k = roomSort;
   const soonLast = (x, y) => (x.status === 'coming_soon') - (y.status === 'coming_soon');
@@ -1299,7 +1306,7 @@ function sortRooms(list) {
   return a;
 }
 function renderRooms(tag = currentTag) {
-  if (tag !== currentTag) roomShow = ROOM_PAGE;
+  if (tag !== currentTag) roomShow = roomStep();
   currentTag = tag;
   const q = roomQuery.trim().toLowerCase();
   let list = tag ? games.filter(g => (g.tags ?? []).includes(tag)) : games;
@@ -1316,8 +1323,8 @@ function renderRooms(tag = currentTag) {
   more.hidden = list.length <= roomShow;
   more.textContent = `顯示更多（還有 ${list.length - roomShow} 間）`;
 }
-$('#room-more').addEventListener('click', () => { roomShow += ROOM_PAGE; renderRooms(); });
-$('#room-search').addEventListener('input', (e) => { roomQuery = e.target.value; roomShow = ROOM_PAGE; renderRooms(); });
+$('#room-more').addEventListener('click', () => { roomShow += roomStep(); renderRooms(); });
+$('#room-search').addEventListener('input', (e) => { roomQuery = e.target.value; roomShow = roomStep(); renderRooms(); });
 $('#room-sort').addEventListener('change', (e) => { roomSort = e.target.value; renderRooms(); });
 
 // 點擊密室：沒有角色就跳提示，有角色才跳到該密室的網頁
@@ -1325,6 +1332,7 @@ function onRoomClick(e) {
   const card = e.target.closest('.room, .spot');
   if (!card) return;
   const g = games.find(x => x.slug === card.dataset.slug);
+  if (upcoming(g)) return toast(`「${g.title}」將在 ${fmtDate(g.release_date).slice(5)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
   location.href = g.play_url;
@@ -1595,7 +1603,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { school2: 7, love: 7, bang: 11, sea: 2 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -1605,9 +1613,14 @@ const ACH = [
   { code: 'g_perfect', game: null, icon: '💎', title: '完美主義', desc: '零死亡、零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths && !r.hints) },
   { code: 'g_night', game: null, icon: '🌙', title: '夜貓子', desc: '在凌晨 0 點到 4 點之間逃出密室', test: c => c.cleared.some(r => { const h = new Date(r.updated_at || r.created_at).getHours(); return h < 4; }) },
   { code: 'g_retry', game: null, icon: '🔁', title: '鍥而不捨', desc: '同一間密室挑戰 5 次以上', test: c => Object.values(c.bySlug).some(a => a.length >= 5) },
-  { code: 'q1_clear', game: 'qianchan-school', icon: '🏫', title: '她不說話', desc: '逃出千嬋高級中學', test: c => c.cl('qianchan-school').length > 0 },
-  { code: 'q1_nodeath', game: 'qianchan-school', icon: '❤️', title: '八條命都在', desc: '零死亡逃出千嬋高級中學', test: c => c.cl('qianchan-school').some(r => !r.deaths) },
-  { code: 'q1_fast', game: 'qianchan-school', icon: '⏱', title: '在天亮之前', desc: '90 分鐘內逃出千嬋高級中學', test: c => c.cl('qianchan-school').some(r => r.clear_time_sec <= 5400) },
+  { code: 'q1_clear', game: 'qianchan-school', icon: '🏫', title: '207號房', desc: '通關第一章', test: c => c.cl('qianchan-school').length > 0 },
+  { code: 'q1_nodeath', game: 'qianchan-school', icon: '🗝', title: '七把鑰匙都在', desc: '零死亡通關第一章', test: c => c.cl('qianchan-school').some(r => !r.deaths) },
+  { code: 'q1_fast', game: 'qianchan-school', icon: '⏱', title: '一百五十分鐘', desc: '150 分鐘內通關第一章', test: c => c.cl('qianchan-school').some(r => r.clear_time_sec <= 9000) },
+  { code: 'q1_e1', game: 'qianchan-school', icon: '🌅', title: '封存的黎明', desc: '結局一', test: c => c.end('qianchan-school', 'e1') },
+  { code: 'q1_e2', game: 'qianchan-school', icon: '📄', title: '空白名冊', desc: '結局二', test: c => c.end('qianchan-school', 'e2') },
+  { code: 'q1_e3', game: 'qianchan-school', icon: '🪞', title: '鏡子後面的走廊', desc: '結局三', test: c => c.end('qianchan-school', 'e3') },
+  { code: 'q1_e4', game: 'qianchan-school', icon: '🤫', title: '名字還在', desc: '隱藏真結局', secret: 1, test: c => c.end('qianchan-school', 'e4') },
+  { code: 'q1_all', game: 'qianchan-school', icon: '📚', title: '四個結局', desc: '收集第一章的全部結局', test: c => (c.endings['qianchan-school']?.size ?? 0) >= 4 },
   { code: 'pp_clear', game: 'pupu', icon: '🧻', title: '蜜月完成', desc: '完成「屎」瓦帝尼', test: c => c.cl('pupu').length > 0 },
   { code: 'pp_fast', game: 'pupu', icon: '✈️', title: '準時登機', desc: '60 分鐘內完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => r.clear_time_sec <= 3600) },
   { code: 'pp_rich', game: 'pupu', icon: '💰', title: '財務自由', desc: '沒跟耕卉借錢就完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => !r.borrows) },
