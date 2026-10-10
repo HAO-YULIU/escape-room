@@ -154,10 +154,12 @@ body:not(.home) { padding-top: 68px; }
 .arrow:disabled { opacity: .3; cursor: default; border-color: rgba(239,230,210,.25); color: var(--parchment); }
 .page-no { min-width: 48px; text-align: center; font-size: 13px; color: var(--muted); letter-spacing: .08em; }
 
-.rooms {
-  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, calc((100% - 54px) / 4));
-  gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px 2px 20px; scrollbar-width: thin; scrollbar-color: var(--gold-dark) transparent;
-}
+.rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 18px; padding: 6px 2px 10px; }
+.room-search { font: 14px var(--sans); padding: 7px 14px; border-radius: 999px; border: 1px solid rgba(239,230,210,.2); background: rgba(8,10,20,.5); color: var(--parchment); width: 180px; }
+.room-search:focus { outline: none; border-color: var(--gold); }
+.room-sort { font: 14px var(--sans); padding: 7px 12px; border-radius: 999px; border: 1px solid rgba(239,230,210,.2); background: #0E1124; color: var(--parchment); }
+.room-count { color: var(--muted); font-size: 13px; margin: -6px 0 10px; }
+.room-more { text-align: center; margin-top: 14px; }
 .room {
   scroll-snap-align: start; position: relative; display: flex; flex-direction: column; text-decoration: none; color: inherit;
   background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; cursor: pointer;
@@ -199,6 +201,14 @@ body:not(.home) { padding-top: 68px; }
 .ach-box { margin-top: 18px; border-top: 1px solid var(--ink-2); padding-top: 12px; }
 .ach-head { display: flex; justify-content: space-between; align-items: baseline; }
 .ach-head h4 { margin: 0; color: var(--gold); }
+.ach-tip { margin: 4px 0 0; font-size: 12px; }
+.ach-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; }
+.ach-tab { font: 13px var(--sans); padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(239,230,210,.2); background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.ach-tab em { font-style: normal; margin-left: 6px; font-size: 11px; opacity: .8; }
+.ach-tab.on { background: var(--crimson); color: var(--parchment); border-color: var(--crimson); }
+.ach-tab.full em { color: var(--gold); opacity: 1; }
+.ach-bar { height: 4px; border-radius: 4px; background: var(--ink-2); overflow: hidden; margin-bottom: 8px; }
+.ach-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold)); }
 .ach-group { margin-top: 10px; }
 .ach-group > small { color: var(--muted); font-size: 12px; letter-spacing: .1em; }
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px; margin-top: 4px; }
@@ -422,7 +432,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 
 @media (max-width: 960px) {
   .rank-wrap { grid-template-columns: 1fr; }
-  .rooms { grid-auto-columns: minmax(170px, calc((100% - 36px) / 3)); }
+  .rooms { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
   .cats { grid-template-columns: repeat(2, 1fr); }
   .monthly { grid-template-columns: repeat(3, minmax(0, 210px)); }
   .about { grid-template-columns: 1fr; gap: 36px; }
@@ -444,7 +454,14 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .moon { top: 9%; right: 8%; }
   .whispers { display: none; }
   .section { padding: 72px 0; }
-  .rooms { grid-auto-columns: calc((100% - 18px) / 2); }
+  .rooms { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .room-body { padding: 10px 10px 12px; gap: 6px; }
+  .room-body h4 { font-size: 15px; }
+  .room-body .desc { -webkit-line-clamp: 3; font-size: 12px; }
+  .room-no { left: 8px; top: 8px; font-size: 11px; padding: 1px 7px; }
+  .badge { right: 8px; top: 8px; font-size: 11px; padding: 1px 7px; }
+  .row-tools { width: 100%; }
+  .room-search { flex: 1; min-width: 0; width: auto; }
   .monthly { grid-template-columns: repeat(2, minmax(0, 200px)); }
   .spot { grid-template-columns: 1fr; }
   .spot-poster { padding: 34px 0 0; width: min(58%, 220px); margin: 0 auto; }
@@ -475,6 +492,40 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   * { transition: none !important; animation: none !important; }
 }
 
+
+/* ===== 密室主題：電腦格狀海報、手機橫向清單 ===== */
+.cv-title { display: none; }
+.rooms > .room .room-cover .cv-title { display: block; }
+.rooms { grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 22px; }
+.rooms > .room .room-cover::before { content: ''; position: absolute; inset: auto 0 0; height: 45%; background: linear-gradient(180deg, transparent, rgba(8,10,20,.85)); z-index: 1; pointer-events: none; }
+.rooms > .room .room-cover .cv-title { position: absolute; left: 14px; right: 14px; bottom: 12px; z-index: 2; font: 700 21px/1.3 var(--serif); letter-spacing: .05em; color: #fff; text-shadow: 0 2px 10px rgba(0,0,0,.8); }
+.rooms > .room .room-body h4 { display: none; }
+.rooms > .room .room-body .desc { -webkit-line-clamp: 3; }
+.room-facts { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12px; color: var(--parchment); }
+.room-facts span { background: rgba(239,230,210,.07); border: 1px solid rgba(239,230,210,.1); border-radius: 999px; padding: 2px 9px; white-space: nowrap; }
+.room-facts .locks { margin-left: 2px; }
+.room-foot { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-top: auto; border-top: 1px dashed rgba(239,230,210,.14); padding-top: 10px; }
+.room-foot .room-date { margin: 0; }
+@media (max-width: 760px) {
+  .filters { flex-wrap: nowrap; overflow-x: auto; margin: 0 -16px; padding: 0 16px 4px; scrollbar-width: none; width: calc(100% + 32px); }
+  .filters::-webkit-scrollbar { display: none; }
+  .filters .chip { flex: none; }
+  .rooms { grid-template-columns: 1fr; gap: 12px; }
+  .rooms > .room { flex-direction: row; min-height: 150px; }
+  .rooms > .room:hover { transform: none; }
+  .rooms > .room .room-cover { width: 112px; flex: none; aspect-ratio: auto; }
+  .rooms > .room .room-cover::before, .rooms > .room .room-cover .cv-title { display: none; }
+  .rooms > .room .room-no { display: none; }
+  .rooms > .room .badge { left: 6px; right: auto; top: 6px; font-size: 10px; padding: 1px 6px; }
+  .rooms > .room .room-body { padding: 10px 12px 10px; gap: 5px; min-width: 0; }
+  .rooms > .room .room-body h4 { display: block; font-size: 16px; }
+  .rooms > .room .room-body .sub { font-size: 12px; margin: -3px 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rooms > .room .room-body .desc { -webkit-line-clamp: 2; font-size: 12px; }
+  .rooms > .room .challengers { display: none; }
+  .room-facts { font-size: 11px; gap: 4px; } .room-facts span { padding: 1px 7px; }
+  .room-foot { padding-top: 6px; } .room-foot .room-date { font-size: 11px; }
+  .rooms > .room .room-cta { font-size: 13px; white-space: nowrap; }
+}
   </style>
 </head>
 <body class="home" id="top">
@@ -536,12 +587,15 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         <div class="row-head">
           <div class="filters" id="filters" role="group" aria-label="依類別篩選"></div>
           <div class="row-tools">
-            <button class="arrow" data-dir="-1" aria-label="上一頁">‹</button>
-            <span class="page-no" id="room-page" aria-live="polite"></span>
-            <button class="arrow" data-dir="1" aria-label="下一頁">›</button>
+            <input class="room-search" id="room-search" type="search" placeholder="搜尋密室名稱" aria-label="搜尋密室" autocomplete="off">
+            <select class="room-sort" id="room-sort" aria-label="排序">
+              <option value="no">依編號</option><option value="new">最新上線</option><option value="hard">難度高到低</option><option value="easy">難度低到高</option><option value="short">時長短到長</option>
+            </select>
           </div>
         </div>
+        <p class="room-count" id="room-count"></p>
         <div class="rooms" id="room-list"><p class="empty">正在打開門鎖…</p></div>
+        <div class="room-more"><button class="btn btn-ghost" id="room-more" type="button" hidden></button></div>
       </div>
     </section>
 
@@ -1251,6 +1305,7 @@ function roomCard(g, rank = 0, note = '') {
     <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
       <div class="room-cover">
         ${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, i)}
+        <span class="cv-title">${escapeHTML(g.title)}</span>
         <span class="room-no">No.${String(g.sort_order).padStart(2, '0')}</span>
         ${badge}
         ${rank ? `<span class="room-rank r${rank}" aria-label="本月第 ${rank} 名">${rank}</span>` : ''}
@@ -1261,38 +1316,47 @@ function roomCard(g, rank = 0, note = '') {
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
-        ${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)} 上線</p>` : ''}
-        <div class="meta">
-          <span>${players(g)}・${g.duration_min} 分鐘</span>
-          <span>難度${locks(g.difficulty)}</span>
-        </div>
-        <div class="room-cta">${cta}</div>
+        <div class="room-facts"><span>👥 ${players(g)}</span><span>⏱ ${g.duration_min} 分鐘</span><span>難度${locks(g.difficulty)}</span></div>
+        <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
     </button>`;
 }
 
 const listEl = $('#room-list');
-let currentTag = '', roomPage = 0;
-// 一頁放幾間：電腦 4、平板 3、手機 2，太多就分頁
-const perPage = () => matchMedia('(max-width: 760px)').matches ? 2 : matchMedia('(max-width: 960px)').matches ? 3 : 4;
-function renderRooms(tag = currentTag) {
-  if (tag !== currentTag) roomPage = 0;
-  currentTag = tag;
-  const list = tag ? games.filter(g => (g.tags ?? []).includes(tag)) : games;
-  const n = perPage(), pages = Math.max(1, Math.ceil(list.length / n));
-  roomPage = Math.min(Math.max(roomPage, 0), pages - 1);
-  $('#room-page').textContent = pages > 1 ? `${roomPage + 1} / ${pages}` : '';
-  document.querySelectorAll('.arrow').forEach(a => {
-    a.hidden = pages < 2;
-    a.disabled = Number(a.dataset.dir) < 0 ? roomPage === 0 : roomPage === pages - 1;
-  });
-  if (!list.length) {
-    listEl.innerHTML = `<p class="empty">${tag ? `「${escapeHTML(tag)}」類別的密室正在佈置中，敬請期待。` : '密室正在佈置中，敬請期待。'}</p>`;
-    return;
-  }
-  listEl.innerHTML = list.slice(roomPage * n, roomPage * n + n).map(g => roomCard(g)).join('');
-  listEl.scrollLeft = 0;
+// 一次顯示 8 間（電腦兩排、手機八列），按「顯示更多」再往下加
+const roomStep = () => 8;
+let currentTag = '', roomQuery = '', roomSort = 'no', roomShow = roomStep();
+function sortRooms(list) {
+  const a = list.slice(), k = roomSort;
+  const soonLast = (x, y) => (x.status === 'coming_soon') - (y.status === 'coming_soon');
+  if (k === 'new') a.sort((x, y) => soonLast(x, y) || String(released(y) || '').localeCompare(String(released(x) || '')));
+  else if (k === 'hard') a.sort((x, y) => soonLast(x, y) || (y.difficulty || 0) - (x.difficulty || 0));
+  else if (k === 'easy') a.sort((x, y) => soonLast(x, y) || (x.difficulty || 0) - (y.difficulty || 0));
+  else if (k === 'short') a.sort((x, y) => soonLast(x, y) || (x.duration_min || 0) - (y.duration_min || 0));
+  else a.sort((x, y) => (x.sort_order || 0) - (y.sort_order || 0));
+  return a;
 }
+function renderRooms(tag = currentTag) {
+  if (tag !== currentTag) roomShow = roomStep();
+  currentTag = tag;
+  const q = roomQuery.trim().toLowerCase();
+  let list = tag ? games.filter(g => (g.tags ?? []).includes(tag)) : games;
+  if (q) list = list.filter(g => [g.title, g.subtitle, ...(g.tags ?? [])].join(' ').toLowerCase().includes(q));
+  list = sortRooms(list);
+  const open = list.filter(isOpen).length;
+  $('#room-count').textContent = list.length ? `共 ${list.length} 間${open !== list.length ? `・開放中 ${open} 間` : ''}` : '';
+  const more = $('#room-more');
+  if (!list.length) {
+    listEl.innerHTML = `<p class="empty">${q ? `找不到「${escapeHTML(roomQuery)}」相關的密室。` : tag ? `「${escapeHTML(tag)}」類別的密室正在佈置中，敬請期待。` : '密室正在佈置中，敬請期待。'}</p>`;
+    more.hidden = true; return;
+  }
+  listEl.innerHTML = list.slice(0, roomShow).map(g => roomCard(g)).join('');
+  more.hidden = list.length <= roomShow;
+  more.textContent = `顯示更多（還有 ${list.length - roomShow} 間）`;
+}
+$('#room-more').addEventListener('click', () => { roomShow += roomStep(); renderRooms(); });
+$('#room-search').addEventListener('input', (e) => { roomQuery = e.target.value; roomShow = roomStep(); renderRooms(); });
+$('#room-sort').addEventListener('change', (e) => { roomSort = e.target.value; renderRooms(); });
 
 // 點擊密室：沒有角色就跳提示，有角色才跳到該密室的網頁
 function onRoomClick(e) {
@@ -1322,17 +1386,6 @@ document.querySelectorAll('.cat').forEach(c => c.addEventListener('click', () =>
   setFilter(c.dataset.cat);
   $('#rooms').scrollIntoView();
 }));
-document.querySelectorAll('.arrow').forEach(a => a.addEventListener('click', () => {
-  roomPage += Number(a.dataset.dir);
-  renderRooms();
-}));
-let lastPerPage = perPage();
-addEventListener('resize', () => {
-  if (perPage() === lastPerPage || !games.length) return;
-  roomPage = Math.floor(roomPage * lastPerPage / perPage());
-  lastPerPage = perPage();
-  renderRooms();
-});
 
 async function loadGames() {
   const { data, error } = await supabase.from('games').select('*').order('sort_order');
@@ -1581,7 +1634,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -1650,6 +1703,15 @@ const ACH = [
   { code: 'bg_nolost', game: 'bang', icon: '🗺️', title: '從來沒迷路', desc: '一次都沒迷路通關越南公主', test: c => c.cl('bang').some(r => !r.deaths) },
   { code: 'bg_nowrong', game: 'bang', icon: '🎯', title: 'Bang!', desc: '一次都沒答錯通關越南公主' },
   { code: 'bg_party', game: 'bang', icon: '👨‍👩‍👧‍👦', title: '四個屁孩', desc: '4 人連線通關越南公主' },
+  { code: 'sy_solo', game: 'sea', icon: '🕯️', title: '殘燭照罪', desc: '單人版：指認真兇，結束沈園的案件', test: c => c.end('sea', 'solo') },
+  { code: 'sy_duo', game: 'sea', icon: '📨', title: '兩位偵探', desc: '雙人版：和搭檔一起指認真兇', test: c => c.end('sea', 'duo') },
+  { code: 'sy_all', game: 'sea', icon: '🎩', title: '顧與蘇', desc: '單人版、雙人版都破案', test: c => (c.endings.sea?.size ?? 0) >= 2 },
+  { code: 'sy_first', game: 'sea', icon: '⚖️', title: '一錘定音', desc: '第一次指認就成功破案' },
+  { code: 'sy_fast', game: 'sea', icon: '⏱', title: '天亮之前', desc: '180 分鐘內破案', test: c => c.cl('sea').some(r => r.clear_time_sec != null && r.clear_time_sec <= 10800) },
+  { code: 'sy_nohint', game: 'sea', icon: '🔥', title: '不點一根蠟燭', desc: '零提示破案', test: c => c.cl('sea').some(r => !r.hints) },
+  { code: 'sy_nolost', game: 'sea', icon: '🌕', title: '燭火不滅', desc: '一次燭火全滅都沒有就破案', test: c => c.cl('sea').some(r => !r.deaths) },
+  { code: 'sy_nowrong', game: 'sea', icon: '🎯', title: '滴水不漏', desc: '推理一次都沒失敗就破案' },
+  { code: 'sy_nokick', game: 'sea', icon: '🚪', title: '來去無蹤', desc: '沒有被周以衡趕出辦公室就破案', secret: 1 },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(games.map(g => [g.id, g.slug]));
@@ -1661,19 +1723,32 @@ function achContext() {
   return { recs, cleared, bySlug, endings, openSlugs: games.filter(isOpen).map(g => g.slug),
     cl: s => cleared.filter(r => r.slug === s), end: (s, e) => !!endings[s]?.has(e) };
 }
+let achTab = null;   // 目前看哪一款遊戲的成就（null＝夜語工作室共通）
 function renderAch() {
   const c = achContext();
   const got = a => achCodes.has(a.code) || (a.test && a.test(c));
   const groups = [[null, '夜語工作室'], ...games.filter(g => ACH.some(a => a.game === g.slug)).map(g => [g.slug, g.title])];
+  if (!groups.some(([k]) => k === achTab)) achTab = null;
   const n = ACH.filter(got).length;
-  return `<div class="ach-head"><h4>🏆 成就</h4><span class="muted">${n} / ${ACH.length}</span></div>` + groups.map(([slug, name]) => {
-    const list = ACH.filter(a => a.game === slug);
-    return `<div class="ach-group"><small>${escapeHTML(name)}</small><div class="ach-grid">${list.map(a => {
+  const tabs = groups.map(([slug, name]) => {
+    const list = ACH.filter(a => a.game === slug), k = list.filter(got).length;
+    return `<button type="button" class="ach-tab ${slug === achTab ? 'on' : ''} ${k === list.length ? 'full' : ''}" data-ach="${slug ?? ''}">${escapeHTML(name)}<em>${k}/${list.length}</em></button>`;
+  }).join('');
+  const list = ACH.filter(a => a.game === achTab), k = list.filter(got).length;
+  return `<div class="ach-head"><h4>🏆 成就</h4><span class="muted">總計 ${n} / ${ACH.length}</span></div>
+    <p class="muted small ach-tip">點下面的遊戲名稱，查看那款遊戲的成就。</p>
+    <div class="ach-tabs" role="tablist">${tabs}</div>
+    <div class="ach-panel"><div class="ach-bar"><i style="width:${list.length ? k / list.length * 100 : 0}%"></i></div>
+    <div class="ach-grid">${list.map(a => {
       const ok = got(a), hide = a.secret && !ok;
       return `<div class="ach ${ok ? 'ok' : ''}" title="${escapeHTML(hide ? '隱藏成就' : a.desc)}"><i>${hide ? '🔒' : a.icon}</i><b>${hide ? '？？？' : escapeHTML(a.title)}</b><span>${hide ? '隱藏成就' : escapeHTML(a.desc)}</span></div>`;
     }).join('')}</div></div>`;
-  }).join('');
 }
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('.ach-tab'); if (!b) return;
+  achTab = b.dataset.ach || null;
+  const box = b.closest('.ach-box'); if (box) box.innerHTML = renderAch();
+});
 
 // 我的紀錄
 function renderMine() {
