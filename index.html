@@ -1555,7 +1555,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { school2: 7, love: 7, bang: 11 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -1565,9 +1565,14 @@ const ACH = [
   { code: 'g_perfect', game: null, icon: '💎', title: '完美主義', desc: '零死亡、零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths && !r.hints) },
   { code: 'g_night', game: null, icon: '🌙', title: '夜貓子', desc: '在凌晨 0 點到 4 點之間逃出密室', test: c => c.cleared.some(r => { const h = new Date(r.updated_at || r.created_at).getHours(); return h < 4; }) },
   { code: 'g_retry', game: null, icon: '🔁', title: '鍥而不捨', desc: '同一間密室挑戰 5 次以上', test: c => Object.values(c.bySlug).some(a => a.length >= 5) },
-  { code: 'q1_clear', game: 'qianchan-school', icon: '🏫', title: '她不說話', desc: '逃出千嬋高級中學', test: c => c.cl('qianchan-school').length > 0 },
-  { code: 'q1_nodeath', game: 'qianchan-school', icon: '❤️', title: '八條命都在', desc: '零死亡逃出千嬋高級中學', test: c => c.cl('qianchan-school').some(r => !r.deaths) },
-  { code: 'q1_fast', game: 'qianchan-school', icon: '⏱', title: '在天亮之前', desc: '90 分鐘內逃出千嬋高級中學', test: c => c.cl('qianchan-school').some(r => r.clear_time_sec <= 5400) },
+  { code: 'q1_clear', game: 'qianchan-school', icon: '🏫', title: '207號房', desc: '通關第一章', test: c => c.cl('qianchan-school').length > 0 },
+  { code: 'q1_nodeath', game: 'qianchan-school', icon: '🗝', title: '七把鑰匙都在', desc: '零死亡通關第一章', test: c => c.cl('qianchan-school').some(r => !r.deaths) },
+  { code: 'q1_fast', game: 'qianchan-school', icon: '⏱', title: '一百五十分鐘', desc: '150 分鐘內通關第一章', test: c => c.cl('qianchan-school').some(r => r.clear_time_sec <= 9000) },
+  { code: 'q1_e1', game: 'qianchan-school', icon: '🌅', title: '封存的黎明', desc: '結局一', test: c => c.end('qianchan-school', 'e1') },
+  { code: 'q1_e2', game: 'qianchan-school', icon: '📄', title: '空白名冊', desc: '結局二', test: c => c.end('qianchan-school', 'e2') },
+  { code: 'q1_e3', game: 'qianchan-school', icon: '🪞', title: '鏡子後面的走廊', desc: '結局三', test: c => c.end('qianchan-school', 'e3') },
+  { code: 'q1_e4', game: 'qianchan-school', icon: '🤫', title: '名字還在', desc: '隱藏真結局', secret: 1, test: c => c.end('qianchan-school', 'e4') },
+  { code: 'q1_all', game: 'qianchan-school', icon: '📚', title: '四個結局', desc: '收集第一章的全部結局', test: c => (c.endings['qianchan-school']?.size ?? 0) >= 4 },
   { code: 'pp_clear', game: 'pupu', icon: '🧻', title: '蜜月完成', desc: '完成「屎」瓦帝尼', test: c => c.cl('pupu').length > 0 },
   { code: 'pp_fast', game: 'pupu', icon: '✈️', title: '準時登機', desc: '60 分鐘內完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => r.clear_time_sec <= 3600) },
   { code: 'pp_rich', game: 'pupu', icon: '💰', title: '財務自由', desc: '沒跟耕卉借錢就完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => !r.borrows) },
