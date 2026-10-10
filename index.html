@@ -151,6 +151,8 @@ body:not(.home) { padding-top: 68px; }
 .chip[aria-pressed="true"] { background: var(--crimson); color: var(--parchment); border-color: var(--crimson); }
 .arrow { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(239,230,210,.25); background: transparent; color: var(--parchment); cursor: pointer; font-size: 18px; }
 .arrow:hover { border-color: var(--gold); color: var(--gold); }
+.arrow:disabled { opacity: .3; cursor: default; border-color: rgba(239,230,210,.25); color: var(--parchment); }
+.page-no { min-width: 48px; text-align: center; font-size: 13px; color: var(--muted); letter-spacing: .08em; }
 
 .rooms {
   display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, calc((100% - 90px) / 6));
@@ -442,7 +444,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .moon { top: 9%; right: 8%; }
   .whispers { display: none; }
   .section { padding: 72px 0; }
-  .rooms { grid-auto-columns: 54%; }
+  .rooms { grid-auto-columns: calc((100% - 18px) / 2); }
   .monthly { grid-template-columns: repeat(2, minmax(0, 200px)); }
   .spot { grid-template-columns: 1fr; }
   .spot-poster { padding: 34px 0 0; width: min(58%, 220px); margin: 0 auto; }
@@ -534,8 +536,9 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         <div class="row-head">
           <div class="filters" id="filters" role="group" aria-label="依類別篩選"></div>
           <div class="row-tools">
-            <button class="arrow" data-dir="-1" aria-label="上一個">‹</button>
-            <button class="arrow" data-dir="1" aria-label="下一個">›</button>
+            <button class="arrow" data-dir="-1" aria-label="上一頁">‹</button>
+            <span class="page-no" id="room-page" aria-live="polite"></span>
+            <button class="arrow" data-dir="1" aria-label="下一頁">›</button>
           </div>
         </div>
         <div class="rooms" id="room-list"><p class="empty">正在打開門鎖…</p></div>
@@ -1228,7 +1231,10 @@ const released = (g) => g.release_date ?? g.created_at;
 const isNew = (g) => Date.now() - new Date(released(g)).getTime() < 1000 * 60 * 60 * 24 * 30;
 // 最新上線的那一款：有新的上線日期才會換掉
 const newestGame = () => games.filter(isOpen).sort((a, b) => String(released(b)).localeCompare(String(released(a))))[0];
-const isOpen = (g) => g.status === 'available' && !!g.play_url;
+// 有上線日期的，要等到那天（台灣時間）才開放；在那之前大廳會先顯示「幾月幾日上線」
+const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
+const upcoming = (g) => !!g.play_url && !!g.release_date && g.release_date.slice(0, 10) > today();
+const isOpen = (g) => !!g.play_url && ['available', 'coming_soon'].includes(g.status) && !upcoming(g);
 
 function roomCard(g, rank = 0, note = '') {
   const i = games.indexOf(g);
@@ -1236,9 +1242,10 @@ function roomCard(g, rank = 0, note = '') {
   const m = mine[g.id], st = stats[g.id];
   const badge = m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
     : m ? '<span class="badge played">玩過</span>'
+    : upcoming(g) ? `<span class="badge soon">${fmtDate(g.release_date).slice(5)} 上線</span>`
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-  const cta = !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const cta = upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   const challenge = note ? `<p class="challengers">${note}</p>` : st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
     <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
@@ -1265,15 +1272,25 @@ function roomCard(g, rank = 0, note = '') {
 }
 
 const listEl = $('#room-list');
-let currentTag = '';
+let currentTag = '', roomPage = 0;
+// 一頁放幾間：電腦 6、平板 3、手機 2，太多就分頁
+const perPage = () => matchMedia('(max-width: 760px)').matches ? 2 : matchMedia('(max-width: 960px)').matches ? 3 : 6;
 function renderRooms(tag = currentTag) {
+  if (tag !== currentTag) roomPage = 0;
   currentTag = tag;
   const list = tag ? games.filter(g => (g.tags ?? []).includes(tag)) : games;
+  const n = perPage(), pages = Math.max(1, Math.ceil(list.length / n));
+  roomPage = Math.min(Math.max(roomPage, 0), pages - 1);
+  $('#room-page').textContent = pages > 1 ? `${roomPage + 1} / ${pages}` : '';
+  document.querySelectorAll('.arrow').forEach(a => {
+    a.hidden = pages < 2;
+    a.disabled = Number(a.dataset.dir) < 0 ? roomPage === 0 : roomPage === pages - 1;
+  });
   if (!list.length) {
     listEl.innerHTML = `<p class="empty">${tag ? `「${escapeHTML(tag)}」類別的密室正在佈置中，敬請期待。` : '密室正在佈置中，敬請期待。'}</p>`;
     return;
   }
-  listEl.innerHTML = list.map(g => roomCard(g)).join('');
+  listEl.innerHTML = list.slice(roomPage * n, roomPage * n + n).map(g => roomCard(g)).join('');
   listEl.scrollLeft = 0;
 }
 
@@ -1282,6 +1299,7 @@ function onRoomClick(e) {
   const card = e.target.closest('.room, .spot');
   if (!card) return;
   const g = games.find(x => x.slug === card.dataset.slug);
+  if (upcoming(g)) return toast(`「${g.title}」將在 ${fmtDate(g.release_date).slice(5)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
   location.href = g.play_url;
@@ -1305,8 +1323,16 @@ document.querySelectorAll('.cat').forEach(c => c.addEventListener('click', () =>
   $('#rooms').scrollIntoView();
 }));
 document.querySelectorAll('.arrow').forEach(a => a.addEventListener('click', () => {
-  listEl.scrollBy({ left: Number(a.dataset.dir) * listEl.clientWidth * 0.9, behavior: 'smooth' });
+  roomPage += Number(a.dataset.dir);
+  renderRooms();
 }));
+let lastPerPage = perPage();
+addEventListener('resize', () => {
+  if (perPage() === lastPerPage || !games.length) return;
+  roomPage = Math.floor(roomPage * lastPerPage / perPage());
+  lastPerPage = perPage();
+  renderRooms();
+});
 
 async function loadGames() {
   const { data, error } = await supabase.from('games').select('*').order('sort_order');
