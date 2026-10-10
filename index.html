@@ -155,7 +155,7 @@ body:not(.home) { padding-top: 68px; }
 .page-no { min-width: 48px; text-align: center; font-size: 13px; color: var(--muted); letter-spacing: .08em; }
 
 .rooms {
-  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, calc((100% - 90px) / 6));
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, calc((100% - 54px) / 4));
   gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 6px 2px 20px; scrollbar-width: thin; scrollbar-color: var(--gold-dark) transparent;
 }
 .room {
@@ -1273,8 +1273,8 @@ function roomCard(g, rank = 0, note = '') {
 
 const listEl = $('#room-list');
 let currentTag = '', roomPage = 0;
-// 一頁放幾間：電腦 6、平板 3、手機 2，太多就分頁
-const perPage = () => matchMedia('(max-width: 760px)').matches ? 2 : matchMedia('(max-width: 960px)').matches ? 3 : 6;
+// 一頁放幾間：電腦 4、平板 3、手機 2，太多就分頁
+const perPage = () => matchMedia('(max-width: 760px)').matches ? 2 : matchMedia('(max-width: 960px)').matches ? 3 : 4;
 function renderRooms(tag = currentTag) {
   if (tag !== currentTag) roomPage = 0;
   currentTag = tag;
