@@ -1648,6 +1648,22 @@ const ACH = [
   { code: 'g_perfect', game: null, icon: '💎', title: '完美主義', desc: '零死亡、零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths && !r.hints) },
   { code: 'g_night', game: null, icon: '🌙', title: '夜貓子', desc: '在凌晨 0 點到 4 點之間逃出密室', test: c => c.cleared.some(r => { const h = new Date(r.updated_at || r.created_at).getHours(); return h < 4; }) },
   { code: 'g_retry', game: null, icon: '🔁', title: '鍥而不捨', desc: '同一間密室挑戰 5 次以上', test: c => Object.values(c.bySlug).some(a => a.length >= 5) },
+  { code: 'g_clear3', game: null, icon: '🚪', title: '三扇門', desc: '逃出 3 間不同的密室', test: c => c.slugs.size >= 3 },
+  { code: 'g_clear5', game: null, icon: '🏅', title: '五把鑰匙', desc: '逃出 5 間不同的密室', test: c => c.slugs.size >= 5 },
+  { code: 'g_plays10', game: null, icon: '☕', title: '熟面孔', desc: '累計挑戰 10 次密室', test: c => c.recs.length >= 10 },
+  { code: 'g_plays30', game: null, icon: '🛋', title: '把這裡當家', desc: '累計挑戰 30 次密室', test: c => c.recs.length >= 30 },
+  { code: 'g_cats', game: null, icon: '🎨', title: '四種夜晚', desc: '恐怖、歡樂、情感、懸疑各逃出一間', test: c => CATS.every(t => [...c.slugs].some(s => c.tagsOf(s).includes(t))) },
+  { code: 'g_fast60', game: null, icon: '⚡', title: '閃電逃脫', desc: '60 分鐘內逃出任何一間密室', test: c => c.cleared.some(r => r.clear_time_sec != null && r.clear_time_sec <= 3600) },
+  { code: 'g_long', game: null, icon: '🕰', title: '長夜漫漫', desc: '花了 3 小時以上，還是逃出來了', test: c => c.cleared.some(r => r.clear_time_sec >= 10800) },
+  { code: 'g_day3', game: null, icon: '📅', title: '一日三逃', desc: '同一天逃出 3 間不同的密室', test: c => { const d = {}; for (const r of c.cleared) (d[c.day(r)] ??= new Set()).add(r.slug); return Object.values(d).some(x => x.size >= 3); } },
+  { code: 'g_end10', game: null, icon: '📖', title: '結局收藏家', desc: '累計收集 10 個不同的結局', test: c => c.endingTotal >= 10 },
+  { code: 'g_end25', game: null, icon: '🏛', title: '夜語說書人', desc: '累計收集 25 個不同的結局', test: c => c.endingTotal >= 25 },
+  { code: 'g_perfect3', game: null, icon: '💠', title: '三連完美', desc: '零死亡、零提示逃出 3 間不同的密室', test: c => new Set(c.cleared.filter(r => !r.deaths && !r.hints).map(r => r.slug)).size >= 3 },
+  { code: 'g_early', game: null, icon: '🐣', title: '首日夜訪', desc: '在密室上線當天就逃出來', test: c => c.cleared.some(r => { const g = games.find(x => x.slug === r.slug); return !!g?.release_date && c.day(r) === g.release_date.slice(0, 10); }) },
+  { code: 'g_dawn', game: null, icon: '🌅', title: '晨光逃脫', desc: '在早上 5 點到 8 點之間逃出密室', test: c => c.cleared.some(r => { const h = new Date(r.updated_at || r.created_at).getHours(); return h >= 5 && h < 8; }) },
+  { code: 'g_comeback', game: null, icon: '🌱', title: '再推一次門', desc: '上次沒逃出來的密室，這次成功逃出', test: c => c.cleared.some(r => c.recs.some(x => x.slug === r.slug && x.status !== 'cleared' && x.created_at < r.created_at)) },
+  { code: 'g_avatar', game: null, icon: '🖼', title: '有頭有臉', desc: '上傳自己的頭像', test: () => !!profile?.avatar_url },
+  { code: 'g_minute', game: null, icon: '🎯', title: '分秒不差', desc: '逃脫時間剛好是整數分鐘', secret: 1, test: c => c.cleared.some(r => r.clear_time_sec > 0 && r.clear_time_sec % 60 === 0) },
   { code: 'q1_clear', game: 'qianchan-school', icon: '🏫', title: '207號房', desc: '通關第一章', test: c => c.cl('qianchan-school').length > 0 },
   { code: 'q1_nodeath', game: 'qianchan-school', icon: '🗝', title: '七把鑰匙都在', desc: '零死亡通關第一章', test: c => c.cl('qianchan-school').some(r => !r.deaths) },
   { code: 'q1_fast', game: 'qianchan-school', icon: '⏱', title: '一百五十分鐘', desc: '150 分鐘內通關第一章', test: c => c.cl('qianchan-school').some(r => r.clear_time_sec <= 9000) },
@@ -1725,6 +1741,10 @@ function achContext() {
   for (const r of recs) (bySlug[r.slug] ??= []).push(r);
   for (const r of cleared) if (r.ending) (endings[r.slug] ??= new Set()).add(r.ending);
   return { recs, cleared, bySlug, endings, openSlugs: games.filter(isOpen).map(g => g.slug),
+    slugs: new Set(cleared.map(r => r.slug)),
+    endingTotal: Object.values(endings).reduce((n, x) => n + x.size, 0),
+    tagsOf: s => games.find(g => g.slug === s)?.tags ?? [],
+    day: r => new Date(r.updated_at || r.created_at).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }),
     cl: s => cleared.filter(r => r.slug === s), end: (s, e) => !!endings[s]?.has(e) };
 }
 let achTab = null;   // 目前看哪一款遊戲的成就（null＝夜語工作室共通）
