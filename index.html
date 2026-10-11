@@ -1718,7 +1718,7 @@ const ACH = [
   { code: 'bg_mj3', game: 'bang', icon: '🀆', title: '麻將・第三名', desc: '4 人：麻將最終決戰第三名', test: c => c.end('bang', 'mj3') },
   { code: 'bg_mj4', game: 'bang', icon: '🧋', title: '請大家喝飲料', desc: '4 人：麻將最終決戰最後一名', test: c => c.end('bang', 'mj4') },
   { code: 'bg_all', game: 'bang', icon: '🇻🇳', title: '神人。', desc: '收集越南公主的全部 11 個結局', test: c => (c.endings.bang?.size ?? 0) >= 11 },
-  { code: 'bg_fast', game: 'bang', icon: '⏱', title: '兩日遊不加班', desc: '100 分鐘內通關越南公主', test: c => c.cl('bang').some(r => r.clear_time_sec != null && r.clear_time_sec <= 6000) },
+  { code: 'bg_fast', game: 'bang', icon: '⏱', title: '兩日遊不加班', desc: '180 分鐘內通關越南公主', test: c => c.cl('bang').some(r => r.clear_time_sec != null && r.clear_time_sec <= 10800) },
   { code: 'bg_nohint', game: 'bang', icon: '😇', title: '博育，不用了', desc: '零提示通關越南公主', test: c => c.cl('bang').some(r => !r.hints) },
   { code: 'bg_nolost', game: 'bang', icon: '🗺️', title: '從來沒迷路', desc: '一次都沒迷路通關越南公主', test: c => c.cl('bang').some(r => !r.deaths) },
   { code: 'bg_nowrong', game: 'bang', icon: '🎯', title: 'Bang!', desc: '一次都沒答錯通關越南公主' },
