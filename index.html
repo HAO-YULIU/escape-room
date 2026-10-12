@@ -1638,7 +1638,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2, arg: 8 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -1732,6 +1732,30 @@ const ACH = [
   { code: 'sy_nolost', game: 'sea', icon: '🌕', title: '燭火不滅', desc: '一次燭火全滅都沒有就破案', test: c => c.cl('sea').some(r => !r.deaths) },
   { code: 'sy_nowrong', game: 'sea', icon: '🎯', title: '滴水不漏', desc: '推理一次都沒失敗就破案' },
   { code: 'sy_nokick', game: 'sea', icon: '🚪', title: '來去無蹤', desc: '沒有被周以衡趕出辦公室就破案', secret: 1 },
+  { code: 'zr_E1', game: 'arg', icon: '📂', title: '未完成', desc: 'END 01：選擇繼續追查', test: c => c.end('arg', 'E1') },
+  { code: 'zr_E2', game: 'arg', icon: '📦', title: '交接', desc: 'END 02：把資料留給下一個人', test: c => c.end('arg', 'E2') },
+  { code: 'zr_E3', game: 'arg', icon: '✒️', title: '記錄者', desc: 'END 03：把自己的版本留給下一個人', test: c => c.end('arg', 'E3') },
+  { code: 'zr_E4', game: 'arg', icon: '🧮', title: '停止計算', desc: 'END 04：停下來，沒有替任何人決定', test: c => c.end('arg', 'E4') },
+  { code: 'zr_E5', game: 'arg', icon: '🔇', title: '沉默', desc: 'END 05：停止閱讀，但有些東西已經被你補上', test: c => c.end('arg', 'E5') },
+  { code: 'zr_E6', game: 'arg', icon: '✉️', title: '第八位收件人', desc: 'END 06：回信的人一直是你', secret: 1, test: c => c.end('arg', 'E6') },
+  { code: 'zr_E7', game: 'arg', icon: '🕊', title: '被遺忘的權利', desc: 'END 07：有一個人終於被允許不被記得', secret: 1, test: c => c.end('arg', 'E7') },
+  { code: 'zr_E8', game: 'arg', icon: '❔', title: '你不知道', desc: 'END 08：讀完所有版本，然後承認了', test: c => c.end('arg', 'E8') },
+  { code: 'zr_all', game: 'arg', icon: '📮', title: '收件人不詳', desc: '收集零號回信的全部 8 個結局', test: c => (c.endings.arg?.size ?? 0) >= 8 },
+  { code: 'zr_fast', game: 'arg', icon: '⏱', title: '23:17 之前', desc: '200 分鐘內抵達任一結局', test: c => c.cl('arg').some(r => r.clear_time_sec != null && r.clear_time_sec <= 12000) },
+  { code: 'zr_nohint', game: 'arg', icon: '🙈', title: '系統不必替你判斷', desc: '零提示抵達任一結局', test: c => c.cl('arg').some(r => !r.hints) },
+  { code: 'zr_open', game: 'arg', icon: '📎', title: '已寄達', desc: '打開那封沒有寄件人的信的附件' },
+  { code: 'zr_noreply', game: 'arg', icon: '🤐', title: '請不要替我回信', desc: '直到最後，都沒有回覆第一封信' },
+  { code: 'zr_frag7', game: 'arg', icon: '🧩', title: '七種材料', desc: '集齊問題、紀錄、系統、聲音、分析、溝通、記憶' },
+  { code: 'zr_sister', game: 'arg', icon: '🪞', title: '還給她一個名字', desc: '把一個被遺忘的名字交給迴述音' },
+  { code: 'zr_again', game: 'arg', icon: '🔁', title: '你記不記得自己曾經收過這封信？', desc: '第二次收到第八封信' },
+  { code: 'zr_zero', game: 'arg', icon: '🕳', title: '第零層', desc: '進入一個尚未建立的資料夾（第二部）' },
+  { code: 'zr_p2', game: 'arg', icon: '0️⃣', title: '零號回信', desc: '完成第二部的調查：沒有任何事被確認' },
+  { code: 'zr_reading', game: 'arg', icon: '🔍', title: '你的版本', desc: '在五種解讀裡，留下自己傾向的那一種' },
+  { code: 'zr_cb100', game: 'arg', icon: '🗂', title: '一百個問題', desc: '在卷宗裡解開 100 題' },
+  { code: 'zr_cbsecret', game: 'arg', icon: '🗝', title: '第零號卷宗', desc: '完成卷宗裡全部 57 個秘密任務' },
+  { code: 'zr_2317', game: 'arg', icon: '🕚', title: '23:17', desc: '在信寄達的那一分鐘回到這裡', secret: 1 },
+  { code: 'zr_guest', game: 'arg', icon: '👤', title: '訪客', desc: '以 guest_000 的身分登入', secret: 1 },
+  { code: 'zr_source', game: 'arg', icon: '🧾', title: '背面', desc: '找到這個封存站本身的背面', secret: 1 },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(games.map(g => [g.id, g.slug]));
