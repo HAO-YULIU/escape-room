@@ -249,6 +249,47 @@ body:not(.home) { padding-top: 68px; }
 .monthly { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); gap: 20px; justify-content: center; }
 .monthly .room { scroll-snap-align: none; }
 .month-note { text-align: center; color: var(--muted); font-size: 13px; margin: 18px 0 0; }
+/* 大型開放 RPG：橫幅大卡（方形封面＋介紹），不顯示難度、時長 */
+/* 首頁主畫面上的入口 */
+.hero-rpg { display: inline-flex; align-items: center; gap: 14px; margin-top: 26px; padding: 8px 18px 8px 8px; border-radius: 14px; text-decoration: none; color: #EEF3F8; text-align: left;
+  background: rgba(8,14,28,.72); border: 1px solid rgba(127,180,230,.5); box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 30px rgba(60,120,200,.25); backdrop-filter: blur(6px); transition: transform .2s, border-color .2s; }
+.hero-rpg:hover { transform: translateY(-2px); border-color: #9cc8f0; }
+.hero-rpg img { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; }
+.hero-rpg span { display: flex; flex-direction: column; gap: 2px; }
+.hero-rpg small { font-size: 12px; color: #9cc8f0; letter-spacing: .12em; }
+.hero-rpg b { font: 900 24px/1.1 var(--serif); letter-spacing: .3em; }
+.hero-rpg em { font-style: normal; font-size: 13px; color: #FFD9A0; font-weight: 700; }
+.rpg-sec { background: radial-gradient(90% 70% at 30% 40%, rgba(42,82,140,.22), transparent 70%), #070A14; }
+.rpg-sec .container { width: min(1440px, 100% - 32px); }
+.rpg { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); min-height: min(720px, 82vh); width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0; isolation: isolate;
+  background: #060912; border: 1px solid rgba(127,180,230,.35); border-radius: 18px; overflow: hidden; box-shadow: 0 24px 60px rgba(0,0,0,.55), 0 0 80px rgba(60,120,200,.16); transition: transform .3s ease, border-color .3s ease; }
+.rpg:hover { transform: translateY(-4px); border-color: rgba(127,180,230,.7); }
+.rpg-bg { position: absolute; inset: 0; z-index: -1; overflow: hidden; }
+.rpg-bg img { width: 100%; height: 100%; object-fit: cover; filter: blur(30px) brightness(.35) saturate(1.2); transform: scale(1.3); }
+.rpg-cover { position: relative; aspect-ratio: 1; overflow: hidden; align-self: stretch; }
+.rpg-cover img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .6s ease; }
+.rpg:hover .rpg-cover img { transform: scale(1.03); }
+.rpg-cover::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 70%, rgba(6,9,18,.9)); }
+.rpg-body { padding: clamp(24px, 4vw, 48px); display: flex; flex-direction: column; gap: 14px; justify-content: center; }
+.rpg-kicker { display: inline-flex; align-items: center; gap: 10px; color: #9cc8f0; font-weight: 700; letter-spacing: .3em; font-size: 12px; }
+.rpg-kicker::before { content: ''; width: 26px; height: 1px; background: #7fb4e6; }
+.rpg-body h3 { font: 900 clamp(48px, 7vw, 96px)/1 var(--serif); letter-spacing: .2em; color: #EEF3F8; text-shadow: 0 0 24px rgba(127,180,230,.35); }
+.rpg-body .sub { margin: 0; color: #b9c8d8; letter-spacing: .25em; font-size: clamp(14px, 1.3vw, 18px); }
+.rpg-body .desc { margin: 0; color: #c8d0da; font-size: clamp(15px, 1.3vw, 18px); line-height: 1.9; }
+.rpg-feats { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+.rpg-feats li { font-size: 13px; color: #d9e6f3; padding: 4px 12px; border-radius: 999px; background: rgba(127,180,230,.12); border: 1px solid rgba(127,180,230,.25); }
+.rpg-open { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 8px; }
+.rpg-date { font: 700 15px var(--serif); color: #FFD9A0; letter-spacing: .1em; }
+.rpg .btn { pointer-events: none; }
+.rpg.locked .btn { opacity: .8; }
+@media (max-width: 760px) {
+  .rpg { grid-template-columns: 1fr; min-height: 0; }
+  .rpg-sec .container { width: 100%; }
+  .rpg-sec .section-head { padding-inline: 16px; }
+  .rpg { border-radius: 0; border-inline: 0; }
+  .rpg-cover::after { background: linear-gradient(180deg, transparent 70%, rgba(6,9,18,.95)); }
+  .rpg-body { padding: 4px 20px 24px; }
+}
 /* 全新主題：電影院首映海報風 */
 .spot { position: relative; display: grid; grid-template-columns: minmax(170px, 250px) 1fr 120px; align-items: center; gap: 0; width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0; isolation: isolate;
   background: #0B0D1A; border: 1px solid rgba(232,212,160,.4); border-radius: 18px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.5), 0 0 70px rgba(139,124,230,.14); transition: transform .3s ease, border-color .3s ease; }
@@ -548,6 +589,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="hero-actions" id="hero-actions">
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
+      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em>10/20 開放 →</em></span></a>
     </div>
     <div class="stars" id="stars" aria-hidden="true"></div>
     <div class="moon" aria-hidden="true"></div>
@@ -579,6 +621,18 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   </section>
 
   <main>
+    <!-- 大型開放 RPG 網頁遊戲：不是密室，不計時、不分難度 -->
+    <section class="section rpg-sec" id="rpg">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">OPEN WORLD RPG</span>
+          <h2>大型開放RPG網頁遊戲</h2>
+          <p>沒有倒數計時，也沒有出口——整座城市都是你的地圖</p>
+        </div>
+        <div id="rpg-list"></div>
+      </div>
+    </section>
+
     <!-- 密室主題 -->
     <section class="section" id="rooms">
       <div class="container">
@@ -802,6 +856,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <h4>導覽</h4>
           <ul>
             <li><a href="#rooms">密室主題</a></li>
+            <li><a href="#rpg">開放RPG</a></li>
             <li><a href="#monthly">每月推薦</a></li>
             <li><a href="#ranking">排行榜</a></li>
             <li><a href="#how">遊戲方式</a></li>
@@ -1167,6 +1222,7 @@ function renderHeader() {
       <a class="logo" href="#top" aria-label="夜語工作室 首頁">${LOGO_SVG}<span>夜語工作室</span></a>
       <nav class="nav" id="nav">
         <a href="#rooms">密室主題</a>
+        <a href="#rpg">開放RPG</a>
         <a href="#monthly">每月推薦</a>
         <a href="#ranking">排行榜</a>
         <a href="#how">遊戲方式</a>
@@ -1365,9 +1421,9 @@ $('#room-sort').addEventListener('change', (e) => { roomSort = e.target.value; r
 
 // 點擊密室：沒有角色就跳提示，有角色才跳到該密室的網頁
 function onRoomClick(e) {
-  const card = e.target.closest('.room, .spot');
+  const card = e.target.closest('.room, .spot, .rpg');
   if (!card) return;
-  const g = games.find(x => x.slug === card.dataset.slug);
+  const g = games.find(x => x.slug === card.dataset.slug) || RPGS.find(x => x.slug === card.dataset.slug);
   if (upcoming(g)) return toast(`「${g.title}」將在 ${fmtDate(g.release_date).slice(5)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
@@ -1376,6 +1432,34 @@ function onRoomClick(e) {
 listEl.addEventListener('click', onRoomClick);
 $('#newest-box').addEventListener('click', onRoomClick);
 $('#monthly-list').addEventListener('click', onRoomClick);
+
+// ================= 大型開放 RPG（不是密室：不計時、不分難度、不進排行榜） =================
+const RPGS = [{
+  slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You',
+  description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
+  feats: ['台北捷運 118 站', '3D 開放世界', '主線・支線・秘密任務', '00:30 迷霧之城', '手機・電腦都能玩'],
+  cover_url: 'covers/mist.jpg', play_url: 'https://hao-yuliu.github.io/MRT-station-/', release_date: '2026-10-20', status: 'available',
+}];
+function renderRpgs() {
+  $('#rpg-list').innerHTML = RPGS.map(g => {
+    const open = isOpen(g), soon = upcoming(g);
+    const cta = soon ? `${fmtDate(g.release_date).slice(5)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
+    return `
+    <button class="rpg ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
+      <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(g.cover_url)}" alt=""></div>
+      <div class="rpg-cover"><img src="${escapeHTML(g.cover_url)}" alt="${escapeHTML(g.title)} 封面" loading="lazy"></div>
+      <div class="rpg-body">
+        <span class="rpg-kicker">大型開放RPG網頁遊戲</span>
+        <h3>${escapeHTML(g.title)}</h3>
+        <p class="sub">${escapeHTML(g.subtitle)}</p>
+        <p class="desc">${escapeHTML(g.description)}</p>
+        <ul class="rpg-feats">${g.feats.map(f => `<li>${escapeHTML(f)}</li>`).join('')}</ul>
+        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
+      </div>
+    </button>`;
+  }).join('');
+}
+$('#rpg-list').addEventListener('click', onRoomClick);
 
 // 類別篩選
 const filtersEl = $('#filters');
@@ -1877,6 +1961,7 @@ function renderMonthly() {
 function renderAll() {
   renderHeader();
   renderHero();
+  renderRpgs();
   renderRooms();
   renderNewest();
   renderMonthly();
