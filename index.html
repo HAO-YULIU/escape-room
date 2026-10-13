@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>夜語工作室｜線上密室逃脫</title>
-  <meta name="description" content="夜語工作室 線上密室逃脫。建立你的角色，挑一間密室，在時間內解開謎題逃出來。">
+  <title>夜語工作室｜線上密室逃脫・大型開放RPG網頁遊戲</title>
+  <meta name="description" content="夜語工作室 線上密室逃脫與大型開放RPG網頁遊戲。建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
   <style>
@@ -250,6 +250,11 @@ body:not(.home) { padding-top: 68px; }
 .monthly .room { scroll-snap-align: none; }
 .month-note { text-align: center; color: var(--muted); font-size: 13px; margin: 18px 0 0; }
 /* 大型開放 RPG：橫幅大卡（方形封面＋介紹），不顯示難度、時長 */
+/* 怎麼玩：兩種玩法的小標 */
+.how-track { display: flex; align-items: center; gap: 10px; justify-content: center; margin: 8px 0 4px; font: 700 22px var(--serif); color: var(--gold); letter-spacing: .08em; }
+.how-track span { font-size: 22px; }
+.how-track.rpg-track { margin-top: 48px; color: #9cc8f0; }
+.how-sub { text-align: center; color: var(--muted); margin: 0 0 22px; }
 /* 首頁主畫面上的入口 */
 .hero-rpg { display: inline-flex; align-items: center; gap: 14px; margin-top: 26px; padding: 8px 18px 8px 8px; border-radius: 14px; text-decoration: none; color: #EEF3F8; text-align: left;
   background: rgba(8,14,28,.72); border: 1px solid rgba(127,180,230,.5); box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 30px rgba(60,120,200,.25); backdrop-filter: blur(6px); transition: transform .2s, border-color .2s; }
@@ -726,7 +731,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <span class="eyebrow">ABOUT US</span>
           <h2>歡迎來到夜語工作室</h2>
           <p>夜深人靜的時候，總有些聲音特別清楚：走廊盡頭的腳步聲、手機裡沒有署名的訊息、蟬鳴裡藏著的秘密。「夜語」，就是那些只在深夜才說得出口的故事。</p>
-          <p>夜語工作室專做線上密室逃脫。每一間密室都是我們親手設計的原創故事，從場景、謎題到機關都一手包辦。打開瀏覽器，就能在家走進故事裡。</p>
+          <p>夜語工作室做線上密室逃脫，也做大型開放RPG網頁遊戲。每一間密室都是我們親手設計的原創故事，從場景、謎題到機關都一手包辦；《迷霧》則把整個台北捷運搬進瀏覽器，118 站都能自由走進去。打開瀏覽器，就能在家走進故事裡。</p>
           <p>建立屬於你的角色、換上你喜歡的造型，用他的身分，去聽完每一個故事。</p>
           <div class="stats">
             <div><b id="stat-rooms">–</b><span>間原創密室</span></div>
@@ -742,9 +747,11 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">HOW TO PLAY</span>
-          <h2>什麼是線上密室逃脫？</h2>
-          <p>觀察場景、蒐集線索、破解機關，在時間內逃出房間。</p>
+          <h2>怎麼玩？</h2>
+          <p>兩種玩法：在時間內逃出密室，或是在一整座城市裡自由冒險。</p>
         </div>
+        <h3 class="how-track"><span>🔐</span>線上密室逃脫</h3>
+        <p class="how-sub">觀察場景、蒐集線索、破解機關，在時間內逃出房間。</p>
         <div class="steps">
           <div class="step">
             <span class="num">01</span>
@@ -763,6 +770,28 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <div class="step-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M15 8l2 2"/></svg></div>
             <h3>解謎逃脫</h3>
             <p>點擊場景找線索、組合道具、破解密碼，成功逃脫就會留下你的通關紀錄。</p>
+          </div>
+        </div>
+        <h3 class="how-track rpg-track"><span>🚇</span>大型開放RPG網頁遊戲《迷霧》</h3>
+        <p class="how-sub">沒有倒數計時、沒有出口——用你自己的步調，把整個台北捷運走一遍。</p>
+        <div class="steps">
+          <div class="step">
+            <span class="num">01</span>
+            <div class="step-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c.8-3.5 3.2-5.5 6-5.5s5.2 2 6 5.5M14.5 15.2c2.6-.4 4.9 1.2 5.5 4.8"/></svg></div>
+            <h3>選主角、取名字</h3>
+            <p>選男主或女主，替角色取一個 2–6 個字的名字（中文或英文），從南港展覽館出發。</p>
+          </div>
+          <div class="step">
+            <span class="num">02</span>
+            <div class="step-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-2-4M15 21l2-4"/><circle cx="9" cy="14" r=".8" fill="currentColor"/><circle cx="15" cy="14" r=".8" fill="currentColor"/></svg></div>
+            <h3>搭捷運、自由探索</h3>
+            <p>118 站都能走進去：刷卡進站、搭電扶梯、在月台等車、上車轉乘。依台灣真實時間運行，3 分鐘一班。</p>
+          </div>
+          <div class="step">
+            <span class="num">03</span>
+            <div class="step-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h11l5 5v9H4z"/><path d="M8 11h8M8 15h5"/></svg></div>
+            <h3>接任務、解開真相</h3>
+            <p>主線、支線、秘密任務與城市裡的人。末班車開走後的 00:30，城市會被霧吞沒——那時候的捷運，不一樣。</p>
           </div>
         </div>
       </div>
@@ -824,6 +853,14 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <details>
             <summary>密室可以多人一起玩嗎？</summary>
             <p>可以。每間密室卡片上都有標示人數，例如《越南公主》支援 1–4 人連線：一人開房間，朋友輸入房號就能加入。</p>
+          </details>
+          <details>
+            <summary>《迷霧》是什麼？跟密室有什麼不一樣？</summary>
+            <p>《迷霧》是大型開放RPG網頁遊戲，不是密室：沒有計時、不分難度，也不會進逃脫排行榜。你可以在台北捷運 118 站之間自由搭車、接任務、認識城市裡的人，想玩多久就玩多久。2026/10/20 開放。</p>
+          </details>
+          <details>
+            <summary>《迷霧》的進度會保存嗎？手機可以玩嗎？</summary>
+            <p>進度會自動存在你的瀏覽器裡，下次打開就能「繼續旅程」。電腦用鍵盤（方向鍵／WASD、Shift 跑步、E 互動），手機用畫面上的搖桿和按鈕，直式、橫式都可以玩。</p>
           </details>
           <details>
             <summary>角色外觀和頭像之後可以改嗎？</summary>
