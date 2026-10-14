@@ -1464,7 +1464,20 @@ function onRoomClick(e) {
   if (upcoming(g)) return toast(`「${g.title}」將在 ${fmtDate(g.release_date).slice(5)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
-  location.href = g.play_url;
+  goPlay(g.play_url);
+}
+
+// 遊戲在別的網域（例如 Cloudflare workers.dev）時，登入狀態不會自動帶過去：
+// 先跟 game-handoff 換一個一次性登入碼，接在網址 #sd= 後面，遊戲那邊用它登入。失敗就照原樣開啟。
+async function goPlay(url) {
+  let dest = url;
+  try {
+    if (new URL(url, location.href).origin !== location.origin) {
+      const { data, error } = await supabase.functions.invoke('game-handoff', { method: 'POST' });
+      if (!error && data?.token_hash) dest = url.split('#')[0] + '#sd=' + encodeURIComponent(data.token_hash);
+    }
+  } catch (e) {}
+  location.href = dest;
 }
 listEl.addEventListener('click', onRoomClick);
 $('#newest-box').addEventListener('click', onRoomClick);
