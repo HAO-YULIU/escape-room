@@ -853,9 +853,10 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .hub-tabs::-webkit-scrollbar { display: none; }
   .hub-tabs button { flex: none; font-size: 14px; padding: 8px 15px; }
   /* 往下滑之後，頂端多一條快速跳轉 */
-  .quick { display: flex; position: sticky; top: 68px; z-index: 19; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 8px 12px; background: rgba(8,10,20,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+  .quick { display: flex; position: fixed; left: 0; right: 0; top: 68px; z-index: 19; transform: translateY(-110%); opacity: 0; pointer-events: none; transition: transform .25s, opacity .25s; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 8px 12px; background: rgba(8,10,20,.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
   .quick::-webkit-scrollbar { display: none; }
   .quick a { flex: none; font-size: 13px; font-weight: 700; color: var(--parchment); text-decoration: none; padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(239,230,210,.18); background: rgba(14,17,32,.6); }
+  .quick.show { transform: none; opacity: 1; pointer-events: auto; }
   .quick a.on { background: var(--gold); color: #12142A; border-color: transparent; }
   .quick a[hidden] { display: none; }
   /* 我的進度：橫向滑動 */
@@ -877,6 +878,57 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .cats { gap: 10px; }
   .cat { min-height: 150px; padding: 16px; }
   .cat p { font-size: 13px; }
+}
+/* ===== 手機版：少一點東西，看起來清楚 ===== */
+.ach-fold .passport { padding: 4px 18px 18px; }
+@media (max-width: 760px) {
+  /* 主畫面：只留標題、一句話、按鈕、倒數 */
+  .hero { padding: 96px 20px 150px; min-height: 92svh; }
+  .hero-kicker { font-size: 11px; letter-spacing: .4em; margin-bottom: 12px; }
+  .hero h1 { font-size: 34px; }
+  #hero-text { font-size: 15px; line-height: 1.8; margin: 14px 0 22px; }
+  .hero-me { margin-bottom: 16px; }
+  .hero-rpg, .hero-hint, .scroll-cue { display: none; }
+  .hero-next { font-size: 13px; padding: 7px 14px; margin-top: 18px; }
+  .hero-install { margin-top: 12px; font-size: 13px; }
+  /* 區塊標題：拿掉英文小標、裝飾和第二行說明 */
+  .section-head .eyebrow, .section-head h2::after, .section-head p br, .section-head p small { display: none; }
+  .section-head h2 { font-size: 24px; }
+  .section-head p { font-size: 14px; margin-top: 6px; }
+  .section-head { margin-bottom: 18px; }
+  .section { padding: 40px 0; }
+  /* 密室：只留分類；卡片只留名字、一句介紹、人數時長難度、按鈕 */
+  .row-head { gap: 10px; margin-bottom: 12px; }
+  .row-tools { display: none; }
+  .room-count { display: none; }
+  .rooms > .room { min-height: 0; }
+  .rooms > .room .room-cover { width: 96px; }
+  .rooms > .room .room-body { padding: 12px 14px; gap: 6px; justify-content: center; }
+  .rooms > .room .tags, .rooms > .room .room-body .desc, .rooms > .room .room-date { display: none; }
+  .rooms > .room .room-body h4 { font-size: 17px; }
+  .rooms > .room .room-body .sub { font-size: 13px; }
+  .rooms > .room .room-facts { gap: 10px; color: var(--muted); }
+  .rooms > .room .room-facts span { background: none; border: 0; padding: 0; }
+  .rooms > .room .room-foot { border-top: 0; padding-top: 2px; justify-content: flex-end; }
+  .room-more { margin-top: 10px; }
+  .retired-fold { margin-top: 16px; }
+  .retired-fold summary small { display: none; }
+  /* 迷霧：標題、一段介紹、開放倒數 */
+  .rpg-kicker, .rpg-feats, .rpg-body .sub, .about .eyebrow, .cta .eyebrow { display: none; }
+  .rpg-body h3 { font-size: 40px; }
+  .rpg-body .desc { -webkit-line-clamp: 2; }
+  .rpg-body { padding: 4px 20px 22px; }
+  .rpg-cover { aspect-ratio: 2 / 1; }
+  /* 我的進度 */
+  .prog-me .eyebrow { display: none; }
+  .prog-me h2 { font-size: 20px; }
+  .prog-next i { max-width: 200px; }
+  .ach-fold .passport { gap: 8px; }
+  /* 頁尾：只留名字、聯絡方式 */
+  .foot-grid > div:not(:first-child) { display: none; }
+  .foot-grid { grid-template-columns: 1fr; }
+  .site-footer { padding: 32px 0 24px; }
+  .cta { padding: 56px 20px; }
 }
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; }
@@ -937,7 +989,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   </section>
 
   <nav class="quick" id="quick" aria-label="快速前往">
-    <a href="#progress" data-q="progress" hidden>▶ 我的進度</a><a href="#rooms" data-q="rooms">🔑 密室</a><a href="#rpg" data-q="rpg">🚇 迷霧</a><a href="#monthly" data-q="explore">⭐ 推薦</a><a href="#ranking" data-q="explore">🏆 排行榜</a><a href="#news" data-q="explore">📰 消息</a><a href="#how" data-q="info">💡 說明</a>
+    <a href="#progress" data-q="progress" hidden>我的進度</a><a href="#rooms" data-q="rooms">密室</a><a href="#rpg" data-q="rpg">迷霧</a><a href="#monthly" data-q="explore">推薦</a><a href="#ranking" data-q="explore">排行榜</a><a href="#news" data-q="explore">消息</a><a href="#how" data-q="info">說明</a>
   </nav>
 
   <main>
@@ -946,17 +998,6 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="container" id="prog-box"></div>
     </section>
 
-    <!-- 大型開放 RPG 網頁遊戲：不是密室，不計時、不分難度 -->
-    <section class="section rpg-sec" id="rpg">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">OPEN WORLD RPG</span>
-          <h2>大型開放RPG網頁遊戲</h2>
-          <p>沒有倒數計時，也沒有出口——整座城市都是你的地圖</p>
-        </div>
-        <div id="rpg-list"></div>
-      </div>
-    </section>
 
     <!-- 密室主題 -->
     <section class="section" id="rooms">
@@ -987,6 +1028,18 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       </div>
     </section>
 
+    <!-- 大型開放 RPG 網頁遊戲：不是密室，不計時、不分難度 -->
+    <section class="section rpg-sec" id="rpg">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">OPEN WORLD RPG</span>
+          <h2>大型開放RPG網頁遊戲</h2>
+          <p>沒有倒數計時，也沒有出口——整座城市都是你的地圖</p>
+        </div>
+        <div id="rpg-list"></div>
+      </div>
+    </section>
+
 
 
 
@@ -998,7 +1051,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 
     <!-- 探索：本月推薦、全新主題、排行榜、最新消息放在同一區，用分頁切換，不用一直往下滑 -->
     <section class="section alt hub" id="explore">
-      <div class="container"><div class="hub-tabs" role="tablist" aria-label="探索"><button type="button" role="tab" data-panel="monthly">⭐ 本月推薦</button><button type="button" role="tab" data-panel="newest">🆕 全新主題</button><button type="button" role="tab" data-panel="ranking">🏆 排行榜</button><button type="button" role="tab" data-panel="news">📰 最新消息</button></div></div>
+      <div class="container"><div class="hub-tabs" role="tablist" aria-label="探索"><button type="button" role="tab" data-panel="monthly">本月推薦</button><button type="button" role="tab" data-panel="newest">全新主題</button><button type="button" role="tab" data-panel="ranking">排行榜</button><button type="button" role="tab" data-panel="news">最新消息</button></div></div>
       <div class="hub-panel" id="monthly" role="tabpanel">
       <div class="container">
         <div class="section-head">
@@ -1050,7 +1103,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 
     <!-- 認識夜語：關於我們、怎麼玩、密室類別、常見問題 -->
     <section class="section hub" id="info">
-      <div class="container"><div class="hub-tabs" role="tablist" aria-label="認識夜語工作室"><button type="button" role="tab" data-panel="about">🌙 關於我們</button><button type="button" role="tab" data-panel="how">🎮 怎麼玩</button><button type="button" role="tab" data-panel="cats">🎨 密室類別</button><button type="button" role="tab" data-panel="faq">❓ 常見問題</button></div></div>
+      <div class="container"><div class="hub-tabs" role="tablist" aria-label="認識夜語工作室"><button type="button" role="tab" data-panel="about">關於我們</button><button type="button" role="tab" data-panel="how">怎麼玩</button><button type="button" role="tab" data-panel="cats">密室類別</button><button type="button" role="tab" data-panel="faq">常見問題</button></div></div>
       <div class="hub-panel" id="about" role="tabpanel">
       <div class="container about">
         <div class="about-door-wrap">
@@ -1944,7 +1997,7 @@ function renderRpgs() {
         <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(g.release_date)}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
       </div>
     </button>`;
-  }).join('') + (mistTop.length || mist ? mistBoard() : '');
+  }).join('') + (mistTop.length ? mistBoard() : '');
 }
 // 迷霧：探索排行榜（去過最多車站的旅人；同站數比等級）＋自己的旅程
 function mistTrip() {
@@ -2467,7 +2520,6 @@ function renderProgress() {
     <div class="prog-top">
       <div class="prog-me">${avatarHTML(profile, 56)}<div><span class="eyebrow">CONTINUE</span><h2>${escapeHTML(profile.username)}，繼續你的故事</h2>
         <span class="prog-title">✦ ${t.name}</span>${nextTxt}</div></div>
-      <div class="passport" aria-label="密室護照">${stamps}<button class="btn btn-ghost" type="button" data-share="__passport">分享我的護照</button></div>
     </div>
     ${rows.length || mist ? `<div class="prog-list">${rows.map(r => `<div class="prog-card">
       ${r.g.cover_url ? `<img src="${escapeHTML(r.g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
@@ -2477,7 +2529,9 @@ function renderProgress() {
         <div class="prog-acts">${isOpen(r.g) ? `<button class="btn btn-gold" type="button" data-go="${escapeHTML(r.g.slug)}">${r.act}</button>` : ''}
           ${r.m?.best != null ? `<button class="btn btn-ghost" type="button" data-share="${escapeHTML(r.g.slug)}">分享 ↗</button>` : ''}</div></div></div>`).join('')}${mistCard}</div>`
     : `<p class="prog-empty">還沒開始任何故事。${sug ? `今晚，走進 <button type="button" data-go="${escapeHTML(sug.slug)}">《${escapeHTML(sug.title)}》</button> 吧。` : ''}</p>`}
-    <details class="ach-fold"${achOpen ? ' open' : ''}><summary>🏆 全部成就 <small>${achN} / ${ACH.length}</small></summary><div class="ach-box">${renderAch()}</div></details>`;
+    <details class="ach-fold"${achOpen ? ' open' : ''}><summary>🏆 我的護照與成就 <small>成就 ${achN} / ${ACH.length}</small></summary>
+      <div class="passport" aria-label="密室護照">${stamps}<button class="btn btn-ghost" type="button" data-share="__passport">分享我的護照</button></div>
+      <div class="ach-box">${renderAch()}</div></details>`;
   box.querySelector('.ach-fold').addEventListener('toggle', (e) => { achOpen = e.target.open; });
 }
 document.addEventListener('click', (e) => {
@@ -2795,6 +2849,7 @@ function initQuick() {
     .sort((x, y) => x.compareDocumentPosition(y) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);   // 依頁面上的順序
   const mark = () => {
     let cur = null;
+    q.classList.toggle('show', scrollY > innerHeight * .6 && document.body.classList.contains('home'));
     for (const sec of secs) if (!sec.hidden && sec.getBoundingClientRect().top < innerHeight * .4) cur = sec.id;
     const panel = cur && document.querySelector(`#${cur} .hub-panel.on`)?.id;
     links.forEach(a => a.classList.toggle('on', a.dataset.q === cur && (!a.hash || a.hash.slice(1) === cur || a.hash.slice(1) === panel)));
