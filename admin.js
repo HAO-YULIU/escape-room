@@ -98,7 +98,8 @@ function summarize(game, save) {
     const part = p2 >= 21 ? '第二部完成' : p2 >= 9 ? `第二部・${ARG_P2[p2] || p2}` : answered ? '第一部完成' : ch < 0 ? '還沒登入' : ARG_P1[Math.min(9, Math.max(0, ch))];
     const hints = Object.values(R.hintsShown || {}).reduce((a, b) => a + (+b || 0), 0);
     return { part, pi: p2 >= 9 ? p2 : answered ? 9 : Math.max(0, ch), pn: 21, scene: null, solved: cnt(M.cb?.solved) || null, total: null,
-      time: R.playSec > 0 ? R.playSec : null, hints,   // 實際遊玩秒數（舊存檔沒有這個欄位，就不顯示，避免一直往上加） endings: ends, done: p2 >= 21, note: `碎片 ${cnt(R.frags)} / 7` };
+      // time：實際遊玩秒數（舊存檔沒有這個欄位，就不顯示，避免一直往上加）
+      time: R.playSec > 0 ? R.playSec : null, hints, endings: ends, done: p2 >= 21, note: `碎片 ${cnt(R.frags)} / 7` };
   }
   if (game === 'mist') {
     const s = cnt(d.visited);
