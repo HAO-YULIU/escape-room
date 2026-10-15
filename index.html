@@ -682,6 +682,20 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 @keyframes shoot { from { opacity: 0; translate: 0 0; } 15% { opacity: 1; } to { opacity: 0; translate: -420px 190px; } }
 .spark { position: absolute; z-index: 4; pointer-events: none; font-size: 14px; color: var(--gold); text-shadow: 0 0 10px var(--gold); animation: spark .9s ease-out forwards; }
 @keyframes spark { from { opacity: 1; transform: translate(-50%, -50%) scale(1); } to { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(.3) rotate(160deg); } }
+/* 小互動：接流星、城市的窗、關於我們的門 */
+.skyline .win { pointer-events: all; cursor: pointer; stroke: transparent; stroke-width: 26px; }
+.skyline .win.out { animation: none; opacity: .08; transition: opacity .15s; }
+.skyline .peek { pointer-events: none; animation: peek 2.2s ease-in-out forwards; }
+@keyframes peek { 0% { opacity: 0; } 25%, 70% { opacity: .95; } 100% { opacity: 0; } }
+#about-door { cursor: pointer; transform-box: view-box; transform-origin: 120px 300px; transition: transform .9s cubic-bezier(.5,.1,.2,1); }
+#about-door:hover { filter: drop-shadow(0 0 6px rgba(243,223,166,.6)); }
+.about-art.open #about-door { transform: scaleX(.16); }
+#door-light { opacity: 0; transition: opacity .9s; }
+.about-art.open #door-light { opacity: 1; }
+.door-note { text-align: center; margin: 14px auto 0; max-width: 440px; min-height: 1.6em; color: var(--gold); font-size: 15px; opacity: 0; transform: translateY(6px); transition: opacity .5s, transform .5s; }
+.door-note.on { opacity: 1; transform: none; }
+.door-note button { background: none; border: 0; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.door-hint { display: block; text-align: center; margin-top: 10px; font-size: 12px; color: var(--muted); letter-spacing: .2em; opacity: .7; }
 .hero-hint { display: block; margin-top: 18px; font-size: 12px; color: var(--muted); letter-spacing: .2em; opacity: .7; }
 /* 進場淡入 */
 .reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s ease, transform .8s ease; }
@@ -755,7 +769,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       </div>
       <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em>10/20 開放 →</em></span></a>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
-      <span class="hero-hint" aria-hidden="true">✦ 點一下夜空，或戳戳月亮 ✦</span>
+      <span class="hero-hint" aria-hidden="true">✦ 點一下夜空、戳戳月亮，或接住一顆流星 ✦</span>
     </div>
     <div class="hero-glow" aria-hidden="true"></div>
     <div class="stars" id="stars" aria-hidden="true"></div>
@@ -883,6 +897,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     <!-- 關於我們 -->
     <section class="section" id="about">
       <div class="container about">
+        <div class="about-door-wrap">
         <div class="about-art" aria-hidden="true">
           <svg viewBox="0 0 400 400" preserveAspectRatio="xMidYMid slice">
             <defs>
@@ -896,12 +911,19 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <circle cx="250" cy="120" r="40" fill="url(#amoon)"/>
             <circle cx="268" cy="108" r="36" fill="#191A3E"/>
             <path d="M0 330 Q100 300 200 318 T400 310 V400 H0Z" fill="#0B0D1F"/>
+            <g id="door-light"><path d="M120 400 V250 Q120 200 165 200 Q210 200 210 250 V400Z" fill="#FFF2CC"/><circle cx="165" cy="300" r="120" fill="url(#alamp)"/></g>
+            <g id="about-door">
             <path d="M120 400 V250 Q120 200 165 200 Q210 200 210 250 V400Z" fill="#0E1026" stroke="#8C7C55" stroke-width="3"/>
             <path d="M138 300 V258 Q138 222 165 222 Q192 222 192 258 V300Z" fill="#F3DFA6" opacity=".85"/>
             <path d="M165 222 V300 M138 262 H192" stroke="#0E1026" stroke-width="3"/>
-            <circle cx="165" cy="262" r="70" fill="url(#alamp)" opacity=".25"/>
+            <circle cx="198" cy="330" r="4" fill="#C9A86A"/>
+            </g>
+            <circle cx="165" cy="262" r="70" fill="url(#alamp)" opacity=".25" pointer-events="none"/>
             <text x="300" y="300" font-family="Noto Serif TC, serif" font-size="40" font-weight="700" fill="#E8D4A0" opacity=".85" writing-mode="tb" letter-spacing="10">夜語</text>
           </svg>
+        </div>
+          <span class="door-hint" aria-hidden="true">✦ 推推看那扇門 ✦</span>
+          <p class="door-note" id="door-note" aria-live="polite"></p>
         </div>
         <div>
           <span class="eyebrow">ABOUT US</span>
@@ -2424,7 +2446,7 @@ function initFx() {
   };
   setInterval(() => { if (Math.random() < .5) shoot(); }, 3500);
   hero.addEventListener('click', (e) => {
-    if (e.target.closest('a, button, .moon')) return;
+    if (e.target.closest('a, button, .moon, .win')) return;
     const r = hero.getBoundingClientRect();
     spark(e.clientX - r.left, e.clientY - r.top);
     if (Math.random() < .35) shoot();
@@ -2439,6 +2461,46 @@ function initFx() {
     spark(m.left + m.width / 2 - r.left, m.top + m.height / 2 - r.top, 12);
     for (let i = 0; i < 3; i++) setTimeout(shoot, i * 180);
   });
+
+  // 接流星：點到飛過的流星就「接住」，同一晚接越多句子越不一樣
+  const STAR_KEY = 'yeyu_stars', today = () => new Date().toLocaleDateString('sv', { timeZone: 'Asia/Taipei' });
+  hero.addEventListener('click', (e) => {
+    // 流星在文字後面飛，所以用「點的位置離流星夠近」來判斷，不擋住按鈕和連結
+    if (e.target.closest('a, button')) return;
+    const st = [...hero.querySelectorAll('.shooting')].find((s) => { const b = s.getBoundingClientRect(), m = 22;
+      return getComputedStyle(s).opacity > .2 && e.clientX > b.left - m && e.clientX < b.right + m && e.clientY > b.top - m && e.clientY < b.bottom + m; });
+    if (!st) return;
+    e.stopImmediatePropagation();
+    let c = { d: today(), n: 0 }; try { const o = JSON.parse(localStorage.getItem(STAR_KEY)); if (o?.d === c.d) c = o; } catch (_) {}
+    c.n++; try { localStorage.setItem(STAR_KEY, JSON.stringify(c)); } catch (_) {}
+    const r = hero.getBoundingClientRect(); spark(e.clientX - r.left, e.clientY - r.top, 14); st.remove();
+    toast(c.n === 1 ? '🌠 接住一顆流星！快許個願。' : c.n === 7 ? '🌠 七顆流星……夜語工作室聽見你的願望了。今晚的密室，會對你溫柔一點。'
+      : c.n % 10 === 0 ? `🌠 今晚已經接住 ${c.n} 顆流星了，天空快被你接光了！` : `🌠 今晚第 ${c.n} 顆流星。`);
+  }, true);
+  // 城市的窗：點亮著的窗，燈會熄掉，窗邊好像站著誰
+  const PEEKS = ['🏚 燈熄了。……剛剛窗邊站著的是誰？', '👁 你看見她了。她也看見你了。', '🕯 那棟樓，早就沒有人住了。', '🔦 有人關燈了——從裡面。', '🤫 噓，她在數還有幾扇窗亮著。'];
+  let pk = Math.random() * PEEKS.length | 0;
+  document.querySelectorAll('.skyline .win').forEach((w) => w.addEventListener('click', (e) => {
+    e.stopPropagation(); if (w.classList.contains('out')) return;
+    w.classList.add('out');
+    const x = +w.getAttribute('x'), y = +w.getAttribute('y'), ww = +w.getAttribute('width'), h = +w.getAttribute('height');
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'path'); g.setAttribute('class', 'peek'); g.setAttribute('fill', '#E8D4A0');
+    g.setAttribute('d', `M${x + ww / 2} ${y + h * .2}a${ww * .2} ${ww * .2} 0 1 1 0 .01M${x + ww * .15} ${y + h}q0-${h * .45} ${ww * .35}-${h * .45}h${ww * .3}q${ww * .35} 0 ${ww * .35} ${h * .45}z`);
+    w.after(g); toast(PEEKS[pk++ % PEEKS.length]);
+    setTimeout(() => { g.remove(); w.classList.remove('out'); }, 2600);
+  }));
+  // 關於我們的門：推開會透出光，告訴你今晚可以走進哪一間
+  const door = document.getElementById('about-door'), art = door?.closest('.about-art'), note = $('#door-note');
+  let doorT = 0;
+  door?.addEventListener('click', () => {
+    if (art.classList.contains('open')) return;
+    const open = games.filter(isOpen); const g = open[Math.random() * open.length | 0];
+    art.classList.add('open');
+    note.innerHTML = g ? `門後亮著燈——今晚，走進 <button type="button" data-slug="${escapeHTML(g.slug)}">《${escapeHTML(g.title)}》</button> 吧。` : '門後還在佈置，再等等。';
+    note.classList.add('on');
+    clearTimeout(doorT); doorT = setTimeout(() => { art.classList.remove('open'); note.classList.remove('on'); }, 7000);
+  });
+  note?.addEventListener('click', (e) => { const b = e.target.closest('button[data-slug]'); if (b) openGame(b.dataset.slug); });
 
   // 卡片 3D 傾斜＋反光（只在有滑鼠的裝置）
   if (fine && !calm) {
