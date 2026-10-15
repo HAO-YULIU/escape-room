@@ -246,8 +246,33 @@ body:not(.home) { padding-top: 68px; }
 .room-rank { position: absolute; left: 12px; bottom: 12px; width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; font: 900 18px var(--serif); color: #12142A; background: linear-gradient(180deg, #F6E7BE, var(--gold)); box-shadow: 0 4px 14px rgba(0,0,0,.45); }
 .room-rank.r2 { background: linear-gradient(180deg, #eef0f6, #b9bfcc); }
 .room-rank.r3 { background: linear-gradient(180deg, #f1cfae, #c08a5c); }
-.monthly { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); gap: 20px; justify-content: center; }
-.monthly .room { scroll-snap-align: none; }
+.monthly { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 18px; max-width: 980px; margin-inline: auto; }
+/* 每月推薦：第 1 名大卡（左），第 2、3 名橫向小卡（右） */
+.pick { position: relative; display: grid; grid-template-columns: 112px 1fr; gap: 16px; align-items: center; padding: 14px; text-align: left; font: inherit; color: inherit; cursor: pointer;
+  background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); transition: transform .2s, border-color .2s, box-shadow .2s; }
+.pick:hover { transform: translateY(-4px); border-color: rgba(232,212,160,.45); box-shadow: 0 18px 40px rgba(0,0,0,.45), 0 0 34px rgba(139,124,230,.16); }
+.pick-cover { position: relative; aspect-ratio: 3 / 4; border-radius: 10px; overflow: hidden; background: var(--wall-2); }
+.pick-cover img, .pick-cover svg { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; transition: transform .5s; }
+.pick:hover .pick-cover img { transform: scale(1.05); }
+.pick-rank { position: absolute; left: -2px; top: -2px; width: 44px; height: 44px; display: grid; place-items: center; font: 900 20px var(--serif); color: #12142A;
+  background: linear-gradient(180deg, #ffe7a8, #d6b26a); border-bottom-right-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.45); }
+.pick.p2 .pick-rank { background: linear-gradient(180deg, #eef0f6, #b9bfcc); }
+.pick.p3 .pick-rank { background: linear-gradient(180deg, #f1cfae, #c08a5c); }
+.pick-body { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.pick-kicker { font-size: 12px; font-weight: 700; letter-spacing: .12em; color: #FFD9A0; }
+.pick h4 { font: 700 19px var(--serif); margin: 0; letter-spacing: .04em; }
+.pick .sub { color: var(--muted); font-size: 13px; margin: 0; }
+.pick .desc { color: #CFCBE0; font-size: 14px; line-height: 1.75; margin: 2px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.pick-facts { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
+.pick-cta { font-size: 14px; font-weight: 700; color: var(--gold); margin-top: 2px; white-space: nowrap; }
+.pick.p1 { grid-row: span 2; grid-template-columns: minmax(0, 1fr); align-content: start; padding: 0; overflow: hidden;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(214,178,106,.16), transparent 60%), var(--wall); border-color: rgba(232,212,160,.4); }
+.pick.p1 .pick-cover { aspect-ratio: 16 / 10; border-radius: 0; }
+.pick.p1 .pick-cover::after { content: ''; position: absolute; inset: 55% 0 0; background: linear-gradient(180deg, transparent, rgba(10,12,24,.92)); }
+.pick.p1 .pick-rank { width: 56px; height: 56px; font-size: 26px; }
+.pick.p1 .pick-body { padding: 0 22px 22px; margin-top: -54px; position: relative; z-index: 1; gap: 8px; }
+.pick.p1 h4 { font-size: clamp(24px, 2.6vw, 30px); text-shadow: 0 3px 14px rgba(0,0,0,.7); }
+.pick.p1 .desc { -webkit-line-clamp: 3; }
 .month-note { text-align: center; color: var(--muted); font-size: 13px; margin: 18px 0 0; }
 /* 大型開放 RPG：橫幅大卡（方形封面＋介紹），不顯示難度、時長 */
 /* 怎麼玩：兩種玩法的小標 */
@@ -392,6 +417,26 @@ a.news-item:hover { border-color: rgba(232,212,160,.45); transform: translateX(4
 .news-date b { display: block; font: 700 28px/1.1 var(--serif); color: var(--gold); }
 .news-date span { font-size: 12px; color: var(--muted); letter-spacing: .1em; }
 .news-item h3 { font-size: 19px; margin-bottom: 4px; }
+.news-item { grid-template-columns: 92px 1fr auto; text-align: left; font: inherit; color: inherit; width: 100%; cursor: default; }
+button.news-item, a.news-item { cursor: pointer; }
+button.news-item:hover { border-color: rgba(232,212,160,.45); transform: translateX(4px); }
+.news-thumb { width: 64px; aspect-ratio: 3 / 4; border-radius: 8px; overflow: hidden; background: var(--wall-2); flex: none; }
+.news-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top; display: block; }
+.news-tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .12em; padding: 1px 9px; border-radius: 999px; margin-bottom: 6px; background: rgba(139,124,230,.18); color: #C9C0FF; }
+.news-tag.t-新密室 { background: rgba(196,64,64,.2); color: #FFB4A8; }
+.news-tag.t-預告 { background: rgba(214,178,106,.2); color: #FFE0A0; }
+.news-tag.t-改版 { background: rgba(110,190,150,.18); color: #A8E8C4; }
+.news-go { display: block; margin-top: 6px; font-size: 13px; font-weight: 700; color: var(--gold); }
+.news-more { text-align: center; margin-top: 6px; }
+.news-item[hidden] { display: none; }
+@media (max-width: 760px) {
+  .news-item { grid-template-columns: 58px 1fr 52px; gap: 12px; padding: 14px 14px; }
+  .news-date { padding-right: 10px; }
+  .news-date b { font-size: 20px; }
+  .news-thumb { width: 52px; }
+  .news-item h3 { font-size: 16px; }
+  .news-item p { font-size: 13px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+}
 .news-item p { margin: 0; color: var(--muted); font-size: 14px; }
 
 /* FAQ */
@@ -500,7 +545,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .rank-wrap { grid-template-columns: 1fr; }
   .rooms { grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); }
   .cats { grid-template-columns: repeat(2, 1fr); }
-  .monthly { grid-template-columns: repeat(3, minmax(0, 210px)); }
+  .monthly { max-width: 860px; }
   .about { grid-template-columns: 1fr; gap: 36px; }
 }
 @media (max-width: 760px) {
@@ -528,7 +573,13 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .badge { right: 8px; top: 8px; font-size: 11px; padding: 1px 7px; }
   .row-tools { width: 100%; }
   .room-search { flex: 1; min-width: 0; width: auto; }
-  .monthly { grid-template-columns: repeat(2, minmax(0, 200px)); }
+  .monthly { grid-template-columns: 1fr; gap: 12px; }
+  .pick { grid-template-columns: 92px 1fr; padding: 12px; gap: 14px; }
+  .pick.p1 { grid-row: auto; }
+  .pick.p1 .pick-cover { aspect-ratio: 16 / 9; }
+  .pick.p1 .pick-body { padding: 0 16px 16px; margin-top: -40px; }
+  .pick .desc { -webkit-line-clamp: 2; }
+  .pick.p2 .desc, .pick.p3 .desc { display: none; }
   .spot { grid-template-columns: 1fr; }
   .spot-poster { padding: 34px 0 0; width: min(58%, 220px); margin: 0 auto; }
   .spot-ribbon { left: -8px; }
@@ -960,11 +1011,11 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </details>
           <details>
             <summary>玩到一半離開會怎樣？</summary>
-            <p>可以隨時離開密室。下次重新進門時會重新開始計時，成功逃脫後才會留下通關紀錄。</p>
+            <p>可以隨時離開。遊戲會自動存檔，而且會同步到你的帳號：下次用任何一台手機或電腦登入，都能從離開的地方接著玩。成功逃脫後才會留下通關紀錄。</p>
           </details>
           <details>
             <summary>密室可以多人一起玩嗎？</summary>
-            <p>可以。每間密室卡片上都有標示人數，例如《越南公主》支援 1–4 人連線：一人開房間，朋友輸入房號就能加入。</p>
+            <p>可以。每間密室卡片上都有標示人數：《越南公主》支援 1–4 人連線、《沈園殘燭》可以單人或兩人搭檔推理。一人開房間，朋友輸入房號就能加入。</p>
           </details>
           <details>
             <summary>《迷霧》是什麼？跟密室有什麼不一樣？</summary>
@@ -1515,7 +1566,7 @@ const locks = (d) => { d = Number(d) || 0; return `<span class="locks" aria-labe
 const players = (g) => g.min_players === g.max_players ? `${g.min_players} 人` : `${g.min_players}～${g.max_players} 人`;
 const fmtDate = (d) => d ? d.slice(0, 10).replaceAll('-', '/').replace(/\/0(\d)/g, '/$1') : '';
 const released = (g) => g.release_date ?? g.created_at;
-const isNew = (g) => Date.now() - new Date(released(g)).getTime() < 1000 * 60 * 60 * 24 * 30;
+const isNew = (g) => Date.now() - new Date(released(g)).getTime() < 1000 * 60 * 60 * 24 * 7; // 上線 7 天內才標 NEW
 // 最新上線的那一款：有新的上線日期才會換掉
 const newestGame = () => games.filter(isOpen).sort((a, b) => String(released(b)).localeCompare(String(released(a))))[0];
 // 有上線日期的，要等到那天（台灣時間）才開放；在那之前大廳會先顯示「幾月幾日上線」
@@ -1633,9 +1684,13 @@ $('#room-pick').addEventListener('click', async () => {
 
 // 點擊密室：沒有角色就跳提示，有角色才跳到該密室的網頁
 function onRoomClick(e) {
-  const card = e.target.closest('.room, .spot, .rpg');
+  const card = e.target.closest('.room, .spot, .rpg, .pick');
   if (!card) return;
-  const g = games.find(x => x.slug === card.dataset.slug) || RPGS.find(x => x.slug === card.dataset.slug);
+  openGame(card.dataset.slug);
+}
+function openGame(slug) {
+  const g = games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug);
+  if (!g) return;
   if (upcoming(g)) return toast(`「${g.title}」將在 ${fmtDate(g.release_date).slice(5)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
@@ -1720,7 +1775,7 @@ async function loadGames() {
   allGames = data;
   games = data.filter(g => !RETIRED.includes(g.slug));
   retiredGames = data.filter(g => RETIRED.includes(g.slug));
-  $('#stat-rooms').textContent = games.length;
+  $('#stat-rooms').textContent = allGames.filter(g => g.play_url).length; // 只算真正做好的密室（含已下架），不算 Coming Soon 佔位
   const tags = CATS;
   filtersEl.innerHTML = ['全部', ...tags].map((t, i) =>
     `<button class="chip" type="button" data-tag="${i ? escapeHTML(t) : ''}" aria-pressed="${i === 0}">${escapeHTML(t)}</button>`).join('');
@@ -1741,18 +1796,26 @@ async function loadGames() {
 // ================= 最新消息 =================
 async function loadNews() {
   const el = $('#news-list');
-  const { data, error } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(8);
+  const { data, error } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(30);
   if (error || !data?.length) { el.innerHTML = `<p class="empty">${error ? '讀取消息失敗' : '目前還沒有消息。'}</p>`; return; }
-  el.innerHTML = data.map(n => {
-    const d = new Date(n.published_at);
+  const SHOW = 6;
+  // link：game:<slug> 開啟該密室（跟點密室卡片一樣，會帶登入）、#xxx 捲到大廳區塊、一般網址直接開
+  el.innerHTML = data.map((n, i) => {
+    const d = new Date(n.published_at), link = n.link ?? '', slug = link.startsWith('game:') ? link.slice(5) : '';
+    const g = slug && (games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug));
+    const go = slug ? (g ? (upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放 →` : '進入密室 →') : '') : link.startsWith('#') ? '前往查看 →' : link ? '前往 →' : '';
     const inner = `
       <div class="news-date"><b>${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}</b><span>${d.getFullYear()}</span></div>
-      <div><h3>${escapeHTML(n.title)}</h3>${n.summary ? `<p>${escapeHTML(n.summary)}</p>` : ''}</div>`;
-    return /^https?:\/\//.test(n.link ?? '') || (n.link ?? '').startsWith('#')
-      ? `<a class="news-item" href="${escapeHTML(n.link)}">${inner}</a>`
-      : `<div class="news-item">${inner}</div>`;
-  }).join('');
+      <div>${n.tag ? `<span class="news-tag t-${escapeHTML(n.tag)}">${escapeHTML(n.tag)}</span>` : ''}<h3>${escapeHTML(n.title)}</h3>${n.summary ? `<p>${escapeHTML(n.summary)}</p>` : ''}${go ? `<span class="news-go">${go}</span>` : ''}</div>
+      ${n.cover_url ? `<div class="news-thumb"><img src="${escapeHTML(n.cover_url)}" alt="" loading="lazy"></div>` : '<span></span>'}`;
+    const hide = i >= SHOW ? ' hidden' : '';
+    if (g) return `<button class="news-item" type="button" data-slug="${escapeHTML(slug)}"${hide}>${inner}</button>`;
+    if (/^https?:\/\//.test(link) || link.startsWith('#')) return `<a class="news-item" href="${escapeHTML(link)}"${hide}>${inner}</a>`;
+    return `<div class="news-item"${hide}>${inner}</div>`;
+  }).join('') + (data.length > SHOW ? `<p class="news-more"><button class="btn ghost" type="button" id="news-more">顯示更早的消息（${data.length - SHOW}）</button></p>` : '');
+  $('#news-more')?.addEventListener('click', (e) => { el.querySelectorAll('.news-item[hidden]').forEach(x => x.hidden = false); e.target.closest('.news-more').remove(); });
 }
+$('#news-list').addEventListener('click', (e) => { const b = e.target.closest('button.news-item'); if (b) openGame(b.dataset.slug); });
 
 // ================= 登入 / 註冊 =================
 let authMode = 'login';
@@ -2192,8 +2255,24 @@ function renderMonthly() {
     if (!top.includes(g)) top.push(g);
   }
   $('#monthly-list').innerHTML = top.length
-    ? top.map((g, i) => roomCard(g, i + 1, byId[g.id] ? `🔥 本月 ${byId[g.id].players} 人挑戰` : '✨ 本月等你來挑戰')).join('')
+    ? top.map((g, i) => pickCard(g, i + 1, byId[g.id] ? `🔥 本月 ${byId[g.id].players} 人挑戰` : '✨ 本月等你來挑戰')).join('')
     : '<p class="empty">密室正在佈置中，敬請期待。</p>';
+}
+function pickCard(g, rank, note) {
+  const m = mine[g.id];
+  const cta = !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  return `
+    <button class="pick p${rank}" data-slug="${escapeHTML(g.slug)}" type="button" aria-label="本月第 ${rank} 名：${escapeHTML(g.title)}">
+      <div class="pick-cover">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g))}<span class="pick-rank">${rank}</span></div>
+      <div class="pick-body">
+        <span class="pick-kicker">${note}</span>
+        <h4>${escapeHTML(g.title)}</h4>
+        ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
+        <p class="desc">${escapeHTML(g.description ?? '')}</p>
+        <div class="pick-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span></div>
+        <span class="pick-cta">${m?.best != null ? `已逃脫 ${fmtTime(m.best)}・` : ''}${cta}</span>
+      </div>
+    </button>`;
 }
 
 // 已下架遊戲
@@ -2352,7 +2431,7 @@ function initFx() {
 
 // ================= 啟動 =================
 $('#year').textContent = new Date().getFullYear();
-await Promise.all([loadAuth(), loadGames(), loadStats(), loadNews(), loadMistTop().catch(() => {})]);
+await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMistTop().catch(() => {})]); // 消息要等密室資料，才知道哪些可以點
 reshuffle();
 renderAll();
 initFx();
