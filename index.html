@@ -1375,7 +1375,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
               <input id="email" type="email" autocomplete="email" required>
             </div>
             <div class="field">
-              <label for="password">密碼（至少 6 個字元）</label>
+              <label for="password" id="password-label">密碼</label>
               <input id="password" type="password" autocomplete="current-password" minlength="6" required>
             </div>
             <p class="form-msg" id="auth-msg" aria-live="polite"></p>
@@ -2116,17 +2116,27 @@ function setAuthMode(m) {
   $('#auth-lead').textContent = m === 'login' ? '登入後繼續你的逃脫。' : '免費註冊，接著建立你的角色就能進入密室。';
   $('#auth-submit').textContent = m === 'login' ? '登入' : '註冊';
   $('#password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
+  $('#password-label').textContent = m === 'login' ? '密碼' : '密碼（至少 6 個字元，要同時有大寫英文、小寫英文和數字）';
   authMsg('');
 }
 $('#tab-login').onclick = () => { location.hash = 'login'; };
 $('#tab-signup').onclick = () => { location.hash = 'signup'; };
 
+const PW_RULE = '密碼至少要 6 個字元，而且要同時有大寫英文、小寫英文和數字（例如 Room2024）。';
+const pwProblem = (p) => p.length < 6 || !/[a-z]/.test(p) || !/[A-Z]/.test(p) || !/[0-9]/.test(p);
+
 const authError = (e) => {
   const m = e.message || '';
+  const wait = m.match(/after (\d+) seconds?/);
+  if (wait) return `操作太頻繁了，請等 ${wait[1]} 秒後再試一次。`;
+  if (e.code === 'over_email_send_rate_limit' || m.includes('email rate limit')) return '現在註冊的人比較多，驗證信暫時寄不出去。請過一段時間（最多約一小時）再試一次，不用一直重按。';
+  if (e.code === 'over_request_rate_limit' || e.status === 429) return '操作太頻繁了，請稍等幾分鐘再試一次。';
   if (m.includes('Invalid login credentials')) return '電子郵件或密碼不正確。';
   if (m.includes('Email not confirmed')) return '這個帳號還沒完成信箱驗證，請先到信箱點擊驗證連結。';
   if (m.includes('already registered')) return '這個電子郵件已經註冊過了，請直接登入。';
-  if (m.includes('Password')) return '密碼至少需要 6 個字元。';
+  if (m.includes('Signups not allowed')) return '目前暫停開放註冊，請稍後再來。';
+  if (e.code === 'weak_password' || m.includes('Password')) return PW_RULE;
+  if (m.includes('email') && m.includes('invalid')) return '電子郵件格式不正確，請再檢查一次。';
   return m;
 };
 
@@ -2135,6 +2145,7 @@ $('#auth-form').addEventListener('submit', async (e) => {
   const email = $('#email').value.trim();
   const password = $('#password').value;
   if (!email || password.length < 6) return authMsg('請輸入電子郵件，以及至少 6 個字元的密碼。');
+  if (authMode === 'signup' && pwProblem(password)) return authMsg(PW_RULE);
 
   $('#auth-submit').disabled = true;
   authMsg('處理中…', 'ok');
@@ -2178,17 +2189,41 @@ $('#options').addEventListener('click', (e) => {
 $('#random').onclick = () => { appearance = randomAppearance(); updateCharacter(); };
 $('#username').addEventListener('input', updateCharacter);
 $('#pick-avatar').onclick = () => $('#avatar-file').click();
-$('#avatar-file').onchange = (e) => {
-  const file = e.target.files[0];
+// 上傳前裁成正方形並縮到 256×256，每張只剩幾十 KB，省下儲存空間與流量
+const AVATAR_PX = 256;
+async function shrinkAvatar(file) {
+  const img = await createImageBitmap(file);
+  const side = Math.min(img.width, img.height);
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = Math.min(AVATAR_PX, side);
+  cv.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, cv.width, cv.height);
+  img.close?.();
+  let blob = await new Promise(ok => cv.toBlob(ok, 'image/webp', 0.85));
+  if (!blob || blob.type !== 'image/webp') blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85));
+  return blob;
+}
+$('#avatar-file').onchange = async (e) => {
+  const raw = e.target.files[0];
   e.target.value = '';
-  if (!file) return;
-  if (file.size > 2 * 1024 * 1024) return toast('圖片超過 2MB，請換一張小一點的。', 'error');
+  if (!raw) return;
+  if (raw.size > 20 * 1024 * 1024) return toast('圖片超過 20MB，請換一張小一點的。', 'error');
+  let file;
+  try { file = await shrinkAvatar(raw); } catch { return toast('這張圖片讀不出來，請換一張 JPG 或 PNG。', 'error'); }
   pendingFile = file;
   if (pendingPreview) URL.revokeObjectURL(pendingPreview);
   pendingPreview = URL.createObjectURL(file);
   updateCharacter();
 };
 $('#clear-avatar').onclick = () => { pendingFile = null; pendingPreview = null; avatarUrl = null; updateCharacter(); };
+
+// 換頭像後刪掉自己資料夾裡的舊檔（失敗也沒關係，不影響儲存）
+async function cleanOldAvatars(keepUrl) {
+  try {
+    const { data } = await supabase.storage.from('avatars').list(user.id);
+    const old = (data || []).map(f => `${user.id}/${f.name}`).filter(p => !keepUrl?.endsWith(p));
+    if (old.length) await supabase.storage.from('avatars').remove(old);
+  } catch {}
+}
 
 function openCharacter() {
   appearance = { ...DEFAULT_APPEARANCE, ...(profile?.appearance ?? {}) };
@@ -2220,7 +2255,7 @@ $('#save').onclick = async () => {
   try {
     let finalUrl = avatarUrl;
     if (pendingFile) {
-      const ext = pendingFile.name.split('.').pop().toLowerCase();
+      const ext = pendingFile.type === 'image/webp' ? 'webp' : 'jpg';
       const path = `${user.id}/avatar-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type });
       if (upErr) throw upErr;
@@ -2231,6 +2266,7 @@ $('#save').onclick = async () => {
       if (error.code === '23505') throw new Error('這個角色名稱已經有人用了，換一個吧。');
       throw error;
     }
+    if (pendingFile || (!finalUrl && profile?.avatar_url)) cleanOldAvatars(finalUrl);
     await loadAuth();
     renderAll();
     toast('角色已儲存，挑一間密室吧！');
