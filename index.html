@@ -744,6 +744,69 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   .retired-sec .rooms { grid-template-columns: 1fr; }
   .room.retired .room-cover::after { font-size: 13px; letter-spacing: .1em; padding: 2px 4px 2px 8px; border-width: 2px; }
 }
+/* ===== 我的進度：繼續你的故事 ===== */
+.prog-sec { padding-top: 56px; padding-bottom: 56px; background: radial-gradient(70% 90% at 80% 0%, rgba(75,63,143,.22), transparent 70%), var(--ink); }
+.prog-top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 28px; margin-bottom: 26px; }
+.prog-me { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.prog-me .avatar-img, .prog-me .avatar-svg { width: 56px; height: 56px; flex: none; }
+.prog-me h2 { font-size: clamp(22px, 3vw, 28px); }
+.prog-title { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 2px 12px; border-radius: 999px; font: 700 13px var(--serif); letter-spacing: .12em; color: #12142A; background: linear-gradient(180deg, #F6E7BE, var(--gold)); }
+.prog-next { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+.prog-next i { display: block; height: 4px; margin-top: 6px; max-width: 240px; border-radius: 4px; background: var(--ink-2); overflow: hidden; }
+.prog-next i b { display: block; height: 100%; background: linear-gradient(90deg, #8B7CE6, var(--gold)); }
+.passport { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.stamp { position: relative; width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; text-align: center; font: 700 11px/1.15 var(--serif); letter-spacing: 0;
+  color: rgba(232,212,160,.28); border: 2px dashed rgba(232,212,160,.22); padding: 3px; }
+.stamp.got { color: #E9B7A2; border: 3px double #C4664A; transform: rotate(-12deg); background: radial-gradient(circle, rgba(196,102,74,.16), rgba(196,102,74,.04)); text-shadow: 0 0 1px #C4664A; }
+.stamp.got:nth-child(2n) { transform: rotate(9deg); } .stamp.got:nth-child(3n) { transform: rotate(-4deg); }
+.stamp small { position: absolute; bottom: -6px; left: 50%; translate: -50% 0; font: 700 10px var(--sans); color: var(--gold); background: var(--ink); padding: 0 4px; border-radius: 4px; white-space: nowrap; }
+.passport .btn { padding: 8px 16px; font-size: 13px; }
+.prog-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+.prog-card { display: grid; grid-template-columns: 92px 1fr; gap: 14px; padding: 14px; border-radius: 14px; background: var(--wall); border: 1px solid var(--line); }
+.prog-card img { width: 92px; height: 122px; object-fit: cover; border-radius: 8px; }
+.prog-card h4 { font: 700 16px var(--serif); margin: 0 0 4px; letter-spacing: .04em; }
+.prog-st { font-size: 13px; color: var(--muted); margin: 0; }
+.prog-st b { color: var(--moss); font-weight: 700; }
+.prog-st b.mid { color: #FFD9A0; }
+.prog-bar { height: 5px; border-radius: 5px; background: var(--ink-2); margin: 10px 0 4px; overflow: hidden; }
+.prog-bar i { display: block; height: 100%; background: linear-gradient(90deg, #8B7CE6, var(--gold)); }
+.prog-meta { font-size: 12px; color: var(--muted); }
+.prog-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.prog-acts .btn { padding: 7px 14px; font-size: 13px; }
+.prog-empty { text-align: center; color: var(--muted); padding: 18px; border: 1px dashed var(--line); border-radius: 14px; }
+.prog-empty button { background: none; border: 0; padding: 0; font: inherit; color: var(--gold); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.my-list .share-btn { margin-left: 8px; background: none; border: 1px solid var(--line); border-radius: 999px; color: var(--gold); font-size: 12px; padding: 2px 10px; cursor: pointer; }
+/* 新成就通知 */
+.ach-pop { position: fixed; left: 50%; bottom: 24px; z-index: 60; width: min(380px, calc(100% - 32px)); translate: -50% 0; padding: 16px 18px; border-radius: 16px;
+  background: rgba(20,24,41,.97); border: 1px solid rgba(232,212,160,.5); box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(232,212,160,.15); animation: achIn .5s cubic-bezier(.2,1.4,.4,1); }
+@keyframes achIn { from { opacity: 0; transform: translateY(30px) scale(.95); } }
+.ach-pop h4 { margin: 0 0 10px; font: 700 16px var(--serif); color: var(--gold); letter-spacing: .1em; }
+.ach-pop ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.ach-pop li { display: flex; gap: 10px; align-items: center; font-size: 14px; }
+.ach-pop li i { font-style: normal; font-size: 22px; width: 32px; text-align: center; }
+.ach-pop li small { display: block; color: var(--muted); font-size: 12px; }
+.ach-pop .up { margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--line); font-size: 14px; color: var(--gold); }
+.ach-pop .row { display: flex; gap: 8px; margin-top: 12px; }
+.ach-pop .row .btn { flex: 1; padding: 8px 12px; font-size: 13px; }
+/* 開放倒數 */
+.hero-next { display: flex; width: fit-content; max-width: 100%; margin-left: auto; margin-right: auto; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; padding: 8px 16px; border-radius: 12px; background: rgba(8,10,20,.55); border: 1px solid rgba(232,212,160,.3); color: var(--parchment); font-size: 14px; text-decoration: none; cursor: pointer; font-family: inherit; }
+.hero-next b { font-family: var(--serif); color: var(--gold); }
+.hero-next[hidden] { display: none; }
+.cd { font-variant-numeric: tabular-nums; font-weight: 700; color: #FFD9A0; letter-spacing: .03em; }
+/* 分享圖 */
+#share-dlg { max-width: 420px; width: calc(100% - 32px); max-height: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 20px; }
+#share-dlg::backdrop { background: rgba(4,6,14,.75); }
+#share-dlg h3 { font: 700 18px var(--serif); margin: 0 0 12px; color: var(--gold); }
+#share-dlg img { display: block; width: 100%; border-radius: 10px; background: var(--ink-2); aspect-ratio: 4 / 5; object-fit: contain; }
+#share-dlg .row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+#share-dlg .row .btn { padding: 9px 10px; font-size: 14px; }
+#share-dlg .row .wide { grid-column: 1 / -1; }
+#share-dlg .muted { font-size: 12px; margin: 10px 0 0; text-align: center; }
+@media (max-width: 760px) {
+  .prog-top { flex-direction: column; align-items: flex-start; }
+  .prog-list { grid-template-columns: 1fr; }
+  .stamp { width: 56px; height: 56px; font-size: 10px; }
+}
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; }
   .shooting, .spark { display: none; }
@@ -767,7 +830,8 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="hero-actions" id="hero-actions">
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
-      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em>10/20 開放 →</em></span></a>
+      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-20" data-cd-short>10/20 開放</time> →</em></span></a>
+      <button class="hero-next" id="hero-next" type="button" hidden></button>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <span class="hero-hint" aria-hidden="true">✦ 點一下夜空、戳戳月亮，或接住一顆流星 ✦</span>
     </div>
@@ -802,6 +866,11 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   </section>
 
   <main>
+    <!-- 我的進度：登入後才顯示 -->
+    <section class="section prog-sec" id="progress" hidden>
+      <div class="container" id="prog-box"></div>
+    </section>
+
     <!-- 大型開放 RPG 網頁遊戲：不是密室，不計時、不分難度 -->
     <section class="section rpg-sec" id="rpg">
       <div class="container">
@@ -1137,6 +1206,17 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     <ol id="install-steps"></ol>
     <form method="dialog"><button class="btn btn-gold" style="width:100%">知道了</button></form>
   </dialog>
+  <dialog id="share-dlg" aria-labelledby="share-title">
+    <h3 id="share-title">分享你的紀錄</h3>
+    <img id="share-img" alt="分享圖預覽">
+    <div class="row">
+      <button class="btn btn-gold wide" id="share-go" type="button" hidden>📤 分享</button>
+      <a class="btn btn-ghost" id="share-dl" download="夜語工作室.png">⬇ 下載圖片</a>
+      <button class="btn btn-ghost" id="share-copy" type="button">🔗 複製文字</button>
+    </div>
+    <p class="muted">手機也可以長按圖片儲存</p>
+    <form method="dialog"><button class="btn btn-ghost" style="width:100%;margin-top:12px">關閉</button></form>
+  </dialog>
 
   </div>
 
@@ -1428,6 +1508,8 @@ const CONTACT = 'iho87061@gmail.com';
 let allGames = [], retiredGames = [];
 // 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
 let mine = {}, myRecs = [], achCodes = new Set();
+// 有雲端存檔的遊戲：{ slug: 最後存檔時間 }（遊戲玩到一半的依據）
+let saves = {};
 const isPlayer = () => !!(user && profile);
 
 function fmtTime(s) {
@@ -1441,6 +1523,7 @@ async function loadAuth() {
   profile = null;
   mine = {};
   mist = null;
+  saves = {};
   if (user) {
     const { data: p, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) console.error(error);
@@ -1451,6 +1534,8 @@ async function loadAuth() {
     // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
     const { data: ms } = await supabase.from('game_saves').select('level,station,updated_at,visited:data->visited,items:data->items,name:data->name').eq('user_id', user.id).eq('game', 'mist').maybeSingle();
     mist = ms ? { level: ms.level || 1, station: ms.station, at: ms.updated_at, stations: Object.keys(ms.visited || {}).length, treasures: Object.keys(ms.items || {}).length, name: ms.name } : null;
+    const { data: sv } = await supabase.from('game_saves').select('game,updated_at').eq('user_id', user.id);
+    for (const r of sv ?? []) saves[r.game] = r.updated_at;
     const { data: ach } = await supabase.from('user_achievements').select('code').eq('user_id', user.id);
     achCodes = new Set((ach ?? []).map(a => a.code));
     for (const r of recs ?? []) {
@@ -1629,11 +1714,12 @@ function roomCard(g, rank = 0, note = '') {
   const open = isOpen(g);
   const m = mine[g.id], st = stats[g.id];
   const badge = m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
+    : saves[g.slug] ? '<span class="badge played">▶ 玩到一半</span>'
     : m ? '<span class="badge played">玩過</span>'
-    : upcoming(g) ? `<span class="badge soon">${fmtDate(g.release_date).slice(5)} 上線</span>`
+    : upcoming(g) ? `<span class="badge soon">⏳ ${cdSpan(g.release_date)}</span>`
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-  const cta = upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const cta = upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   const challenge = note ? `<p class="challengers">${note}</p>` : st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
     <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
@@ -1784,7 +1870,7 @@ function renderRpgs() {
         <p class="sub">${escapeHTML(g.subtitle)}</p>
         <p class="desc">${escapeHTML(g.description)}</p>
         <ul class="rpg-feats">${g.feats.map(f => `<li>${escapeHTML(f)}</li>`).join('')}</ul>
-        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
+        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(g.release_date)}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
       </div>
     </button>`;
   }).join('') + mistBoard();
@@ -2252,11 +2338,201 @@ function renderMine() {
     ${played.length ? `<ul class="my-list">${played.map(g => {
       const m = mine[g.id];
       return `<li><span>${escapeHTML(g.title)}<small>挑戰 ${m.plays} 次・通關 ${m.clears} 次${ENDING_COUNT[g.slug] ? `・結局 ${m.endings.size} / ${ENDING_COUNT[g.slug]}` : ''}</small>${m.bestRec ? `<small>最佳那次：${runMeta(m.bestRec)}</small>` : ''}</span>
-        <b class="${m.best != null ? 'ok' : ''}">${m.best != null ? '最佳 ' + fmtTime(m.best) : '尚未逃脫'}</b></li>`;
+        <b class="${m.best != null ? 'ok' : ''}">${m.best != null ? '最佳 ' + fmtTime(m.best) : '尚未逃脫'}${m.best != null ? `<button class="share-btn" type="button" data-share="${escapeHTML(g.slug)}">分享</button>` : ''}</b></li>`;
     }).join('')}</ul>` : '<p class="muted">還沒有遊玩紀錄。挑一間密室，今晚就開始吧。</p>'}
     ${mist ? `<div class="my-mist"><h4>🚇 迷霧・我的旅程</h4><div class="my-stats four"><div><b>${mist.level}</b><span>等級</span></div><div><b>${mist.stations}</b><span>去過車站</span></div><div><b>${mist.treasures}</b><span>寶物 / 6</span></div><div><b class="mist-at">${escapeHTML(mist.station || '-')}</b><span>目前所在</span></div></div></div>` : ''}
     <div class="ach-box">${renderAch()}</div>`;
 }
+
+// ================= 稱號（依成就數量升級） =================
+const TITLES = [[0, '初來的夜訪者'], [3, '推門的人'], [8, '見習解謎者'], [15, '密室常客'], [25, '夜語偵探'], [40, '午夜說書人'], [60, '不眠的守夜人'], [85, '夜語傳說']];
+function achGot() { const c = achContext(); return ACH.filter(a => achCodes.has(a.code) || (a.test && a.test(c))); }
+function titleOf(n) {
+  let i = 0; while (i + 1 < TITLES.length && n >= TITLES[i + 1][0]) i++;
+  return { name: TITLES[i][1], next: TITLES[i + 1] ?? null, from: TITLES[i][0] };
+}
+// 每款密室在護照上的章：只取短名字
+const stampName = (g) => g.title.replace(/[「」]/g, '').replace(/^千嬋高級中學：/, '千嬋・').replace('第一章', '一').replace('第二章', '二');
+
+// ================= 我的進度：繼續你的故事 =================
+function progressOf(g, got) {
+  const m = mine[g.id], save = saves[g.slug], list = ACH.filter(a => a.game === g.slug), k = list.filter(a => got.has(a.code)).length;
+  const ends = ENDING_COUNT[g.slug], e = m?.endings.size ?? 0;
+  const last = [save, m?.last].filter(Boolean).sort().pop();
+  let st, act;
+  if (m?.best != null) {
+    st = `<b>✓ 已逃脫</b>・最佳 ${fmtTime(m.best)}`;
+    act = ends && e < ends ? `收集其他結局（${e}/${ends}）→` : '再挑戰一次 →';
+  } else if (save) { st = '<b class="mid">▶ 玩到一半</b>'; act = '繼續玩 →'; }
+  else { st = `挑戰過 ${m.plays} 次，還沒逃出來`; act = '再推一次門 →'; }
+  return { g, m, k, n: list.length, ends, e, last, st, act };
+}
+function renderProgress() {
+  const sec = $('#progress'), box = $('#prog-box');
+  sec.hidden = !isPlayer();
+  if (!isPlayer()) return;
+  const gotList = achGot(), got = new Set(gotList.map(a => a.code)), t = titleOf(gotList.length);
+  const open = allGames.filter(g => isOpen(g) || mine[g.id] || saves[g.slug]).filter(g => !RETIRED.includes(g.slug) || mine[g.id]);
+  const rows = open.filter(g => mine[g.id] || saves[g.slug]).map(g => progressOf(g, got)).sort((a, b) => String(b.last).localeCompare(String(a.last)));
+  const stamps = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug)).map(g => {
+    const m = mine[g.id], ok = m?.best != null, ends = ENDING_COUNT[g.slug];
+    return `<span class="stamp ${ok ? 'got' : ''}" title="${escapeHTML(g.title)}${ok ? '：已逃脫' : '：尚未逃脫'}">${escapeHTML(stampName(g))}${ok && ends ? `<small>${m.endings.size}/${ends}</small>` : ''}</span>`;
+  }).join('');
+  const nextTxt = t.next ? `<p class="prog-next">再解鎖 ${t.next[0] - gotList.length} 個成就 → 「${t.next[1]}」<i><b style="width:${(gotList.length - t.from) / (t.next[0] - t.from) * 100}%"></b></i></p>` : '<p class="prog-next">你已經是夜語工作室的傳說了。</p>';
+  const mistCard = mist ? `<div class="prog-card"><img src="covers/mist.jpg" alt="" loading="lazy"><div><h4>迷霧</h4>
+      <p class="prog-st"><b class="mid">🚇 旅程中</b>・Lv ${mist.level}${mist.station ? `・在${escapeHTML(mist.station)}` : ''}</p>
+      <div class="prog-bar"><i style="width:${Math.min(100, mist.stations / 118 * 100)}%"></i></div><span class="prog-meta">去過 ${mist.stations} / 118 站・寶物 ${mist.treasures} / 6</span>
+      <div class="prog-acts"><button class="btn btn-gold" type="button" data-go="mist">繼續旅程 →</button></div></div></div>` : '';
+  const pick = games.filter(g => isOpen(g) && !mine[g.id] && !saves[g.slug]);
+  const sug = pick[Math.random() * pick.length | 0];
+  box.innerHTML = `
+    <div class="prog-top">
+      <div class="prog-me">${avatarHTML(profile, 56)}<div><span class="eyebrow">CONTINUE</span><h2>${escapeHTML(profile.username)}，繼續你的故事</h2>
+        <span class="prog-title">✦ ${t.name}</span>${nextTxt}</div></div>
+      <div class="passport" aria-label="密室護照">${stamps}<button class="btn btn-ghost" type="button" data-share="__passport">分享我的護照</button></div>
+    </div>
+    ${rows.length || mist ? `<div class="prog-list">${rows.map(r => `<div class="prog-card">
+      ${r.g.cover_url ? `<img src="${escapeHTML(r.g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
+      <div><h4>${escapeHTML(r.g.title)}</h4><p class="prog-st">${r.st}</p>
+        <div class="prog-bar"><i style="width:${r.n ? r.k / r.n * 100 : 0}%"></i></div>
+        <span class="prog-meta">成就 ${r.k} / ${r.n}${r.ends ? `・結局 ${r.e} / ${r.ends}` : ''}</span>
+        <div class="prog-acts">${isOpen(r.g) ? `<button class="btn btn-gold" type="button" data-go="${escapeHTML(r.g.slug)}">${r.act}</button>` : ''}
+          ${r.m?.best != null ? `<button class="btn btn-ghost" type="button" data-share="${escapeHTML(r.g.slug)}">分享 ↗</button>` : ''}</div></div></div>`).join('')}${mistCard}</div>`
+    : `<p class="prog-empty">還沒開始任何故事。${sug ? `今晚，走進 <button type="button" data-go="${escapeHTML(sug.slug)}">《${escapeHTML(sug.title)}》</button> 吧。` : ''}</p>`}`;
+}
+document.addEventListener('click', (e) => {
+  const go = e.target.closest('[data-go]'); if (go) return openGame(go.dataset.go);
+  const sh = e.target.closest('[data-share]'); if (sh) { e.stopPropagation(); openShare(sh.dataset.share); }
+});
+
+// ================= 新成就通知：回到大廳時，告訴玩家這次解鎖了什麼 =================
+function checkNewAch() {
+  if (!isPlayer()) return;
+  const KEY = 'yeyu_ach_seen:' + user.id, got = achGot();
+  let seen = null; try { seen = JSON.parse(localStorage.getItem(KEY)); } catch (_) {}
+  try { localStorage.setItem(KEY, JSON.stringify(got.map(a => a.code))); } catch (_) {}
+  if (!Array.isArray(seen)) return;   // 這台裝置第一次看：先記下來，不一次跳出一大堆
+  const fresh = got.filter(a => !seen.includes(a.code));
+  if (!fresh.length) return;
+  const before = titleOf(got.length - fresh.length).name, now = titleOf(got.length).name;
+  const el = document.createElement('div'); el.className = 'ach-pop'; el.setAttribute('role', 'status');
+  el.innerHTML = `<h4>🏆 解鎖新成就${fresh.length > 1 ? ` ×${fresh.length}` : ''}</h4>
+    <ul>${fresh.slice(0, 3).map(a => `<li><i>${a.icon}</i><span>${escapeHTML(a.title)}<small>${escapeHTML(a.desc)}</small></span></li>`).join('')}</ul>
+    ${fresh.length > 3 ? `<p class="muted" style="margin:8px 0 0;font-size:13px">還有 ${fresh.length - 3} 個…</p>` : ''}
+    ${before !== now ? `<p class="up">✦ 稱號升級：「${before}」→「${now}」</p>` : ''}
+    <div class="row"><a class="btn btn-gold" href="#progress">查看進度</a><button class="btn btn-ghost" type="button">知道了</button></div>`;
+  el.addEventListener('click', (e) => { if (e.target.closest('a, button')) el.remove(); });
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 12000);
+}
+
+// ================= 開放倒數 =================
+// 上線日期當天 00:00（台灣時間）開放
+const openAt = (d) => new Date(d.slice(0, 10) + 'T00:00:00+08:00').getTime();
+function cdText(d, short) {
+  const ms = openAt(d) - Date.now(); if (ms <= 0) return '已開放';
+  const s = ms / 1000 | 0, day = s / 86400 | 0, p = (n) => String(n).padStart(2, '0');
+  const hms = `${p(s % 86400 / 3600 | 0)}:${p(s % 3600 / 60 | 0)}:${p(s % 60)}`;
+  if (short) return day ? `還有 ${day} 天` : `${hms} 後開放`;
+  return day ? `${day} 天 ${hms}` : hms;
+}
+const cdSpan = (d) => `<span class="cd" data-cd="${escapeHTML(d.slice(0, 10))}">${cdText(d)}</span>`;
+function renderHeroNext() {
+  const el = $('#hero-next');
+  const g = games.filter(upcoming).sort((a, b) => a.release_date.localeCompare(b.release_date))[0];
+  el.hidden = !g; if (!g) return;
+  el.dataset.slug = g.slug;
+  el.innerHTML = `<span>⏳ 下一扇門《<b>${escapeHTML(g.title)}</b>》開放倒數</span>${cdSpan(g.release_date)}`;
+}
+$('#hero-next').addEventListener('click', (e) => {
+  const card = document.querySelector(`.room[data-slug="${e.currentTarget.dataset.slug}"]`);
+  if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); else location.hash = 'rooms';
+});
+let cdDay = today();
+function tickCountdown() {
+  document.querySelectorAll('[data-cd]').forEach(el => { el.textContent = cdText(el.dataset.cd, el.hasAttribute('data-cd-short')); });
+  if (today() !== cdDay) { cdDay = today(); reshuffle(); renderAll(); }   // 過了午夜：剛開放的遊戲直接變成可以玩
+}
+setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
+
+// ================= 分享圖 =================
+const LOBBY_URL = 'https://hao-yuliu.github.io/escape-room/';
+const loadImg = (src) => new Promise((ok) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+function cover(ctx, img, x, y, w, h) {
+  const r = Math.max(w / img.width, h / img.height), sw = w / r, sh = h / r;
+  ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
+}
+async function drawShare(kind) {
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), SERIF = '"Noto Serif TC", "Songti TC", serif', SANS = '"Noto Sans TC", "PingFang TC", sans-serif';
+  try { await Promise.all([document.fonts.load(`900 80px "Noto Serif TC"`, '夜語'), document.fonts.load(`500 30px "Noto Sans TC"`, '夜語')]); } catch (_) {}
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#141831'); bg.addColorStop(1, '#06070F'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  const got = achGot(), t = titleOf(got.length), gold = '#E8D4A0';
+  const center = (txt, y, font, color = gold) => { x.font = font; x.fillStyle = color; x.textAlign = 'center'; x.fillText(txt, W / 2, y); };
+  const stat = (items, y) => items.forEach(([v, k], i) => {
+    const cx = W / (items.length * 2) * (i * 2 + 1);
+    x.textAlign = 'center'; x.fillStyle = gold; x.font = `900 64px ${SERIF}`; x.fillText(v, cx, y);
+    x.fillStyle = '#9D9CB8'; x.font = `500 28px ${SANS}`; x.fillText(k, cx, y + 48);
+  });
+  let text;
+  if (kind === '__passport') {
+    const logo = await loadImg('icons/icon-512.png');
+    if (logo) { x.globalAlpha = .55; cover(x, logo, 0, 0, W, 640); x.globalAlpha = 1; }
+    const f = x.createLinearGradient(0, 300, 0, 642); f.addColorStop(0, 'rgba(11,13,29,0)'); f.addColorStop(1, '#0F1226'); x.fillStyle = f; x.fillRect(0, 300, W, 342);
+    center('我的夜語護照', 470, `900 92px ${SERIF}`);
+    center(`${profile.username}・${t.name}`, 550, `700 40px ${SERIF}`, '#ECEAF5');
+    const list = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug)), per = Math.min(list.length, 4), R = 86, rows = Math.ceil(list.length / per);
+    list.forEach((g, i) => {
+      const row = i / per | 0, col = i % per, n = Math.min(per, list.length - row * per);
+      const cx = W / 2 + (col - (n - 1) / 2) * 230, cy = 720 + row * 210 + (rows === 1 ? 60 : 0), ok = mine[g.id]?.best != null;
+      x.save(); x.translate(cx, cy); x.rotate(ok ? (i % 2 ? .16 : -.2) : 0);
+      x.strokeStyle = ok ? '#C4664A' : 'rgba(232,212,160,.25)'; x.lineWidth = ok ? 7 : 3; x.setLineDash(ok ? [] : [10, 8]);
+      x.beginPath(); x.arc(0, 0, R, 0, 7); x.stroke(); if (ok) { x.lineWidth = 2; x.beginPath(); x.arc(0, 0, R - 12, 0, 7); x.stroke(); }
+      x.fillStyle = ok ? '#E9B7A2' : 'rgba(232,212,160,.3)'; x.textAlign = 'center'; x.font = `700 30px ${SERIF}`;
+      const nm = stampName(g), lines = nm.length > 4 ? [nm.slice(0, Math.ceil(nm.length / 2)), nm.slice(Math.ceil(nm.length / 2))] : [nm];
+      lines.forEach((l, j) => x.fillText(l, 0, 10 + (j - (lines.length - 1) / 2) * 36));
+      x.restore();
+    });
+    const cleared = list.filter(g => mine[g.id]?.best != null).length;
+    stat([[`${cleared}/${list.length}`, '逃出的密室'], [`${got.length}`, '解鎖成就'], [`${Object.values(mine).reduce((n, m) => n + m.endings.size, 0)}`, '收集結局']], 1090);
+    text = `我在夜語工作室已經逃出 ${cleared} 間密室，稱號「${t.name}」。你敢來挑戰嗎？ ${LOBBY_URL}`;
+  } else {
+    const g = allGames.find(z => z.slug === kind), m = mine[g.id];
+    const img = g.cover_url ? await loadImg(g.cover_url) : null;
+    if (img) cover(x, img, 0, 0, W, 720);
+    const f = x.createLinearGradient(0, 540, 0, 722); f.addColorStop(0, 'rgba(11,13,29,0)'); f.addColorStop(1, '#0F1226'); x.fillStyle = f; x.fillRect(0, 540, W, 182);
+    center('我逃出來了', 800, `700 44px ${SERIF}`, '#FFD9A0');
+    let fs = 96; x.font = `900 ${fs}px ${SERIF}`; while (x.measureText(`《${g.title}》`).width > W - 100 && fs > 48) x.font = `900 ${fs -= 6}px ${SERIF}`;
+    center(`《${g.title}》`, 910, x.font);
+    const ends = ENDING_COUNT[g.slug], list = ACH.filter(a => a.game === g.slug), k = list.filter(a => got.some(b => b.code === a.code)).length;
+    stat([[fmtTime(m.best), '最佳通關時間'], ends ? [`${m.endings.size}/${ends}`, '收集結局'] : [`${m.plays}`, '挑戰次數'], [`${k}/${list.length}`, '成就']], 1040);
+    center(`${profile.username}・${t.name}`, 1180, `700 38px ${SERIF}`, '#ECEAF5');
+    text = `我在夜語工作室逃出了《${g.title}》，最佳 ${fmtTime(m.best)}！你敢來挑戰嗎？ ${LOBBY_URL}`;
+  }
+  x.fillStyle = 'rgba(232,212,160,.35)'; x.fillRect(W / 2 - 160, 1238, 320, 2);
+  center('夜 語 工 作 室 ・ 線 上 密 室', 1290, `700 32px ${SERIF}`);
+  center(LOBBY_URL.replace('https://', ''), 1330, `500 24px ${SANS}`, '#9D9CB8');
+  return { blob: await new Promise(ok => cv.toBlob(ok, 'image/png')), text };
+}
+let shareData = null;
+async function openShare(kind) {
+  if (!isPlayer()) return;
+  const dlg = $('#share-dlg'), img = $('#share-img');
+  img.removeAttribute('src'); $('#share-go').hidden = true; dlg.showModal();
+  try {
+    const { blob, text } = await drawShare(kind);
+    const file = new File([blob], '夜語工作室.png', { type: 'image/png' }), url = URL.createObjectURL(blob);
+    shareData = { file, text };
+    img.src = url; $('#share-dl').href = url;
+    $('#share-go').hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
+  } catch (e) { console.error(e); dlg.close(); toast('分享圖做不出來，請稍後再試。'); }
+}
+$('#share-go').addEventListener('click', async () => {
+  try { await navigator.share({ files: [shareData.file], text: shareData.text }); } catch (_) {}
+});
+$('#share-copy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(shareData.text); toast('已複製，貼到 IG、LINE 都可以 ✨', 'ok'); } catch (_) { toast(shareData.text); }
+});
 
 function renderNewest() {
   const g = newestGame();
@@ -2394,6 +2670,9 @@ function renderAll() {
   renderRetired();
   renderMine();
   renderRanking();
+  renderProgress();
+  renderHeroNext();
+  tickCountdown();
 }
 
 // ================= 互動小東西 =================
@@ -2550,6 +2829,7 @@ await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMist
 reshuffle();
 renderAll();
 initFx();
+checkNewAch();
 
 // 剛從驗證信回來、還沒建角色 → 直接帶去建立角色
 if (user && !profile && !['login', 'signup', 'character'].includes(location.hash.slice(1))) {
