@@ -835,6 +835,9 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .ach-fold[open] summary::after { transform: rotate(45deg); }
 .ach-fold .ach-box { padding: 0 18px 18px; }
 .quick { display: none; }
+.dev-badge { display: inline-block; margin-left: 8px; padding: 1px 9px; border-radius: 999px; font: 700 11px var(--sans); letter-spacing: .1em; color: #12142A; background: linear-gradient(180deg, #CFE8FF, #8FB8E8); vertical-align: 2px; }
+.dev-link { font-size: 13px; color: var(--gold); margin-left: 6px; }
+.nav a.nav-admin { color: #9cc8f0; opacity: 1; }
 .nav a { white-space: nowrap; }
 @media (min-width: 761px) { .nav a.m-only { display: none; } .nav { gap: 24px; } }
 @media (min-width: 761px) { .rooms > .room .room-body .desc { -webkit-line-clamp: 2; } }
@@ -1413,6 +1416,9 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     <footer class="simple">© 夜語工作室 線上密室逃脫</footer>
   </div>
 
+  <!-- ===== 管理（只有管理員看得到；資料由資料庫權限保護） ===== -->
+  <div id="view-admin" hidden></div>
+
   <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
@@ -1624,6 +1630,7 @@ const LOGO_SVG = `
 
 // ================= 登入狀態 =================
 let user = null, profile = null, games = [], stats = {}, monthly = [];
+let isAdmin = false;   // 管理員：admins 表只讀得到自己那一列，所以讀得到＝是管理員
 let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）、探索排行榜
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
 const RETIRED = ['love'];
@@ -1647,6 +1654,7 @@ async function loadAuth() {
   mine = {};
   mist = null;
   saves = {};
+  isAdmin = false;
   if (user) {
     const { data: p, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) console.error(error);
@@ -1659,6 +1667,8 @@ async function loadAuth() {
     mist = ms ? { level: ms.level || 1, station: ms.station, at: ms.updated_at, stations: Object.keys(ms.visited || {}).length, treasures: Object.keys(ms.items || {}).length, name: ms.name } : null;
     const { data: sv } = await supabase.from('game_saves').select('game,updated_at').eq('user_id', user.id);
     for (const r of sv ?? []) saves[r.game] = r.updated_at;
+    const { data: adm } = await supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle();
+    isAdmin = !!adm;
     const { data: ach } = await supabase.from('user_achievements').select('code').eq('user_id', user.id);
     achCodes = new Set((ach ?? []).map(a => a.code));
     for (const r of recs ?? []) {
@@ -1713,6 +1723,7 @@ function renderHeader() {
         <a href="#faq">Q&amp;A</a>
         <a class="m-only" href="#contact">聯絡我們</a>
         ${user ? '<a class="m-only" href="#character">我的角色</a>' : ''}
+        ${isAdmin ? '<a class="nav-admin" href="#admin">🛠 管理</a>' : ''}
       </nav>
       <div class="header-right">${right}</div>
       <button class="menu-btn" id="menu-btn" type="button" aria-label="選單" aria-expanded="false" aria-controls="nav">
@@ -1790,7 +1801,7 @@ function renderHero() {
     hero('今晚，\n想聽哪一個故事？', '挑一間密室，門一關上，計時就開始。',
       `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
        <a class="btn btn-ghost btn-lg" href="#character">換個造型</a>`,
-      `<a class="hero-me" href="#character" style="text-decoration:none">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}</span></a>`);
+      `<a class="hero-me" href="#character" style="text-decoration:none">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}</span>${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</a>`);
     $('#cta-title').textContent = `${profile.username}，下一個故事在等你`;
     $('#cta-actions').innerHTML = `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>`;
   }
@@ -2218,17 +2229,19 @@ $('#save').onclick = async () => {
 // #login / #signup / #character 是獨立畫面，其他（#rooms、#faq…）都是大廳裡的區塊
 function route() {
   const h = decodeURIComponent(location.hash.slice(1));
-  let view = h === 'login' || h === 'signup' ? 'login' : h === 'character' ? 'character' : 'home';
+  let view = h === 'login' || h === 'signup' ? 'login' : h === 'character' ? 'character' : h === 'admin' ? 'admin' : 'home';
+  if (view === 'admin' && !isAdmin) { location.hash = user ? 'top' : 'login'; return; }
 
   if (view === 'character' && !user) { location.hash = 'signup'; return; }
   if (view === 'login' && user) { location.hash = profile ? 'rooms' : 'character'; return; }
 
   $('#gate')?.open && $('#gate').close();
   document.body.classList.toggle('home', view === 'home');
-  for (const v of ['home', 'login', 'character']) $(`#view-${v}`).hidden = v !== view;
+  for (const v of ['home', 'login', 'character', 'admin']) $(`#view-${v}`).hidden = v !== view;
 
   if (view === 'login') setAuthMode(h);
   if (view === 'character') openCharacter();
+  if (view === 'admin') openAdmin();
 
   let target = view === 'home' && h ? document.getElementById(h) : null;
   if (target) {
@@ -2241,6 +2254,19 @@ function route() {
   onScroll();
 }
 window.addEventListener('hashchange', route);
+
+// 管理頁：第一次打開才載入 admin.js（一般玩家不會下載）
+let adminUI = null;
+async function openAdmin() {
+  if (adminUI) return adminUI.refresh();
+  try {
+    const m = await import('./admin.js?v=1');
+    adminUI = m.mountAdmin({
+      supabase, root: $('#view-admin'), escapeHTML, avatarHTML, toast,
+      onContentChange: async () => { await loadGames(); await loadNews(); renderAll(); },
+    });
+  } catch (e) { $('#view-admin').innerHTML = `<p class="container" style="padding-top:100px">管理頁載入失敗：${escapeHTML(e.message)}</p>`; }
+}
 
 // ================= 排行榜 =================
 let rankSlug = '';
@@ -2519,7 +2545,7 @@ function renderProgress() {
   box.innerHTML = `
     <div class="prog-top">
       <div class="prog-me">${avatarHTML(profile, 56)}<div><span class="eyebrow">CONTINUE</span><h2>${escapeHTML(profile.username)}，繼續你的故事</h2>
-        <span class="prog-title">✦ ${t.name}</span>${nextTxt}</div></div>
+        <span class="prog-title">✦ ${t.name}</span>${isAdmin ? ' <span class="dev-badge">開發者</span> <a class="dev-link" href="#admin">🛠 管理頁</a>' : ''}${nextTxt}</div></div>
     </div>
     ${rows.length || mist ? `<div class="prog-list">${rows.map(r => `<div class="prog-card">
       ${r.g.cover_url ? `<img src="${escapeHTML(r.g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
