@@ -255,6 +255,25 @@ body:not(.home) { padding-top: 68px; }
 .how-track span { font-size: 22px; }
 .how-track.rpg-track { margin-top: 48px; color: #9cc8f0; }
 .how-sub { text-align: center; color: var(--muted); margin: 0 0 22px; }
+/* 迷霧：探索排行榜、你的旅程 */
+.mist-board { margin-top: 22px; padding: 20px 22px; border-radius: 16px; background: rgba(6,9,18,.78); border: 1px solid rgba(127,180,230,.3); }
+.mist-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.mist-head h3 { margin: 0; font: 700 20px var(--serif); color: #dfeaf5; }
+.mist-me { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin: 12px 0 2px; padding: 10px 12px; border-radius: 10px; background: rgba(127,180,230,.1); font-size: 14px; color: #d9e6f3; }
+.mist-me b { color: #9cc8f0; }
+.mist-list { list-style: none; margin: 12px 0 0; padding: 0; display: grid; gap: 6px; }
+.mist-row { display: grid; grid-template-columns: 30px 36px 1fr auto; gap: 12px; align-items: center; padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.04); }
+.mist-row:nth-child(-n+3) { background: linear-gradient(90deg, rgba(127,180,230,.16), rgba(255,255,255,.03)); }
+.mist-row.mist-mine { outline: 1px solid #9cc8f0; }
+.mist-no { font: 700 18px var(--serif); color: #9cc8f0; text-align: center; }
+.mist-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.mist-name small { display: block; font-size: 12px; color: var(--muted); font-weight: 400; }
+.mist-row b { font: 700 20px var(--serif); color: #FFD9A0; } .mist-row b small { font-size: 12px; color: var(--muted); }
+.mist-empty { color: var(--muted); text-align: center; padding: 18px 8px; font-size: 14px; }
+.my-mist { margin-top: 16px; border-top: 1px solid var(--ink-2); padding-top: 12px; }
+.my-mist h4 { margin: 0 0 8px; color: #9cc8f0; }
+.mist-at { font-size: 15px !important; }
+@media (max-width: 760px) { .mist-board { margin: 16px 12px 0; padding: 16px; } }
 /* 首頁主畫面上的入口 */
 .hero-rpg { display: inline-flex; align-items: center; gap: 14px; margin-top: 26px; padding: 8px 18px 8px 8px; border-radius: 14px; text-decoration: none; color: #EEF3F8; text-align: left;
   background: rgba(8,14,28,.72); border: 1px solid rgba(127,180,230,.5); box-shadow: 0 10px 30px rgba(0,0,0,.45), 0 0 30px rgba(60,120,200,.25); backdrop-filter: blur(6px); transition: transform .2s, border-color .2s; }
@@ -1301,6 +1320,7 @@ const LOGO_SVG = `
 
 // ================= 登入狀態 =================
 let user = null, profile = null, games = [], stats = {}, monthly = [];
+let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）、探索排行榜
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
 const RETIRED = ['love'];
 const CONTACT = 'iho87061@gmail.com';
@@ -1319,6 +1339,7 @@ async function loadAuth() {
   user = data.session?.user ?? null;
   profile = null;
   mine = {};
+  mist = null;
   if (user) {
     const { data: p, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) console.error(error);
@@ -1326,6 +1347,9 @@ async function loadAuth() {
     const { data: recs } = await supabase.from('play_records')
       .select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending').eq('user_id', user.id);
     myRecs = recs ?? [];
+    // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
+    const { data: ms } = await supabase.from('game_saves').select('level,station,updated_at,visited:data->visited,items:data->items,name:data->name').eq('user_id', user.id).eq('game', 'mist').maybeSingle();
+    mist = ms ? { level: ms.level || 1, station: ms.station, at: ms.updated_at, stations: Object.keys(ms.visited || {}).length, treasures: Object.keys(ms.items || {}).length, name: ms.name } : null;
     const { data: ach } = await supabase.from('user_achievements').select('code').eq('user_id', user.id);
     achCodes = new Set((ach ?? []).map(a => a.code));
     for (const r of recs ?? []) {
@@ -1343,6 +1367,10 @@ async function loadAuth() {
   }
 }
 
+async function loadMistTop() {
+  const { data } = await supabase.rpc('get_mist_leaderboard', { lim: 10 });
+  mistTop = data ?? [];
+}
 async function loadStats() {
   const [{ data }, { data: top }] = await Promise.all([supabase.rpc('get_game_stats'), supabase.rpc('get_monthly_top', { lim: 3 })]);
   stats = Object.fromEntries((data ?? []).map(s => [s.game_id, s]));
@@ -1654,7 +1682,17 @@ function renderRpgs() {
         <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
       </div>
     </button>`;
-  }).join('');
+  }).join('') + mistBoard();
+}
+// 迷霧：探索排行榜（去過最多車站的旅人；同站數比等級）＋自己的旅程
+function mistTrip() {
+  if (!mist) return '';
+  return `<div class="mist-me"><b>🚇 你的旅程</b><span>Lv ${mist.level}</span><span>去過 ${mist.stations} 站</span><span>寶物 ${mist.treasures} / 6</span>${mist.station ? `<span>目前在 ${escapeHTML(mist.station)}</span>` : ''}</div>`;
+}
+function mistBoard() {
+  const rows = mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
+  return `<div class="mist-board"><div class="mist-head"><h3>🗺️ 迷霧探索排行榜</h3><span class="muted">比誰去過最多車站（同站數比等級）</span></div>${mistTrip()}
+    <ol class="mist-list">${rows || '<li class="mist-empty">10/20 開放後，這裡會列出去過最多車站的旅人。用夜語工作室帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
 }
 $('#rpg-list').addEventListener('click', onRoomClick);
 
@@ -2103,6 +2141,7 @@ function renderMine() {
       return `<li><span>${escapeHTML(g.title)}<small>挑戰 ${m.plays} 次・通關 ${m.clears} 次${ENDING_COUNT[g.slug] ? `・結局 ${m.endings.size} / ${ENDING_COUNT[g.slug]}` : ''}</small>${m.bestRec ? `<small>最佳那次：${runMeta(m.bestRec)}</small>` : ''}</span>
         <b class="${m.best != null ? 'ok' : ''}">${m.best != null ? '最佳 ' + fmtTime(m.best) : '尚未逃脫'}</b></li>`;
     }).join('')}</ul>` : '<p class="muted">還沒有遊玩紀錄。挑一間密室，今晚就開始吧。</p>'}
+    ${mist ? `<div class="my-mist"><h4>🚇 迷霧・我的旅程</h4><div class="my-stats four"><div><b>${mist.level}</b><span>等級</span></div><div><b>${mist.stations}</b><span>去過車站</span></div><div><b>${mist.treasures}</b><span>寶物 / 6</span></div><div><b class="mist-at">${escapeHTML(mist.station || '-')}</b><span>目前所在</span></div></div></div>` : ''}
     <div class="ach-box">${renderAch()}</div>`;
 }
 
@@ -2313,7 +2352,7 @@ function initFx() {
 
 // ================= 啟動 =================
 $('#year').textContent = new Date().getFullYear();
-await Promise.all([loadAuth(), loadGames(), loadStats(), loadNews()]);
+await Promise.all([loadAuth(), loadGames(), loadStats(), loadNews(), loadMistTop().catch(() => {})]);
 reshuffle();
 renderAll();
 initFx();
