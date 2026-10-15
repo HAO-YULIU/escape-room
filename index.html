@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>夜語工作室｜線上密室逃脫・大型開放RPG網頁遊戲</title>
   <meta name="description" content="夜語工作室 線上密室逃脫與大型開放RPG網頁遊戲。建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
+  <!-- 加到主畫面（App 模式） -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#080A14">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="夜語工作室">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&display=swap" rel="stylesheet">
   <style>
@@ -308,6 +317,17 @@ body:not(.home) { padding-top: 68px; }
 .hero-rpg small { font-size: 12px; color: #9cc8f0; letter-spacing: .12em; }
 .hero-rpg b { font: 900 24px/1.1 var(--serif); letter-spacing: .3em; }
 .hero-rpg em { font-style: normal; font-size: 13px; color: #FFD9A0; font-weight: 700; }
+/* 加到主畫面 */
+.hero-install { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 8px 16px; border-radius: 999px; border: 1px dashed rgba(232,212,160,.45);
+  background: rgba(8,10,20,.45); color: var(--gold); font: 700 14px var(--sans); cursor: pointer; }
+.hero-install:hover { border-style: solid; background: rgba(232,212,160,.1); }
+.hero-install[hidden] { display: none; }
+#install-help { max-width: 360px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 24px 22px 20px; }
+#install-help::backdrop { background: rgba(4,6,14,.7); }
+#install-help h3 { font: 700 20px var(--serif); margin: 0 0 6px; color: var(--gold); }
+#install-help ol { margin: 14px 0 18px; padding-left: 1.4em; line-height: 2; }
+#install-help .ios-share { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 6px; background: #2a6cf0; color: #fff; font-size: 14px; vertical-align: -5px; }
+#install-help .muted { color: var(--muted); font-size: 13px; margin: 0; }
 .rpg-sec { background: radial-gradient(90% 70% at 30% 40%, rgba(42,82,140,.22), transparent 70%), #070A14; }
 .rpg-sec .container { width: min(1440px, 100% - 32px); }
 .rpg { position: relative; display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); min-height: min(720px, 82vh); width: 100%; text-align: left; font: inherit; color: inherit; cursor: pointer; padding: 0; isolation: isolate;
@@ -734,6 +754,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
       <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em>10/20 開放 →</em></span></a>
+      <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <span class="hero-hint" aria-hidden="true">✦ 點一下夜空，或戳戳月亮 ✦</span>
     </div>
     <div class="hero-glow" aria-hidden="true"></div>
@@ -1081,12 +1102,19 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <li><a href="#signup">註冊</a></li>
             <li><a href="#login">登入</a></li>
             <li><a href="#character">我的角色</a></li>
+            <li><a href="#" id="install-link" hidden>加到手機主畫面</a></li>
           </ul>
         </div>
       </div>
       <div class="copyright">© <span id="year"></span> 夜語工作室 版權所有</div>
     </div>
   </footer>
+  <dialog id="install-help" aria-labelledby="install-title">
+    <h3 id="install-title">把夜語工作室加到主畫面</h3>
+    <p class="muted" id="install-sub">之後從主畫面點圖示，就會像 App 一樣全螢幕打開。</p>
+    <ol id="install-steps"></ol>
+    <form method="dialog"><button class="btn btn-gold" style="width:100%">知道了</button></form>
+  </dialog>
 
   </div>
 
@@ -2431,6 +2459,31 @@ function initFx() {
 
 // ================= 啟動 =================
 $('#year').textContent = new Date().getFullYear();
+// ================= 加到主畫面 =================
+// 安卓／電腦 Chrome：用瀏覽器的安裝視窗；iPhone／iPad Safari：教玩家用「分享 → 加入主畫面」
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const isMobile = isIOS || /Android/i.test(navigator.userAgent);
+let installEvt = null;
+function showInstall(on) { $('#install-btn').hidden = !on; $('#install-link').hidden = !on; }
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (!isStandalone()) showInstall(true); });
+addEventListener('appinstalled', () => { installEvt = null; showInstall(false); toast('已加到主畫面！之後從主畫面的月亮圖示就能打開。'); });
+if (!isStandalone() && isMobile) showInstall(true); // iPhone 沒有安裝事件，手機一律顯示說明按鈕
+async function doInstall(e) {
+  e?.preventDefault();
+  if (installEvt) { installEvt.prompt(); const { outcome } = await installEvt.userChoice; installEvt = null; if (outcome === 'accepted') showInstall(false); return; }
+  const inApp = /Line|FBAN|FBAV|Instagram/i.test(navigator.userAgent);
+  $('#install-steps').innerHTML = inApp
+    ? '<li>先點右上角「⋯」，選「用預設瀏覽器開啟」（iPhone 用 Safari）</li><li>再回到這個按鈕，照著步驟加到主畫面</li>'
+    : isIOS
+      ? '<li>點 Safari 下方的 <span class="ios-share">⬆︎</span>「分享」按鈕</li><li>往下滑，選「加入主畫面」</li><li>右上角按「新增」</li>'
+      : '<li>點瀏覽器右上角的「⋮」選單</li><li>選「加到主畫面」或「安裝應用程式」</li><li>按「新增」／「安裝」</li>';
+  $('#install-help').showModal();
+}
+$('#install-btn').addEventListener('click', doInstall);
+$('#install-link').addEventListener('click', doInstall);
+
 await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMistTop().catch(() => {})]); // 消息要等密室資料，才知道哪些可以點
 reshuffle();
 renderAll();
