@@ -1987,10 +1987,13 @@ function openGame(slug) {
 
 // 遊戲在別的網域（例如 Cloudflare workers.dev）時，登入狀態不會自動帶過去：
 // 先跟 game-handoff 換一個一次性登入碼，接在網址 #sd= 後面，遊戲那邊用它登入。失敗就照原樣開啟。
+// 從主畫面 App 打開大廳時，就算遊戲在同一個網域也一樣帶：iPhone 的主畫面 App 和 Safari 的登入狀態、存檔是分開的，
+// 遊戲有可能讀不到大廳的登入，帶著登入碼才能保證登入，並從雲端載回存檔。
+const isApp = () => window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
 async function goPlay(url) {
   let dest = url;
   try {
-    if (new URL(url, location.href).origin !== location.origin) {
+    if (new URL(url, location.href).origin !== location.origin || isApp()) {
       const { data, error } = await supabase.functions.invoke('game-handoff', { method: 'POST' });
       if (!error && data?.token_hash) dest = url.split('#')[0] + '#sd=' + encodeURIComponent(data.token_hash);
     }
