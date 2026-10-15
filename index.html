@@ -248,6 +248,7 @@ body:not(.home) { padding-top: 68px; }
 .badge.soon { background: rgba(239,230,210,.9); color: var(--ink); }
 .badge.new { background: var(--crimson-2); color: #fff; }
 .badge.cleared { background: var(--moss); color: var(--ink); }
+.badge.maint { background: #e8a33a; color: var(--ink); }
 .room.locked .room-cover::after { content: ''; position: absolute; inset: 0; background: rgba(8,10,20,.35); }
 .room-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
 .tags { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 13px; color: var(--gold); }
@@ -1645,6 +1646,9 @@ let isAdmin = false;   // 管理員：admins 表只讀得到自己那一列，�
 let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）、探索排行榜
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
 const RETIRED = ['love'];
+// 改版維修中：大廳照樣顯示，但不能進入
+const MAINT = ['bang'];
+const inMaint = (g) => MAINT.includes(g.slug);
 const CONTACT = 'iho87061@gmail.com';
 let allGames = [], retiredGames = [];
 // 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
@@ -1853,19 +1857,20 @@ const newestGame = () => games.filter(isOpen).sort((a, b) => String(released(b))
 // 有上線日期的，要等到那天（台灣時間）才開放；在那之前大廳會先顯示「幾月幾日上線」
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
 const upcoming = (g) => !!g.play_url && !!g.release_date && g.release_date.slice(0, 10) > today();
-const isOpen = (g) => !!g.play_url && ['available', 'coming_soon'].includes(g.status) && !upcoming(g);
+const isOpen = (g) => !inMaint(g) && !!g.play_url && ['available', 'coming_soon'].includes(g.status) && !upcoming(g);
 
 function roomCard(g, rank = 0, note = '') {
   const i = games.indexOf(g);
   const open = isOpen(g);
   const m = mine[g.id], st = stats[g.id];
-  const badge = m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
+  const badge = inMaint(g) ? '<span class="badge maint">🛠 維修中</span>'
+    : m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
     : saves[g.slug] ? '<span class="badge played">▶ 玩到一半</span>'
     : m ? '<span class="badge played">玩過</span>'
     : upcoming(g) ? `<span class="badge soon">⏳ ${cdSpan(g.release_date)}</span>`
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-  const cta = upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const cta = inMaint(g) ? '改版維修中' : upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   const challenge = note ? `<p class="challengers">${note}</p>` : st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
     <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
@@ -1973,6 +1978,7 @@ function onRoomClick(e) {
 function openGame(slug) {
   const g = games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug);
   if (!g) return;
+  if (inMaint(g)) return toast(`「${g.title}」正在改版維修中，全新版本敬請期待！`);
   if (upcoming(g)) return toast(`「${g.title}」將在 ${fmtDate(g.release_date).slice(5)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
