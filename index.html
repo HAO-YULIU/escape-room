@@ -2189,17 +2189,41 @@ $('#options').addEventListener('click', (e) => {
 $('#random').onclick = () => { appearance = randomAppearance(); updateCharacter(); };
 $('#username').addEventListener('input', updateCharacter);
 $('#pick-avatar').onclick = () => $('#avatar-file').click();
-$('#avatar-file').onchange = (e) => {
-  const file = e.target.files[0];
+// 上傳前裁成正方形並縮到 256×256，每張只剩幾十 KB，省下儲存空間與流量
+const AVATAR_PX = 256;
+async function shrinkAvatar(file) {
+  const img = await createImageBitmap(file);
+  const side = Math.min(img.width, img.height);
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = Math.min(AVATAR_PX, side);
+  cv.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, cv.width, cv.height);
+  img.close?.();
+  let blob = await new Promise(ok => cv.toBlob(ok, 'image/webp', 0.85));
+  if (!blob || blob.type !== 'image/webp') blob = await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85));
+  return blob;
+}
+$('#avatar-file').onchange = async (e) => {
+  const raw = e.target.files[0];
   e.target.value = '';
-  if (!file) return;
-  if (file.size > 2 * 1024 * 1024) return toast('圖片超過 2MB，請換一張小一點的。', 'error');
+  if (!raw) return;
+  if (raw.size > 20 * 1024 * 1024) return toast('圖片超過 20MB，請換一張小一點的。', 'error');
+  let file;
+  try { file = await shrinkAvatar(raw); } catch { return toast('這張圖片讀不出來，請換一張 JPG 或 PNG。', 'error'); }
   pendingFile = file;
   if (pendingPreview) URL.revokeObjectURL(pendingPreview);
   pendingPreview = URL.createObjectURL(file);
   updateCharacter();
 };
 $('#clear-avatar').onclick = () => { pendingFile = null; pendingPreview = null; avatarUrl = null; updateCharacter(); };
+
+// 換頭像後刪掉自己資料夾裡的舊檔（失敗也沒關係，不影響儲存）
+async function cleanOldAvatars(keepUrl) {
+  try {
+    const { data } = await supabase.storage.from('avatars').list(user.id);
+    const old = (data || []).map(f => `${user.id}/${f.name}`).filter(p => !keepUrl?.endsWith(p));
+    if (old.length) await supabase.storage.from('avatars').remove(old);
+  } catch {}
+}
 
 function openCharacter() {
   appearance = { ...DEFAULT_APPEARANCE, ...(profile?.appearance ?? {}) };
@@ -2231,7 +2255,7 @@ $('#save').onclick = async () => {
   try {
     let finalUrl = avatarUrl;
     if (pendingFile) {
-      const ext = pendingFile.name.split('.').pop().toLowerCase();
+      const ext = pendingFile.type === 'image/webp' ? 'webp' : 'jpg';
       const path = `${user.id}/avatar-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type });
       if (upErr) throw upErr;
@@ -2242,6 +2266,7 @@ $('#save').onclick = async () => {
       if (error.code === '23505') throw new Error('這個角色名稱已經有人用了，換一個吧。');
       throw error;
     }
+    if (pendingFile || (!finalUrl && profile?.avatar_url)) cleanOldAvatars(finalUrl);
     await loadAuth();
     renderAll();
     toast('角色已儲存，挑一間密室吧！');
