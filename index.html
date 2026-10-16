@@ -791,6 +791,14 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 /* 新成就通知 */
 .ach-pop { position: fixed; left: 50%; bottom: 24px; z-index: 60; width: min(380px, calc(100% - 32px)); translate: -50% 0; padding: 16px 18px; border-radius: 16px;
   background: rgba(20,24,41,.97); border: 1px solid rgba(232,212,160,.5); box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(232,212,160,.15); animation: achIn .5s cubic-bezier(.2,1.4,.4,1); }
+.msg-pop { bottom: auto; top: 84px; border-color: rgba(140,190,255,.5); box-shadow: 0 20px 60px rgba(0,0,0,.6), 0 0 40px rgba(140,190,255,.15); }
+.msg-pop h4 { color: #9cc8f0; }
+.msg-item { padding: 10px 12px; border-radius: 10px; background: rgba(255,255,255,.04); font-size: 14px; line-height: 1.7; white-space: pre-wrap; word-break: break-word; }
+.msg-item + .msg-item { margin-top: 8px; }
+.msg-item small { display: block; color: var(--muted); font-size: 12px; white-space: normal; }
+.msg-item.new { outline: 1px solid rgba(140,190,255,.55); }
+.msg-pop .msg-item { max-height: 180px; overflow: auto; }
+.msg-list { padding: 0 18px 16px; }
 @keyframes achIn { from { opacity: 0; transform: translateY(30px) scale(.95); } }
 .ach-pop h4 { margin: 0 0 10px; font: 700 16px var(--serif); color: var(--gold); letter-spacing: .1em; }
 .ach-pop ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -1653,6 +1661,7 @@ const CONTACT = 'iho87061@gmail.com';
 let allGames = [], retiredGames = [];
 // 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
 let mine = {}, myRecs = [], achCodes = new Set();
+let myMsgs = [];   // 管理員傳給這位玩家的訊息（player_messages，只讀得到自己的）
 // 有雲端存檔的遊戲：{ slug: 最後存檔時間 }（遊戲玩到一半的依據）
 let saves = {};
 const isPlayer = () => !!(user && profile);
@@ -1670,6 +1679,7 @@ async function loadAuth() {
   mist = null;
   saves = {};
   isAdmin = false;
+  myMsgs = [];
   if (user) {
     const { data: p, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
     if (error) console.error(error);
@@ -1686,6 +1696,8 @@ async function loadAuth() {
     isAdmin = !!adm;
     const { data: ach } = await supabase.from('user_achievements').select('code').eq('user_id', user.id);
     achCodes = new Set((ach ?? []).map(a => a.code));
+    const { data: msgs } = await supabase.from('player_messages').select('id,context,body,created_at,read_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
+    myMsgs = msgs ?? [];
     for (const r of recs ?? []) {
       const m = mine[r.game_id] ??= { plays: 0, clears: 0, best: null, bestRec: null, last: r.created_at, deaths: 0, hints: 0, endings: new Set() };
       if (r.ending && r.status === 'cleared') m.endings.add(r.ending);
@@ -2579,7 +2591,7 @@ function progressOf(g, got) {
   else { st = `挑戰過 ${m.plays} 次，還沒逃出來`; act = '再推一次門 →'; }
   return { g, m, k, n: list.length, ends, e, last, st, act };
 }
-let achOpen = false;
+let achOpen = false, msgOpen = false;
 function renderProgress() {
   const sec = $('#progress'), box = $('#prog-box');
   sec.hidden = !isPlayer();
@@ -2612,10 +2624,13 @@ function renderProgress() {
         <div class="prog-acts">${isOpen(r.g) ? `<button class="btn btn-gold" type="button" data-go="${escapeHTML(r.g.slug)}">${r.act}</button>` : ''}
           ${r.m?.best != null ? `<button class="btn btn-ghost" type="button" data-share="${escapeHTML(r.g.slug)}">分享 ↗</button>` : ''}</div></div></div>`).join('')}${mistCard}</div>`
     : `<p class="prog-empty">還沒開始任何故事。${sug ? `今晚，走進 <button type="button" data-go="${escapeHTML(sug.slug)}">《${escapeHTML(sug.title)}》</button> 吧。` : ''}</p>`}
+    ${myMsgs.length ? `<details class="ach-fold msg-fold"${msgOpen ? ' open' : ''}><summary>📬 我的訊息 <small>${myMsgs.filter(m => !m.read_at).length ? `${myMsgs.filter(m => !m.read_at).length} 則新訊息・` : ''}共 ${myMsgs.length} 則</small></summary>
+      <div class="msg-list">${myMsgs.map(msgHTML).join('')}</div></details>` : ''}
     <details class="ach-fold"${achOpen ? ' open' : ''}><summary>🏆 我的護照與成就 <small>成就 ${achN} / ${ACH.length}</small></summary>
       <div class="passport" aria-label="密室護照">${stamps}<button class="btn btn-ghost" type="button" data-share="__passport">分享我的護照</button></div>
       <div class="ach-box">${renderAch()}</div></details>`;
-  box.querySelector('.ach-fold').addEventListener('toggle', (e) => { achOpen = e.target.open; });
+  box.querySelector('.ach-fold:not(.msg-fold)').addEventListener('toggle', (e) => { achOpen = e.target.open; });
+  box.querySelector('.msg-fold')?.addEventListener('toggle', (e) => { msgOpen = e.target.open; if (msgOpen) markMsgsRead(); });
 }
 document.addEventListener('click', (e) => {
   const go = e.target.closest('[data-go]'); if (go) return openGame(go.dataset.go);
@@ -2641,6 +2656,30 @@ function checkNewAch() {
   el.addEventListener('click', (e) => { if (e.target.closest('a, button')) el.remove(); });
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 12000);
+}
+
+// ================= 夜語工作室的訊息：管理員回覆回報、個別通知 =================
+const msgHTML = (m) => `<div class="msg-item${m.read_at ? '' : ' new'}">${m.context ? `<small>${escapeHTML(m.context)}</small>` : ''}${escapeHTML(m.body)}<small>— 夜語工作室・${new Date(m.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}</small></div>`;
+async function markMsgsRead() {
+  if (!myMsgs.some(m => !m.read_at)) return;
+  const { error } = await supabase.rpc('mark_my_messages_read');
+  if (!error) { const now = new Date().toISOString(); myMsgs.forEach(m => { m.read_at ??= now; }); }
+}
+function checkNewMsgs() {
+  if (!isPlayer()) return;
+  const fresh = myMsgs.filter(m => !m.read_at);
+  if (!fresh.length) return;
+  const el = document.createElement('div'); el.className = 'ach-pop msg-pop'; el.setAttribute('role', 'status');
+  el.innerHTML = `<h4>📬 夜語工作室傳了訊息給你${fresh.length > 1 ? ` ×${fresh.length}` : ''}</h4>
+    ${fresh.slice(0, 2).map(msgHTML).join('')}
+    ${fresh.length > 2 ? `<p class="muted" style="margin:8px 0 0;font-size:13px">還有 ${fresh.length - 2} 則，在「我的進度」裡看得到。</p>` : ''}
+    <div class="row"><a class="btn btn-gold" href="#progress">查看全部</a><button class="btn btn-ghost" type="button">知道了</button></div>`;
+  el.addEventListener('click', (e) => {
+    if (!e.target.closest('a, button')) return;
+    el.remove(); markMsgsRead().then(renderProgress);
+    if (e.target.closest('a')) { msgOpen = true; renderProgress(); }
+  });
+  document.body.appendChild(el);
 }
 
 // ================= 開放倒數 =================
@@ -3099,6 +3138,7 @@ renderAll();
 initFx();
 initQuick();
 checkNewAch();
+checkNewMsgs();
 
 // 剛從驗證信回來、還沒建角色 → 直接帶去建立角色
 if (user && !profile && !['login', 'signup', 'character'].includes(location.hash.slice(1))) {
