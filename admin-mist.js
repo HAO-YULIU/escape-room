@@ -1,5 +1,5 @@
 // 夜語工作室・管理頁：迷霧（大型開放 RPG）專用的分頁
-// 迷霧玩家（存檔、存檔歷史與還原、修改存檔、停用帳號、排行榜隱藏）、回報處理、公告與活動、迷霧數據
+// 迷霧玩家（存檔、存檔歷史與還原、修改存檔、停用帳號、排行榜隱藏）、回報處理（所有遊戲）、公告與活動、迷霧數據
 // 所有資料都靠資料庫權限保護（is_admin()）：不是管理員，讀不到也寫不了。
 
 const TZ = { timeZone: 'Asia/Taipei' };
@@ -14,6 +14,8 @@ const treasN = (d) => d && d.items && typeof d.items === 'object' ? Object.keys(
 
 // 迷霧的節慶活動（遊戲裡的任務 id）
 const EVENTS = [['event_double10', '雙十節'], ['event_halloween', '萬聖節（含小活動）'], ['event_xmas', '聖誕節'], ['event_newyear', '跨年'], ['event_lunar', '春節'], ['event_midautumn', '中秋節'], ['event_valentine', '情人節']];
+// 回報問題的遊戲名稱（bug_reports.game）
+const GAME_NAMES = { mist: '迷霧', 'qianchan-school': '千嬋高級中學：第一章', school2: '千嬋高級中學：第二章', pupu: '「屎」瓦帝尼', love: '大直愛情摩天輪', bang: '越南公主', sea: '沈園殘燭', arg: '零號回信' };
 const STATUS = [['open', '待處理', ''], ['doing', '處理中', 'warn'], ['done', '已解決', 'ok'], ['ignored', '不處理', 'bad']];
 
 export const CSS_MIST = `
@@ -117,26 +119,31 @@ export function mountMist(ctx) {
   }
 
   // ---------- 回報處理 ----------
-  let repFilter = 'open';
+  let repFilter = 'open', repGame = 'all';
   async function reports(body) {
     empty(body, '讀取中…');
     let q = supabase.from('bug_reports').select('*').order('created_at', { ascending: false }).limit(100);
     if (repFilter !== 'all') q = q.eq('status', repFilter);
-    const [{ data, error }, { data: counts }] = await Promise.all([q, supabase.from('bug_reports').select('status')]);
+    if (repGame !== 'all') q = q.eq('game', repGame);
+    const [{ data, error }, { data: counts }] = await Promise.all([q, supabase.from('bug_reports').select('status,game')]);
     if (error) return fail(body, error);
-    const n = {}; for (const r of counts || []) n[r.status] = (n[r.status] || 0) + 1;
+    const n = {}, ng = {}; for (const r of counts || []) { if (repGame === 'all' || r.game === repGame) n[r.status] = (n[r.status] || 0) + 1; if (r.status === 'open') ng[r.game] = (ng[r.game] || 0) + 1; }
+    const games = [...new Set([...Object.keys(GAME_NAMES), ...(counts || []).map(r => r.game).filter(Boolean)])];
     const pr = await names((data || []).map(r => r.user_id));
     const infoTxt = (i) => { if (!i || typeof i !== 'object') return ''; const e = (i.errors || []).slice(-3).map(x => '• ' + (x.t ? x.t + ' ' : '') + (x.m || x.message || JSON.stringify(x))).join('\n');
-      return [i.v && `版本 ${i.v}`, i.zone && `區域 ${i.zone}`, i.pos && `位置 ${Array.isArray(i.pos) ? i.pos.map(v => (+v).toFixed?.(1) ?? v).join(', ') : JSON.stringify(i.pos)}`, i.time && `遊戲時間 ${i.time}`, i.vp && `畫面 ${[].concat(i.vp).join(' × ')}`, i.lv && `Lv ${i.lv}`, i.quality && `畫質 ${i.quality}`, i.fps && `fps ${i.fps}`, i.ua && i.ua.slice(0, 140), e && '最近錯誤：\n' + e].filter(Boolean).join('\n'); };
+      const extra = ['mode', 'ch', 'sc', 'phase', 'players', 'lives', 'chapter', 'p2', 'solved', 'hints', 'wrong'].filter(k => i[k] != null).map(k => `${k}=${i[k]}`).join('  ');
+      return [i.at && `位置 ${i.at}`, i.v && `版本 ${i.v}`, i.zone && `區域 ${i.zone}`, i.pos && `位置 ${Array.isArray(i.pos) ? i.pos.map(v => (+v).toFixed?.(1) ?? v).join(', ') : JSON.stringify(i.pos)}`, i.time && `遊戲時間 ${i.time}`, extra, i.vp && `畫面 ${[].concat(i.vp).join(' × ')}`, i.lv && `Lv ${i.lv}`, i.quality && `畫質 ${i.quality}`, i.fps && `fps ${i.fps}`, i.ua && i.ua.slice(0, 140), e && '最近錯誤：\n' + e].filter(Boolean).join('\n'); };
     body.innerHTML = `<div class="adm-card"><h3>玩家回報的問題</h3>
       <div class="adm-acts" style="margin-bottom:8px">${[['open', '待處理'], ['doing', '處理中'], ['done', '已解決'], ['ignored', '不處理'], ['all', '全部']].map(([k, t]) => `<button class="btn ${repFilter === k ? 'btn-gold' : 'btn-ghost'} btn-sm" data-f="${k}">${t}${k !== 'all' ? `（${n[k] || 0}）` : ''}</button>`).join('')}</div>
-      ${(data || []).map(r => `<div class="adm-rep" data-id="${r.id}"><b>${esc(r.game || '大廳')}</b>${r.station ? `<span class="adm-tag">${esc(r.station)}</span>` : ''}<span class="adm-tag ${STATUS.find(s => s[0] === r.status)?.[2] || ''}">${STATUS.find(s => s[0] === r.status)?.[1] || r.status}</span>
+      <div class="adm-acts" style="margin-bottom:8px">${[['all', '全部遊戲'], ...games.map(g => [g, GAME_NAMES[g] || g])].map(([k, t]) => `<button class="btn ${repGame === k ? 'btn-gold' : 'btn-ghost'} btn-sm" data-g="${esc(k)}">${esc(t)}${k !== 'all' && ng[k] ? `（待處理 ${ng[k]}）` : ''}</button>`).join('')}</div>
+      ${(data || []).map(r => `<div class="adm-rep" data-id="${r.id}"><b>${esc(GAME_NAMES[r.game] || r.game || '大廳')}</b>${r.station ? `<span class="adm-tag">${esc(r.station)}</span>` : ''}<span class="adm-tag ${STATUS.find(s => s[0] === r.status)?.[2] || ''}">${STATUS.find(s => s[0] === r.status)?.[1] || r.status}</span>
         <span class="muted" style="font-size:12px;margin-left:6px">${dt(r.created_at)}・${r.user_id ? esc(pr[r.user_id] || '有登入') : '沒登入'}</span>
         <p style="margin:6px 0">${esc(r.message || '')}</p>${r.info ? `<pre>${esc(infoTxt(r.info))}</pre>` : ''}
         <div class="ctl"><select class="adm-sel" data-st>${STATUS.map(([k, t]) => `<option value="${k}"${r.status === k ? ' selected' : ''}>${t}</option>`).join('')}</select>
           <textarea data-note placeholder="處理備註（只有管理員看得到）">${esc(r.admin_note || '')}</textarea>
           <button class="btn btn-gold btn-sm" data-save>儲存</button><button class="btn btn-ghost btn-sm" data-del>刪除</button></div></div>`).join('') || '<p class="adm-empty">這裡沒有回報。</p>'}</div>`;
     body.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { repFilter = b.dataset.f; reports(body); });
+    body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { repGame = b.dataset.g; reports(body); });
     body.querySelectorAll('.adm-rep').forEach(el => {
       const id = el.dataset.id;
       el.querySelector('[data-save]').onclick = async () => {
