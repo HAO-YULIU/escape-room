@@ -1,3 +1,4 @@
+import { mountMist, CSS_MIST } from './admin-mist.js?v=1';
 // 夜語工作室・管理頁（只有管理員登入後才會載入）
 // 資料都靠資料庫權限保護：admin_dump() 不是管理員會直接被拒絕；最新消息、遊戲資訊的修改也只有管理員能寫入。
 // 這個檔案本身沒有任何秘密，就算被人看到也拿不到資料。
@@ -201,9 +202,10 @@ const CSS = `
 
 export function mountAdmin(ctx) {
   const { supabase, root, escapeHTML: esc, avatarHTML, toast, onContentChange } = ctx;
-  if (!document.getElementById('adm-css')) { const st = document.createElement('style'); st.id = 'adm-css'; st.textContent = CSS; document.head.appendChild(st); }
+  if (!document.getElementById('adm-css')) { const st = document.createElement('style'); st.id = 'adm-css'; st.textContent = CSS + CSS_MIST; document.head.appendChild(st); }
+  const mist = mountMist(ctx);   // 迷霧專用的分頁（玩家存檔、回報處理、公告與活動、數據）
   let D = null, games = [], tab = 'overview', stuckGame = null, timer = 0, loading = false;
-  const TABS = [['overview', '總覽'], ['live', '即時動態'], ['stuck', '卡關分析'], ['news', '最新消息'], ['games', '遊戲資訊']];
+  const TABS = [['overview', '總覽'], ['live', '即時動態'], ['stuck', '卡關分析'], ...mist.TABS, ['news', '最新消息'], ['games', '遊戲資訊']];
 
   root.innerHTML = `<div class="container">
     <div class="adm-head"><h1>🛠 管理</h1><span class="muted" id="adm-upd"></span><button class="btn btn-ghost btn-sm" type="button" id="adm-reload">重新整理</button></div>
@@ -256,6 +258,7 @@ export function mountAdmin(ctx) {
   }
   function render() {
     if (!D) return;
+    if (mist.TABS.some(([k]) => k === tab)) return mist.render(tab, body);
     const fn = { overview, live, stuck, news, gamesTab }[tab === 'games' ? 'gamesTab' : tab];
     fn();
   }
