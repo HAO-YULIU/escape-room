@@ -1871,7 +1871,8 @@ function roomCard(g, rank = 0, note = '') {
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
   const cta = inMaint(g) ? '改版維修中' : upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
-  const challenge = note ? `<p class="challengers">${note}</p>` : st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
+  // 挑戰人數只給開發者看（資料庫的 get_game_stats 也只回給管理員）
+  const challenge = note ? `<p class="challengers">${note}</p>` : isAdmin && st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
     <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
       <div class="room-cover">
@@ -2797,7 +2798,7 @@ function renderMonthly() {
     if (!top.includes(g)) top.push(g);
   }
   $('#monthly-list').innerHTML = top.length
-    ? top.map((g, i) => pickCard(g, i + 1, byId[g.id] ? `🔥 本月 ${byId[g.id].players} 人挑戰` : '✨ 本月等你來挑戰')).join('')
+    ? top.map((g, i) => pickCard(g, i + 1, !byId[g.id] ? '✨ 本月等你來挑戰' : isAdmin && byId[g.id].players != null ? `🔥 本月 ${byId[g.id].players} 人挑戰` : '🔥 本月熱門')).join('')   // 人數只給開發者看
     : '<p class="empty">密室正在佈置中，敬請期待。</p>';
 }
 function pickCard(g, rank, note) {
