@@ -31,6 +31,12 @@ export const CSS_MIST = `
 .adm-rep pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.45 ui-monospace, monospace; color: var(--muted); margin: 6px 0; max-height: 180px; overflow: auto; background: rgba(0,0,0,.2); padding: 8px; border-radius: 8px; }
 .adm-rep .ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
 .adm-rep textarea { flex: 1 1 260px; min-height: 38px; font: 13px var(--sans); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(239,230,210,.2); background: #0E1124; color: var(--parchment); }
+.adm-sent { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: rgba(140,190,255,.08); border-left: 3px solid #9cc8f0; font-size: 13px; white-space: pre-wrap; }
+.adm-sent small { display: block; color: var(--muted); font-size: 11px; }
+.adm-msg, .adm-msg-new { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.adm-msg[hidden] { display: none; }
+.adm-msg textarea, .adm-msg-new textarea { flex: 1 1 260px; min-height: 60px; font: 13px var(--sans); padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(239,230,210,.2); background: #0E1124; color: var(--parchment); }
+.adm-msg-new input { flex: 1 1 200px; }
 .adm-tri { display: inline-flex; border: 1px solid rgba(239,230,210,.2); border-radius: 999px; overflow: hidden; }
 .adm-tri button { font: 12px var(--sans); padding: 5px 10px; border: 0; background: transparent; color: var(--parchment); cursor: pointer; }
 .adm-tri button[aria-pressed="true"] { background: var(--gold); color: #12142A; }
@@ -130,22 +136,49 @@ export function mountMist(ctx) {
     const n = {}, ng = {}; for (const r of counts || []) { if (repGame === 'all' || r.game === repGame) n[r.status] = (n[r.status] || 0) + 1; if (r.status === 'open') ng[r.game] = (ng[r.game] || 0) + 1; }
     const games = [...new Set([...Object.keys(GAME_NAMES), ...(counts || []).map(r => r.game).filter(Boolean)])];
     const pr = await names((data || []).map(r => r.user_id));
+    const ids = (data || []).map(r => r.id), sent = {};
+    if (ids.length) { const { data: ms } = await supabase.from('player_messages').select('report_id,body,created_at,read_at').in('report_id', ids).order('created_at'); for (const m of ms || []) (sent[m.report_id] ||= []).push(m); }
     const infoTxt = (i) => { if (!i || typeof i !== 'object') return ''; const e = (i.errors || []).slice(-3).map(x => '• ' + (x.t ? x.t + ' ' : '') + (x.m || x.message || JSON.stringify(x))).join('\n');
       const extra = ['mode', 'ch', 'sc', 'phase', 'players', 'lives', 'chapter', 'p2', 'solved', 'hints', 'wrong'].filter(k => i[k] != null).map(k => `${k}=${i[k]}`).join('  ');
       return [i.at && `位置 ${i.at}`, i.v && `版本 ${i.v}`, i.zone && `區域 ${i.zone}`, i.pos && `位置 ${Array.isArray(i.pos) ? i.pos.map(v => (+v).toFixed?.(1) ?? v).join(', ') : JSON.stringify(i.pos)}`, i.time && `遊戲時間 ${i.time}`, extra, i.vp && `畫面 ${[].concat(i.vp).join(' × ')}`, i.lv && `Lv ${i.lv}`, i.quality && `畫質 ${i.quality}`, i.fps && `fps ${i.fps}`, i.ua && i.ua.slice(0, 140), e && '最近錯誤：\n' + e].filter(Boolean).join('\n'); };
-    body.innerHTML = `<div class="adm-card"><h3>玩家回報的問題</h3>
+    body.innerHTML = `<div class="adm-card"><h3>傳訊息給玩家</h3><p class="muted" style="margin:0 0 8px;font-size:13px">玩家回到大廳時會跳出通知，「我的進度」裡也看得到。</p>
+      <div class="adm-msg-new"><input class="adm-sel" data-to placeholder="玩家名字（角色名稱，要完全一樣）" maxlength="40"><textarea data-body placeholder="要說的話" maxlength="2000"></textarea><button class="btn btn-gold btn-sm" data-send-any>傳送</button></div></div>
+      <div class="adm-card"><h3>玩家回報的問題</h3>
       <div class="adm-acts" style="margin-bottom:8px">${[['open', '待處理'], ['doing', '處理中'], ['done', '已解決'], ['ignored', '不處理'], ['all', '全部']].map(([k, t]) => `<button class="btn ${repFilter === k ? 'btn-gold' : 'btn-ghost'} btn-sm" data-f="${k}">${t}${k !== 'all' ? `（${n[k] || 0}）` : ''}</button>`).join('')}</div>
       <div class="adm-acts" style="margin-bottom:8px">${[['all', '全部遊戲'], ...games.map(g => [g, GAME_NAMES[g] || g])].map(([k, t]) => `<button class="btn ${repGame === k ? 'btn-gold' : 'btn-ghost'} btn-sm" data-g="${esc(k)}">${esc(t)}${k !== 'all' && ng[k] ? `（待處理 ${ng[k]}）` : ''}</button>`).join('')}</div>
       ${(data || []).map(r => `<div class="adm-rep" data-id="${r.id}"><b>${esc(GAME_NAMES[r.game] || r.game || '大廳')}</b>${r.station ? `<span class="adm-tag">${esc(r.station)}</span>` : ''}<span class="adm-tag ${STATUS.find(s => s[0] === r.status)?.[2] || ''}">${STATUS.find(s => s[0] === r.status)?.[1] || r.status}</span>
         <span class="muted" style="font-size:12px;margin-left:6px">${dt(r.created_at)}・${r.user_id ? esc(pr[r.user_id] || '有登入') : '沒登入'}</span>
         <p style="margin:6px 0">${esc(r.message || '')}</p>${r.info ? `<pre>${esc(infoTxt(r.info))}</pre>` : ''}
+        ${(sent[r.id] || []).map(m => `<div class="adm-sent">✉️ ${esc(m.body)}<small>${dt(m.created_at)}・${m.read_at ? '玩家已讀' : '玩家還沒看'}</small></div>`).join('')}
+        ${r.user_id ? `<div class="adm-msg" hidden><textarea data-reply placeholder="傳給${esc(pr[r.user_id] || '這位玩家')}的訊息（會附上這則回報的內容）" maxlength="2000"></textarea><label class="muted" style="font-size:12px"><input type="checkbox" data-done checked> 同時標成「已解決」</label><button class="btn btn-gold btn-sm" data-reply-send>傳送</button></div>` : ''}
         <div class="ctl"><select class="adm-sel" data-st>${STATUS.map(([k, t]) => `<option value="${k}"${r.status === k ? ' selected' : ''}>${t}</option>`).join('')}</select>
           <textarea data-note placeholder="處理備註（只有管理員看得到）">${esc(r.admin_note || '')}</textarea>
-          <button class="btn btn-gold btn-sm" data-save>儲存</button><button class="btn btn-ghost btn-sm" data-del>刪除</button></div></div>`).join('') || '<p class="adm-empty">這裡沒有回報。</p>'}</div>`;
+          <button class="btn btn-gold btn-sm" data-save>儲存</button>${r.user_id ? '<button class="btn btn-ghost btn-sm" data-reply-open>✉️ 傳訊息給玩家</button>' : ''}<button class="btn btn-ghost btn-sm" data-del>刪除</button></div></div>`).join('') || '<p class="adm-empty">這裡沒有回報。</p>'}</div>`;
     body.querySelectorAll('[data-f]').forEach(b => b.onclick = () => { repFilter = b.dataset.f; reports(body); });
     body.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { repGame = b.dataset.g; reports(body); });
+    body.querySelector('[data-send-any]').onclick = async () => {
+      const to = body.querySelector('[data-to]').value.trim(), text = body.querySelector('[data-body]').value.trim();
+      if (!to || !text) return toast('請填玩家名字和要說的話', 'error');
+      const { data: u, error: e1 } = await supabase.from('profiles').select('id,username').eq('username', to).limit(2);
+      if (e1) return toast('查詢失敗：' + e1.message, 'error');
+      if (!u || !u.length) return toast(`找不到叫「${to}」的玩家`, 'error');
+      if (u.length > 1) return toast(`有不只一位叫「${to}」的玩家`, 'error');
+      const { error: e2 } = await supabase.from('player_messages').insert({ user_id: u[0].id, body: text.slice(0, 2000) });
+      if (e2) return toast('傳送失敗：' + e2.message, 'error');
+      toast(`已傳給 ${u[0].username}`, 'ok'); body.querySelector('[data-body]').value = '';
+    };
     body.querySelectorAll('.adm-rep').forEach(el => {
-      const id = el.dataset.id;
+      const id = el.dataset.id, rep = (data || []).find(r => String(r.id) === id);
+      const box = el.querySelector('.adm-msg');
+      el.querySelector('[data-reply-open]')?.addEventListener('click', () => { box.hidden = !box.hidden; if (!box.hidden) box.querySelector('textarea').focus(); });
+      el.querySelector('[data-reply-send]')?.addEventListener('click', async () => {
+        const text = box.querySelector('[data-reply]').value.trim(); if (!text) return toast('請寫要傳的訊息', 'error');
+        const context = `回覆你在《${GAME_NAMES[rep.game] || rep.game || '夜語工作室'}》的回報：「${String(rep.message || '').slice(0, 80)}」`;
+        const { error: e2 } = await supabase.from('player_messages').insert({ user_id: rep.user_id, report_id: rep.id, context: context.slice(0, 300), body: text.slice(0, 2000) });
+        if (e2) return toast('傳送失敗：' + e2.message, 'error');
+        if (box.querySelector('[data-done]').checked) await supabase.from('bug_reports').update({ status: 'done', handled_at: new Date().toISOString() }).eq('id', rep.id);
+        toast('已傳給玩家', 'ok'); reports(body);
+      });
       el.querySelector('[data-save]').onclick = async () => {
         const status = el.querySelector('[data-st]').value, note = el.querySelector('[data-note]').value.trim().slice(0, 2000);
         const { error: e2 } = await supabase.from('bug_reports').update({ status, admin_note: note || null, handled_at: status === 'open' ? null : new Date().toISOString() }).eq('id', id);
