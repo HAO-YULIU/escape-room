@@ -976,7 +976,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="hero-actions" id="hero-actions">
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
-      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-20" data-cd-short>10/20 開放</time> →</em></span></a>
+      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-25" data-cd-short>10/25 開放</time> →</em></span></a>
       <button class="hero-next" id="hero-next" type="button" hidden></button>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <span class="hero-hint" aria-hidden="true">✦ 點一下夜空、戳戳月亮，或接住一顆流星 ✦</span>
@@ -1276,7 +1276,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </details>
           <details>
             <summary>《迷霧》是什麼？跟密室有什麼不一樣？</summary>
-            <p>《迷霧》是大型開放RPG網頁遊戲，不是密室：沒有計時、不分難度，也不會進逃脫排行榜。你可以在台北捷運 118 站之間自由搭車、接任務、認識城市裡的人，想玩多久就玩多久。2026/10/20 開放。</p>
+            <p>《迷霧》是大型開放RPG網頁遊戲，不是密室：沒有計時、不分難度，也不會進逃脫排行榜。你可以在台北捷運 118 站之間自由搭車、接任務、認識城市裡的人，想玩多久就玩多久。2026/10/25 開放。</p>
           </details>
           <details>
             <summary>《迷霧》的進度會保存嗎？手機可以玩嗎？</summary>
@@ -1654,11 +1654,14 @@ let isAdmin = false;   // 管理員：admins 表只讀得到自己那一列，�
 let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）、探索排行榜
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
 const RETIRED = ['love'];
+// 還沒公開的遊戲：只有開發者看得到（卡片標「未公開」），一般玩家在大廳、排行榜、推薦、成就都看不到；要公開時把代號拿掉
+const HIDDEN = ['qianshan-night'];
+const isHidden = (g) => HIDDEN.includes(g.slug);
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
 const CONTACT = 'iho87061@gmail.com';
-let allGames = [], retiredGames = [];
+let gameRows = [], allGames = [], retiredGames = [];
 // 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
 let mine = {}, myRecs = [], achCodes = new Set();
 let myMsgs = [];   // 管理員傳給這位玩家的訊息（player_messages，只讀得到自己的）
@@ -1875,7 +1878,8 @@ function roomCard(g, rank = 0, note = '') {
   const i = games.indexOf(g);
   const open = isOpen(g);
   const m = mine[g.id], st = stats[g.id];
-  const badge = inMaint(g) ? '<span class="badge maint">🛠 維修中</span>'
+  const badge = isHidden(g) ? '<span class="badge maint">🔒 未公開</span>'
+    : inMaint(g) ? '<span class="badge maint">🛠 維修中</span>'
     : m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
     : saves[g.slug] ? '<span class="badge played">▶ 玩到一半</span>'
     : m ? '<span class="badge played">玩過</span>'
@@ -2022,7 +2026,7 @@ const RPGS = [{
   slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You',
   description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
   feats: ['台北捷運 118 站', '3D 開放世界', '主線・支線・秘密任務', '00:30 迷霧之城', '手機・電腦都能玩'],
-  cover_url: 'covers/mist.jpg', play_url: 'https://hao-yuliu.github.io/MRT-station-/', release_date: '2026-10-20', status: 'available',
+  cover_url: 'covers/mist.jpg', play_url: 'https://hao-yuliu.github.io/MRT-station-/', release_date: '2026-10-25', status: 'available',
 }];
 function renderRpgs() {
   $('#rpg-list').innerHTML = RPGS.map(g => {
@@ -2051,7 +2055,7 @@ function mistTrip() {
 function mistBoard() {
   const rows = mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
   return `<div class="mist-board"><div class="mist-head"><h3>🗺️ 迷霧探索排行榜</h3><span class="muted">比誰去過最多車站（同站數比等級）</span></div>${mistTrip()}
-    <ol class="mist-list">${rows || '<li class="mist-empty">10/20 開放後，這裡會列出去過最多車站的旅人。用夜語工作室帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
+    <ol class="mist-list">${rows || '<li class="mist-empty">10/25 開放後，這裡會列出去過最多車站的旅人。用夜語工作室帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
 }
 $('#rpg-list').addEventListener('click', onRoomClick);
 
@@ -2070,16 +2074,21 @@ document.querySelectorAll('.cat').forEach(c => c.addEventListener('click', () =>
   $('#rooms').scrollIntoView();
 }));
 
+// 登入狀態（是不是開發者）改變後要重新分一次，未公開的遊戲才不會露出來
+function applyGames() {
+  allGames = gameRows.filter(g => isAdmin || !isHidden(g));
+  games = allGames.filter(g => !RETIRED.includes(g.slug));
+  retiredGames = allGames.filter(g => RETIRED.includes(g.slug));
+  $('#stat-rooms').textContent = gameRows.filter(g => g.play_url && !isHidden(g)).length; // 只算真正做好的密室（含已下架），不算 Coming Soon 佔位、也不算未公開的
+}
 async function loadGames() {
   const { data, error } = await supabase.from('games').select('*').order('sort_order');
   if (error) {
     listEl.innerHTML = `<p class="empty">讀取密室失敗：${escapeHTML(error.message)}</p>`;
     return;
   }
-  allGames = data;
-  games = data.filter(g => !RETIRED.includes(g.slug));
-  retiredGames = data.filter(g => RETIRED.includes(g.slug));
-  $('#stat-rooms').textContent = allGames.filter(g => g.play_url).length; // 只算真正做好的密室（含已下架），不算 Coming Soon 佔位
+  gameRows = data;
+  applyGames();
   const tags = CATS;
   filtersEl.innerHTML = ['全部', ...tags].map((t, i) =>
     `<button class="chip" type="button" data-tag="${i ? escapeHTML(t) : ''}" aria-pressed="${i === 0}">${escapeHTML(t)}</button>`).join('');
@@ -2917,6 +2926,7 @@ document.addEventListener('click', async (e) => {
 });
 
 function renderAll() {
+  applyGames();
   renderHeader();
   renderHero();
   renderRpgs();
