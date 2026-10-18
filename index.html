@@ -815,6 +815,24 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .hero-next[hidden] { display: none; }
 .cd { font-variant-numeric: tabular-nums; font-weight: 700; color: #FFD9A0; letter-spacing: .03em; }
 /* 分享圖 */
+/* 每款遊戲自己的排行榜與成就（從遊戲卡片、繼續你的故事打開） */
+.room-hub { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(232,212,160,.35); color: var(--gold); font-size: 12px; font-weight: 500; cursor: pointer; }
+.room-hub:hover, .room-hub:focus-visible { background: rgba(232,212,160,.12); outline: none; }
+#game-hub { max-width: 560px; width: calc(100% - 32px); max-height: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 0; }
+#game-hub::backdrop { background: rgba(4,6,14,.75); }
+.gh-head { display: grid; grid-template-columns: 64px 1fr auto; gap: 14px; align-items: center; padding: 18px 20px 14px; border-bottom: 1px solid var(--ink-2); position: sticky; top: 0; background: var(--wall); z-index: 1; }
+.gh-head img, .gh-head .gh-noimg { width: 64px; aspect-ratio: 3 / 4; border-radius: 8px; object-fit: cover; background: var(--wall-2); }
+.gh-head h3 { font: 700 20px var(--serif); margin: 0; color: var(--gold); }
+.gh-head p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.gh-x { background: none; border: 0; color: var(--muted); font-size: 22px; cursor: pointer; padding: 4px 8px; }
+.gh-body { padding: 14px 20px 20px; }
+.gh-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.gh-mine { background: var(--ink-2); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.gh-mine b { color: var(--parchment); }
+.gh-body .rank-list { margin-top: 10px; }
+.gh-body .rank-variants { border-top: 0; padding-top: 0; }
+.gh-play { width: 100%; margin-top: 16px; }
+@media (max-width: 520px) { .gh-body .rank-row { grid-template-columns: 30px 32px 1fr auto; gap: 8px; } .gh-body .rank-date { display: none; } .gh-body .rank-row .avatar-img, .gh-body .rank-row .avatar-svg { width: 32px; height: 32px; } }
 #share-dlg { max-width: 420px; width: calc(100% - 32px); max-height: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 20px; }
 #share-dlg::backdrop { background: rgba(4,6,14,.75); }
 #share-dlg h3 { font: 700 18px var(--serif); margin: 0 0 12px; color: var(--gold); }
@@ -977,7 +995,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="hero-actions" id="hero-actions">
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
-      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-25" data-cd-short>10/25 開放</time> →</em></span></a>
+      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-23T20:00" data-cd-short>10/23 20:00 開放</time> →</em></span></a>
       <button class="hero-next" id="hero-next" type="button" hidden></button>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <span class="hero-hint" aria-hidden="true">✦ 點一下夜空、戳戳月亮，或接住一顆流星 ✦</span>
@@ -1013,7 +1031,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   </section>
 
   <nav class="quick" id="quick" aria-label="快速前往">
-    <a href="#progress" data-q="progress" hidden>我的進度</a><a href="#rooms" data-q="rooms">密室</a><a href="#rpg" data-q="rpg">迷霧</a><a href="#monthly" data-q="explore">推薦</a><a href="#ranking" data-q="explore">排行榜</a><a href="#news" data-q="explore">消息</a><a href="#how" data-q="info">說明</a>
+    <a href="#progress" data-q="progress" hidden>我的進度</a><a href="#rooms" data-q="rooms">密室</a><a href="#rpg" data-q="rpg">迷霧</a><a href="#monthly" data-q="explore">推薦</a><a href="#news" data-q="explore">消息</a><a href="#how" data-q="info">說明</a>
   </nav>
 
   <main>
@@ -1073,9 +1091,9 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 
 
 
-    <!-- 探索：本月推薦、全新主題、排行榜、最新消息放在同一區，用分頁切換，不用一直往下滑 -->
+    <!-- 探索：本月推薦、全新主題、最新消息放在同一區（排行榜在每款遊戲卡片的「排行榜・成就」裡），用分頁切換，不用一直往下滑 -->
     <section class="section alt hub" id="explore">
-      <div class="container"><div class="hub-tabs" role="tablist" aria-label="探索"><button type="button" role="tab" data-panel="monthly">本月推薦</button><button type="button" role="tab" data-panel="newest">全新主題</button><button type="button" role="tab" data-panel="ranking">排行榜</button><button type="button" role="tab" data-panel="news">最新消息</button></div></div>
+      <div class="container"><div class="hub-tabs" role="tablist" aria-label="探索"><button type="button" role="tab" data-panel="monthly">本月推薦</button><button type="button" role="tab" data-panel="newest">全新主題</button><button type="button" role="tab" data-panel="news">最新消息</button></div></div>
       <div class="hub-panel" id="monthly" role="tabpanel">
       <div class="container">
         <div class="section-head">
@@ -1095,22 +1113,6 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <p>夜語工作室最新上線的密室</p>
         </div>
         <div id="newest-box"></div>
-      </div>
-      </div>
-      <div class="hub-panel" id="ranking" role="tabpanel">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">RANKING</span>
-          <h2>逃脫排行榜</h2>
-          <p>每位玩家只取最快的一次。誰能最快逃出去？</p>
-        </div>
-        <div class="rank-wrap">
-          <div class="rank-board">
-            <div class="filters" id="rank-tabs" role="group" aria-label="選擇密室"></div>
-            <ol class="rank-list" id="rank-list"><li class="rank-empty">讀取中…</li></ol>
-          </div>
-          <aside class="my-rec" id="my-rec"></aside>
-        </div>
       </div>
       </div>
       <div class="hub-panel" id="news" role="tabpanel">
@@ -1277,7 +1279,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </details>
           <details>
             <summary>《迷霧》是什麼？跟密室有什麼不一樣？</summary>
-            <p>《迷霧》是大型開放RPG網頁遊戲，不是密室：沒有計時、不分難度，也不會進逃脫排行榜。你可以在台北捷運 118 站之間自由搭車、接任務、認識城市裡的人，想玩多久就玩多久。2026/10/25 開放。</p>
+            <p>《迷霧》是大型開放RPG網頁遊戲，不是密室：沒有計時、不分難度，也不會進逃脫排行榜。你可以在台北捷運 118 站之間自由搭車、接任務、認識城市裡的人，想玩多久就玩多久。2026/10/23 晚上 8 點（台灣時間）開放。</p>
           </details>
           <details>
             <summary>《迷霧》的進度會保存嗎？手機可以玩嗎？</summary>
@@ -1326,7 +1328,6 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <li><a href="#rooms">密室主題</a></li>
             <li><a href="#rpg">開放RPG</a></li>
             <li><a href="#monthly">每月推薦</a></li>
-            <li><a href="#ranking">排行榜</a></li>
             <li><a href="#how">遊戲方式</a></li>
             <li><a href="#about">關於我們</a></li>
             <li><a href="#retired">已下架遊戲</a></li>
@@ -1352,6 +1353,10 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     <p class="muted" id="install-sub">之後從主畫面點圖示，就會像 App 一樣全螢幕打開。</p>
     <ol id="install-steps"></ol>
     <form method="dialog"><button class="btn btn-gold" style="width:100%">知道了</button></form>
+  </dialog>
+  <dialog id="game-hub" aria-labelledby="gh-title">
+    <div class="gh-head"><span id="gh-cover"></span><div><h3 id="gh-title"></h3><p id="gh-sub"></p></div><form method="dialog"><button class="gh-x" aria-label="關閉">✕</button></form></div>
+    <div class="gh-body" id="gh-body"></div>
   </dialog>
   <dialog id="share-dlg" aria-labelledby="share-title">
     <h3 id="share-title">分享你的紀錄</h3>
@@ -1659,7 +1664,7 @@ const RETIRED = ['love'];
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
-const OPEN_TIME = { 'qianshan-night': '20:00' };
+const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
@@ -1753,7 +1758,6 @@ function renderHeader() {
         <a href="#rpg">開放RPG</a>
         ${isPlayer() ? '<a class="m-only" href="#progress">我的進度</a>' : ''}
         <a href="#monthly">每月推薦</a>
-        <a href="#ranking">排行榜</a>
         <a href="#news">最新消息</a>
         <a class="m-only" href="#how">遊戲方式</a>
         <a href="#about">關於我們</a>
@@ -1914,6 +1918,7 @@ function roomCard(g, rank = 0, note = '') {
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
         <div class="room-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span></div>
+        ${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 排行榜・成就</span>` : ''}
         <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
     </button>`;
@@ -2035,12 +2040,12 @@ const RPGS = [{
   slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You',
   description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
   feats: ['台北捷運 118 站', '3D 開放世界', '主線・支線・秘密任務', '00:30 迷霧之城', '手機・電腦都能玩'],
-  cover_url: 'covers/mist.jpg', play_url: 'https://hao-yuliu.github.io/MRT-station-/', release_date: '2026-10-25', status: 'available',
+  cover_url: 'covers/mist.jpg', play_url: 'https://hao-yuliu.github.io/MRT-station-/', release_date: '2026-10-23', status: 'available',
 }];
 function renderRpgs() {
   $('#rpg-list').innerHTML = RPGS.map(g => {
     const open = isOpen(g), soon = upcoming(g);
-    const cta = soon ? `${fmtDate(g.release_date).slice(5)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
+    const cta = soon ? `${openLabel(g)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
     return `
     <button class="rpg ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
       <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(g.cover_url)}" alt=""></div>
@@ -2051,7 +2056,7 @@ function renderRpgs() {
         <p class="sub">${escapeHTML(g.subtitle)}</p>
         <p class="desc">${escapeHTML(g.description)}</p>
         <ul class="rpg-feats">${g.feats.map(f => `<li>${escapeHTML(f)}</li>`).join('')}</ul>
-        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(g.release_date)}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
+        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
       </div>
     </button>`;
   }).join('') + (mistTop.length ? mistBoard() : '');
@@ -2064,7 +2069,7 @@ function mistTrip() {
 function mistBoard() {
   const rows = mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
   return `<div class="mist-board"><div class="mist-head"><h3>🗺️ 迷霧探索排行榜</h3><span class="muted">比誰去過最多車站（同站數比等級）</span></div>${mistTrip()}
-    <ol class="mist-list">${rows || '<li class="mist-empty">10/25 開放後，這裡會列出去過最多車站的旅人。用夜語工作室帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
+    <ol class="mist-list">${rows || '<li class="mist-empty">10/23 20:00 開放後，這裡會列出去過最多車站的旅人。用夜語工作室帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
 }
 $('#rpg-list').addEventListener('click', onRoomClick);
 
@@ -2356,34 +2361,16 @@ async function openAdmin() {
 }
 
 // ================= 排行榜 =================
-let rankSlug = '';
 const MEDALS = ['🥇', '🥈', '🥉'];
-let rankVariant = {};
-async function renderRanking(slug = rankSlug) {
-  const open = games.filter(isOpen);
-  const tabs = $('#rank-tabs'), list = $('#rank-list');
-  if (!open.length) {
-    tabs.innerHTML = '';
-    list.innerHTML = '<li class="rank-empty">密室開放後，這裡會列出最快逃脫的玩家。</li>';
-    return;
-  }
-  rankSlug = open.some(g => g.slug === slug) ? slug : open[0].slug;
-  tabs.innerHTML = open.map(g =>
-    `<button class="chip" type="button" data-slug="${escapeHTML(g.slug)}" aria-pressed="${g.slug === rankSlug}">${escapeHTML(g.title)}</button>`).join('');
-  const vs = VARIANTS[rankSlug];
-  const variant = vs ? (rankVariant[rankSlug] ??= vs[0][0]) : null;
-  if (vs) tabs.insertAdjacentHTML('beforeend', `<div class="rank-variants" role="group" aria-label="選擇版本">${vs.map(([v, name]) =>
-    `<button class="chip" type="button" data-variant="${v}" aria-pressed="${v === variant}">${escapeHTML(name)}</button>`).join('')}</div>`);
-  list.innerHTML = '<li class="rank-empty">讀取中…</li>';
-  const { data, error } = vs
-    ? await supabase.rpc('get_leaderboard_v', { p_slug: rankSlug, p_variant: variant, p_limit: 10 })
-    : await supabase.rpc('get_leaderboard', { p_slug: rankSlug, p_limit: 10 });
-  if (error) { list.innerHTML = `<li class="rank-empty">讀取排行榜失敗：${escapeHTML(error.message)}</li>`; return; }
-  if (!data.length) {
-    list.innerHTML = '<li class="rank-empty">還沒有人成功逃脫。第一個名字，會是你嗎？</li>';
-    return;
-  }
-  list.innerHTML = data.map(r => `
+let rankVariant = {};   // 有分版本的遊戲（千山夜錄）目前看哪一版
+// 一款遊戲（一個版本）的前 10 名，回傳排行榜的 <li>；探索區的排行榜和遊戲的排行榜・成就視窗共用
+async function rankRows(slug, variant) {
+  const { data, error } = variant
+    ? await supabase.rpc('get_leaderboard_v', { p_slug: slug, p_variant: variant, p_limit: 10 })
+    : await supabase.rpc('get_leaderboard', { p_slug: slug, p_limit: 10 });
+  if (error) return `<li class="rank-empty">讀取排行榜失敗：${escapeHTML(error.message)}</li>`;
+  if (!data.length) return '<li class="rank-empty">還沒有人成功逃脫。第一個名字，會是你嗎？</li>';
+  return data.map(r => `
     <li class="rank-row ${profile && r.username === profile.username ? 'me-row' : ''}">
       <span class="rank-no">${MEDALS[r.rank - 1] ?? r.rank}</span>
       ${avatarHTML(r, 40)}
@@ -2392,11 +2379,66 @@ async function renderRanking(slug = rankSlug) {
       <span class="rank-time">${fmtTime(r.best_sec)}</span>
     </li>`).join('');
 }
-$('#rank-tabs').addEventListener('click', (e) => {
-  const b = e.target.closest('.chip');
-  if (b?.dataset.variant) { rankVariant[rankSlug] = b.dataset.variant; renderRanking(rankSlug); }
-  else if (b) renderRanking(b.dataset.slug);
+
+// ================= 每款遊戲的排行榜與成就 =================
+// 從遊戲卡片、「繼續你的故事」的卡片打開，玩家不用再到下面的探索區或成就摺疊區找
+let hubSlug = '', hubTab = 'rank', hubSeq = 0;
+function achItem(a, ok) {
+  const hide = a.secret && !ok;
+  return `<div class="ach ${ok ? 'ok' : ''}" title="${escapeHTML(hide ? '隱藏成就' : a.desc)}"><i>${hide ? '🔒' : a.icon}</i><b>${hide ? '？？？' : escapeHTML(a.title)}</b><span>${hide ? '隱藏成就' : escapeHTML(a.desc)}</span></div>`;
+}
+function openHub(slug, tab = 'rank') {
+  const g = allGames.find(x => x.slug === slug);
+  if (!g) return;
+  hubSlug = slug; hubTab = tab;
+  $('#gh-cover').innerHTML = g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="">` : '<span class="gh-noimg"></span>';
+  $('#gh-title').textContent = g.title;
+  $('#gh-sub').textContent = `${players(g)}・${dur(g)}`;
+  renderHub();
+  const dlg = $('#game-hub');
+  if (!dlg.open) dlg.showModal();
+}
+async function renderHub() {
+  const g = allGames.find(x => x.slug === hubSlug);
+  if (!g) return;
+  const m = mine[g.id], ends = ENDING_COUNT[g.slug];
+  const c = achContext(), got = a => achCodes.has(a.code) || (a.test && a.test(c));
+  const ach = ACH.filter(a => a.game === g.slug), k = isPlayer() ? ach.filter(got).length : 0;
+  if (!ach.length) hubTab = 'rank';
+  const me = !isPlayer() ? '註冊並建立角色後，逃脫時間會登上排行榜，成就也會幫你記下來。'
+    : m ? `我的紀錄：挑戰 ${m.plays} 次・${m.best != null ? `最佳 <b>${fmtTime(m.best)}</b>` : '尚未逃脫'}${ends ? `・結局 <b>${m.endings.size}</b> / ${ends}` : ''}${ach.length ? `・成就 <b>${k}</b> / ${ach.length}` : ''}`
+    : '你還沒挑戰過這款。逃出來的時間會登上這裡的排行榜。';
+  const tabs = `<div class="gh-tabs"><button class="chip" type="button" data-ght="rank" aria-pressed="${hubTab === 'rank'}">🏆 排行榜</button>${ach.length ? `<button class="chip" type="button" data-ght="ach" aria-pressed="${hubTab === 'ach'}">🎖 成就 ${isPlayer() ? `${k}/${ach.length}` : ach.length}</button>` : ''}</div>`;
+  const vs = VARIANTS[g.slug], variant = vs ? (rankVariant[g.slug] ??= vs[0][0]) : null;
+  const body = hubTab === 'ach'
+    ? `<div class="ach-bar"><i style="width:${ach.length ? k / ach.length * 100 : 0}%"></i></div><div class="ach-grid">${ach.map(a => achItem(a, isPlayer() && got(a))).join('')}</div>`
+    : `${vs ? `<div class="rank-variants" role="group" aria-label="選擇版本">${vs.map(([v, name]) => `<button class="chip" type="button" data-ghv="${v}" aria-pressed="${v === variant}">${escapeHTML(name)}</button>`).join('')}</div>` : ''}
+      <p class="muted small">每位玩家只取最快的一次。</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
+  const cta = !isOpen(g) ? '' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>${tabs}${body}${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}`;
+  if (hubTab === 'rank') {
+    const seq = ++hubSeq, html = await rankRows(g.slug, variant);
+    if (seq === hubSeq && $('#gh-rank')) $('#gh-rank').innerHTML = html;   // 切換很快時，只放最後一次的結果
+  }
+}
+$('#game-hub').addEventListener('click', (e) => {
+  const dlg = e.currentTarget;
+  if (e.target === dlg) return dlg.close();   // 點視窗外面關閉
+  const t = e.target.closest('[data-ght]'), v = e.target.closest('[data-ghv]');
+  if (t) { hubTab = t.dataset.ght; renderHub(); }
+  else if (v) { rankVariant[hubSlug] = v.dataset.ghv; renderHub(); }
+  else if (e.target.closest('[data-go]')) dlg.close();   // 進遊戲：關掉視窗，交給下面的 data-go 處理
 });
+// 卡片上的「排行榜・成就」：遊戲卡片本身是按鈕（點了會進遊戲），所以在最前面攔下來
+document.addEventListener('click', (e) => {
+  const h = e.target.closest('[data-hub]'); if (!h) return;
+  e.preventDefault(); e.stopPropagation();
+  openHub(h.dataset.hub, h.dataset.hubTab);
+}, true);
+document.addEventListener('keydown', (e) => {
+  const h = e.target.closest?.('span[data-hub]');
+  if (h && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); openHub(h.dataset.hub); }
+}, true);
 
 // 一次通關紀錄的「死亡／提示／借錢」
 function runMeta(r) {
@@ -2566,56 +2608,20 @@ function achContext() {
     day: r => new Date(r.updated_at || r.created_at).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }),
     cl: s => cleared.filter(r => r.slug === s), end: (s, e) => !!endings[s]?.has(e) };
 }
-let achTab = null;   // 目前看哪一款遊戲的成就（null＝夜語工作室共通）
+// 「我的護照與成就」只列夜語工作室共通的成就；各遊戲自己的成就放在那款遊戲的「排行榜・成就」，這裡只放完成度按鈕
 function renderAch() {
   const c = achContext();
   const got = a => achCodes.has(a.code) || (a.test && a.test(c));
-  const groups = [[null, '夜語工作室'], ...allGames.filter(g => ACH.some(a => a.game === g.slug)).map(g => [g.slug, g.title])];
-  if (!groups.some(([k]) => k === achTab)) achTab = null;
   const n = ACH.filter(got).length;
-  const tabs = groups.map(([slug, name]) => {
-    const list = ACH.filter(a => a.game === slug), k = list.filter(got).length;
-    return `<button type="button" class="ach-tab ${slug === achTab ? 'on' : ''} ${k === list.length ? 'full' : ''}" data-ach="${slug ?? ''}">${escapeHTML(name)}<em>${k}/${list.length}</em></button>`;
+  const common = ACH.filter(a => a.game === null), k = common.filter(got).length;
+  const perGame = allGames.filter(g => ACH.some(a => a.game === g.slug)).map(g => {
+    const list = ACH.filter(a => a.game === g.slug), gk = list.filter(got).length;
+    return `<button type="button" class="ach-tab ${gk === list.length ? 'full' : ''}" data-hub="${escapeHTML(g.slug)}" data-hub-tab="ach">${escapeHTML(g.title)}<em>${gk}/${list.length}</em></button>`;
   }).join('');
-  const list = ACH.filter(a => a.game === achTab), k = list.filter(got).length;
-  return `<div class="ach-head"><h4>🏆 成就</h4><span class="muted">總計 ${n} / ${ACH.length}</span></div>
-    <p class="muted small ach-tip">點下面的遊戲名稱，查看那款遊戲的成就。</p>
-    <div class="ach-tabs" role="tablist">${tabs}</div>
-    <div class="ach-panel"><div class="ach-bar"><i style="width:${list.length ? k / list.length * 100 : 0}%"></i></div>
-    <div class="ach-grid">${list.map(a => {
-      const ok = got(a), hide = a.secret && !ok;
-      return `<div class="ach ${ok ? 'ok' : ''}" title="${escapeHTML(hide ? '隱藏成就' : a.desc)}"><i>${hide ? '🔒' : a.icon}</i><b>${hide ? '？？？' : escapeHTML(a.title)}</b><span>${hide ? '隱藏成就' : escapeHTML(a.desc)}</span></div>`;
-    }).join('')}</div></div>`;
-}
-document.addEventListener('click', (e) => {
-  const b = e.target.closest('.ach-tab'); if (!b) return;
-  achTab = b.dataset.ach || null;
-  const box = b.closest('.ach-box'); if (box) box.innerHTML = renderAch();
-});
-
-// 我的紀錄
-function renderMine() {
-  const el = $('#my-rec');
-  if (!isPlayer()) {
-    el.innerHTML = `<h3>我的紀錄</h3>
-      <p class="muted">註冊並建立角色後，你玩過的密室與逃脫時間都會記錄在這裡，也能登上排行榜。</p>
-      <a class="btn btn-gold" href="${user ? '#character' : '#signup'}">${user ? '建立角色' : '免費建立角色'}</a>`;
-    return;
-  }
-  const played = allGames.filter(g => mine[g.id]);
-  const escaped = played.filter(g => mine[g.id].best != null);
-  const totalDeaths = played.reduce((s, g) => s + mine[g.id].deaths, 0);
-  const totalHints = played.reduce((s, g) => s + mine[g.id].hints, 0);
-  el.innerHTML = `
-    <div class="my-head">${avatarHTML(profile, 48)}<div><h3>${escapeHTML(profile.username)}</h3><span class="muted">我的紀錄</span></div></div>
-    <div class="my-stats four"><div><b>${played.length}</b><span>玩過</span></div><div><b>${escaped.length}</b><span>成功逃脫</span></div><div><b>${totalDeaths}</b><span>總死亡</span></div><div><b>${totalHints}</b><span>總提示</span></div></div>
-    ${played.length ? `<ul class="my-list">${played.map(g => {
-      const m = mine[g.id];
-      return `<li><span>${escapeHTML(g.title)}<small>挑戰 ${m.plays} 次・通關 ${m.clears} 次${ENDING_COUNT[g.slug] ? `・結局 ${m.endings.size} / ${ENDING_COUNT[g.slug]}` : ''}</small>${m.bestRec ? `<small>最佳那次：${runMeta(m.bestRec)}</small>` : ''}</span>
-        <b class="${m.best != null ? 'ok' : ''}">${m.best != null ? '最佳 ' + fmtTime(m.best) : '尚未逃脫'}${m.best != null ? `<button class="share-btn" type="button" data-share="${escapeHTML(g.slug)}">分享</button>` : ''}</b></li>`;
-    }).join('')}</ul>` : '<p class="muted">還沒有遊玩紀錄。挑一間密室，今晚就開始吧。</p>'}
-    ${mist ? `<div class="my-mist"><h4>🚇 迷霧・我的旅程</h4><div class="my-stats four"><div><b>${mist.level}</b><span>等級</span></div><div><b>${mist.stations}</b><span>去過車站</span></div><div><b>${mist.treasures}</b><span>寶物 / 6</span></div><div><b class="mist-at">${escapeHTML(mist.station || '-')}</b><span>目前所在</span></div></div></div>` : ''}
-`;
+  return `<div class="ach-head"><h4>🏆 夜語工作室成就</h4><span class="muted">全部 ${n} / ${ACH.length}</span></div>
+    <div class="ach-panel"><div class="ach-bar"><i style="width:${common.length ? k / common.length * 100 : 0}%"></i></div>
+    <div class="ach-grid">${common.map(a => achItem(a, got(a))).join('')}</div></div>
+    ${perGame ? `<p class="muted small ach-tip">各遊戲的成就：點遊戲名稱，打開那款遊戲的排行榜・成就。</p><div class="ach-tabs">${perGame}</div>` : ''}`;
 }
 
 // ================= 稱號（依成就數量升級） =================
@@ -2672,6 +2678,7 @@ function renderProgress() {
         <div class="prog-bar"><i style="width:${r.n ? r.k / r.n * 100 : 0}%"></i></div>
         <span class="prog-meta">成就 ${r.k} / ${r.n}${r.ends ? `・結局 ${r.e} / ${r.ends}` : ''}</span>
         <div class="prog-acts">${isOpen(r.g) ? `<button class="btn btn-gold" type="button" data-go="${escapeHTML(r.g.slug)}">${r.act}</button>` : ''}
+          <button class="btn btn-ghost" type="button" data-hub="${escapeHTML(r.g.slug)}">🏆 排行榜・成就</button>
           ${r.m?.best != null ? `<button class="btn btn-ghost" type="button" data-share="${escapeHTML(r.g.slug)}">分享 ↗</button>` : ''}</div></div></div>`).join('')}${mistCard}</div>`
     : `<p class="prog-empty">還沒開始任何故事。${sug ? `今晚，走進 <button type="button" data-go="${escapeHTML(sug.slug)}">《${escapeHTML(sug.title)}》</button> 吧。` : ''}</p>`}
     ${myMsgs.length ? `<details class="ach-fold msg-fold"${msgOpen ? ' open' : ''}><summary>📬 我的訊息 <small>${myMsgs.filter(m => !m.read_at).length ? `${myMsgs.filter(m => !m.read_at).length} 則新訊息・` : ''}共 ${myMsgs.length} 則</small></summary>
@@ -2757,7 +2764,7 @@ $('#hero-next').addEventListener('click', (e) => {
 let cdDay = today(), cdSoon = -1;
 function tickCountdown() {
   document.querySelectorAll('[data-cd]').forEach(el => { el.textContent = cdText(el.dataset.cd, el.hasAttribute('data-cd-short')); });
-  const soon = games.filter(upcoming).length;
+  const soon = [...games, ...RPGS].filter(upcoming).length;
   if (today() !== cdDay) { cdDay = today(); cdSoon = soon; reshuffle(); renderAll(); }   // 過了午夜：剛開放的遊戲直接變成可以玩
   else if (soon < cdSoon) { cdSoon = soon; renderAll(); }   // 指定時間開放的遊戲（OPEN_TIME）一到點也直接變成可以玩
   else cdSoon = soon;
@@ -2978,8 +2985,6 @@ function renderAll() {
   renderNewest();
   renderMonthly();
   renderRetired();
-  renderMine();
-  renderRanking();
   renderProgress();
   renderHeroNext();
   tickCountdown();
