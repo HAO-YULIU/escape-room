@@ -2384,8 +2384,9 @@ async function rankRows(slug, variant) {
 // 從遊戲卡片、「繼續你的故事」的卡片打開，玩家不用再到下面的探索區或成就摺疊區找
 let hubSlug = '', hubTab = 'rank', hubSeq = 0;
 function achItem(a, ok) {
-  const hide = a.secret && !ok;
-  return `<div class="ach ${ok ? 'ok' : ''}" title="${escapeHTML(hide ? '隱藏成就' : a.desc)}"><i>${hide ? '🔒' : a.icon}</i><b>${hide ? '？？？' : escapeHTML(a.title)}</b><span>${hide ? '隱藏成就' : escapeHTML(a.desc)}</span></div>`;
+  // 隱藏成就、會透露劇情的結局成就（ending）：達成前只顯示「？？？」
+  const hide = (a.secret || a.ending) && !ok, note = a.ending ? '結局：達成後揭曉' : '隱藏成就';
+  return `<div class="ach ${ok ? 'ok' : ''}" title="${escapeHTML(hide ? note : a.desc)}"><i>${hide ? '🔒' : a.icon}</i><b>${hide ? '？？？' : escapeHTML(a.title)}</b><span>${hide ? note : escapeHTML(a.desc)}</span></div>`;
 }
 function openHub(slug, tab = 'rank') {
   const g = allGames.find(x => x.slug === slug);
@@ -2577,13 +2578,13 @@ const ACH = [
   { code: 'qs_nohint', game: 'qianshan-night', icon: '📝', title: '便條一張都沒用', desc: '零提示通關', test: c => c.cl('qianshan-night').some(r => !r.hints) },
   { code: 'qs_fast', game: 'qianshan-night', icon: '⏱', title: '天還沒亮', desc: '120 分鐘內通關', test: c => c.cl('qianshan-night').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
   { code: 'qs_hell_nohint', game: 'qianshan-night', icon: '💉', title: '沒有打給任何人', desc: '零提示通關地獄版', test: c => c.cl('qianshan-night').some(r => r.variant === 'hell' && !r.hints) },
-  { code: 'qs_e_names', game: 'qianshan-night', icon: '📛', title: '把姓名還給原主', desc: '結局：把姓名還給原主', test: c => c.end('qianshan-night', 'return-names') },
-  { code: 'qs_e_seal', game: 'qianshan-night', icon: '🔒', title: '封閉舊住院大樓', desc: '結局：封閉舊住院大樓', test: c => c.end('qianshan-night', 'seal-building') },
-  { code: 'qs_e_stop', game: 'qianshan-night', icon: '⏹', title: '終止記憶保存程序', desc: '結局：終止記憶保存程序', test: c => c.end('qianshan-night', 'stop-qianshan') },
-  { code: 'qs_e_go', game: 'qianshan-night', icon: '🚪', title: '讓四十七號病患離院', desc: '結局：讓四十七號病患離院', test: c => c.end('qianshan-night', 'let-her-go') },
-  { code: 'qs_e_evidence', game: 'qianshan-night', icon: '📦', title: '讓所有證據離開和山醫院', desc: '結局：讓所有證據離開和山醫院', test: c => c.end('qianshan-night', 'evidence-out') },
-  { code: 'qs_e_stay', game: 'qianshan-night', icon: '🕯', title: '有人留下完成交班', desc: '結局：有人留下完成交班', test: c => c.end('qianshan-night', 'stay-handover') },
-  { code: 'qs_e_leave', game: 'qianshan-night', icon: '🌃', title: '離開醫院，不再追問', desc: '結局：離開醫院，不再追問', test: c => c.end('qianshan-night', 'leave') },
+  { code: 'qs_e_names', game: 'qianshan-night', icon: '📛', title: '把姓名還給原主', ending: 1, desc: '結局：把姓名還給原主', test: c => c.end('qianshan-night', 'return-names') },
+  { code: 'qs_e_seal', game: 'qianshan-night', icon: '🔒', title: '封閉舊住院大樓', ending: 1, desc: '結局：封閉舊住院大樓', test: c => c.end('qianshan-night', 'seal-building') },
+  { code: 'qs_e_stop', game: 'qianshan-night', icon: '⏹', title: '終止記憶保存程序', ending: 1, desc: '結局：終止記憶保存程序', test: c => c.end('qianshan-night', 'stop-qianshan') },
+  { code: 'qs_e_go', game: 'qianshan-night', icon: '🚪', title: '讓四十七號病患離院', ending: 1, desc: '結局：讓四十七號病患離院', test: c => c.end('qianshan-night', 'let-her-go') },
+  { code: 'qs_e_evidence', game: 'qianshan-night', icon: '📦', title: '讓所有證據離開和山醫院', ending: 1, desc: '結局：讓所有證據離開和山醫院', test: c => c.end('qianshan-night', 'evidence-out') },
+  { code: 'qs_e_stay', game: 'qianshan-night', icon: '🕯', title: '有人留下完成交班', ending: 1, desc: '結局：有人留下完成交班', test: c => c.end('qianshan-night', 'stay-handover') },
+  { code: 'qs_e_leave', game: 'qianshan-night', icon: '🌃', title: '離開醫院，不再追問', ending: 1, desc: '結局：離開醫院，不再追問', test: c => c.end('qianshan-night', 'leave') },
   { code: 'qs_e_blank', game: 'qianshan-night', icon: '⬜', title: '空白病患', desc: '隱藏結局', secret: 1, test: c => c.end('qianshan-night', 'blank-patient') },
   { code: 'qs_all', game: 'qianshan-night', icon: '📚', title: '八份交班紀錄', desc: '收集千山夜錄的全部 8 個結局（含隱藏結局）', test: c => ['return-names', 'seal-building', 'stop-qianshan', 'let-her-go', 'evidence-out', 'stay-handover', 'leave', 'blank-patient'].every(e => c.end('qianshan-night', e)) },
   { code: 'qianshan-ending-no-handover', game: 'qianshan-night', icon: '🔕', title: '沒有人接班', desc: '地獄版：交班時間到了，還沒做出決定', secret: 1 },
