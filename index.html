@@ -1655,8 +1655,10 @@ let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）�
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
 const RETIRED = ['love'];
 // 還沒公開的遊戲：只有開發者看得到（卡片標「未公開」），一般玩家在大廳、排行榜、推薦、成就都看不到；要公開時把代號拿掉
-const HIDDEN = ['qianshan-night'];
+const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
+// 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
+const OPEN_TIME = { 'qianshan-night': '20:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
@@ -1869,9 +1871,11 @@ const released = (g) => g.release_date ?? g.created_at;
 const isNew = (g) => Date.now() - new Date(released(g)).getTime() < 1000 * 60 * 60 * 24 * 7; // 上線 7 天內才標 NEW
 // 最新上線的那一款：有新的上線日期才會換掉
 const newestGame = () => games.filter(isOpen).sort((a, b) => String(released(b)).localeCompare(String(released(a))))[0];
-// 有上線日期的，要等到那天（台灣時間）才開放；在那之前大廳會先顯示「幾月幾日上線」
+// 有上線日期的，要等到那天（台灣時間，OPEN_TIME 有寫就等到那個時間）才開放；在那之前大廳會先顯示「幾月幾日上線」
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' });
-const upcoming = (g) => !!g.play_url && !!g.release_date && g.release_date.slice(0, 10) > today();
+const openStr = (g) => g.release_date.slice(0, 10) + (OPEN_TIME[g.slug] ? 'T' + OPEN_TIME[g.slug] : '');
+const openLabel = (g) => fmtDate(g.release_date).slice(5) + (OPEN_TIME[g.slug] ? ' ' + OPEN_TIME[g.slug] : '');
+const upcoming = (g) => !!g.play_url && !!g.release_date && openAt(openStr(g)) > Date.now();
 const isOpen = (g) => !inMaint(g) && !!g.play_url && ['available', 'coming_soon'].includes(g.status) && !upcoming(g);
 
 function roomCard(g, rank = 0, note = '') {
@@ -1883,10 +1887,10 @@ function roomCard(g, rank = 0, note = '') {
     : m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
     : saves[g.slug] ? '<span class="badge played">▶ 玩到一半</span>'
     : m ? '<span class="badge played">玩過</span>'
-    : upcoming(g) ? `<span class="badge soon">⏳ ${cdSpan(g.release_date)}</span>`
+    : upcoming(g) ? `<span class="badge soon">⏳ ${cdSpan(openStr(g))}</span>`
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-  const cta = inMaint(g) ? '改版維修中' : upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const cta = inMaint(g) ? '改版維修中' : upcoming(g) ? `${openLabel(g)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   // 挑戰人數只給開發者看（資料庫的 get_game_stats 也只回給管理員）
   const challenge = note ? `<p class="challengers">${note}</p>` : isAdmin && st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
@@ -1996,7 +2000,7 @@ function openGame(slug) {
   const g = games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug);
   if (!g) return;
   if (inMaint(g)) return toast(`「${g.title}」正在改版維修中，全新版本敬請期待！`);
-  if (upcoming(g)) return toast(`「${g.title}」將在 ${fmtDate(g.release_date).slice(5)} 開放，敬請期待。`);
+  if (upcoming(g)) return toast(`「${g.title}」將在 ${openLabel(g)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
   goPlay(g.play_url);
@@ -2116,7 +2120,7 @@ async function loadNews() {
   el.innerHTML = data.map((n, i) => {
     const d = new Date(n.published_at), link = n.link ?? '', slug = link.startsWith('game:') ? link.slice(5) : '';
     const g = slug && (games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug));
-    const go = slug ? (g ? (upcoming(g) ? `${fmtDate(g.release_date).slice(5)} 開放 →` : '進入密室 →') : '') : link.startsWith('#') ? '前往查看 →' : link ? '前往 →' : '';
+    const go = slug ? (g ? (upcoming(g) ? `${openLabel(g)} 開放 →` : '進入密室 →') : '') : link.startsWith('#') ? '前往查看 →' : link ? '前往 →' : '';
     const inner = `
       <div class="news-date"><b>${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}</b><span>${d.getFullYear()}</span></div>
       <div>${n.tag ? `<span class="news-tag t-${escapeHTML(n.tag)}">${escapeHTML(n.tag)}</span>` : ''}<h3>${escapeHTML(n.title)}</h3>${n.summary ? `<p>${escapeHTML(n.summary)}</p>` : ''}${go ? `<span class="news-go">${go}</span>` : ''}</div>
@@ -2692,8 +2696,8 @@ function checkNewMsgs() {
 }
 
 // ================= 開放倒數 =================
-// 上線日期當天 00:00（台灣時間）開放
-const openAt = (d) => new Date(d.slice(0, 10) + 'T00:00:00+08:00').getTime();
+// 上線日期當天 00:00（台灣時間）開放；d 也可以帶時間（2026-10-18T20:00）
+function openAt(d) { return new Date((d.length > 10 ? d.slice(0, 16) : d.slice(0, 10) + 'T00:00') + ':00+08:00').getTime(); }
 function cdText(d, short) {
   const ms = openAt(d) - Date.now(); if (ms <= 0) return '已開放';
   const s = ms / 1000 | 0, day = s / 86400 | 0, p = (n) => String(n).padStart(2, '0');
@@ -2701,22 +2705,25 @@ function cdText(d, short) {
   if (short) return day ? `還有 ${day} 天` : `${hms} 後開放`;
   return day ? `${day} 天 ${hms}` : hms;
 }
-const cdSpan = (d) => `<span class="cd" data-cd="${escapeHTML(d.slice(0, 10))}">${cdText(d)}</span>`;
+const cdSpan = (d) => `<span class="cd" data-cd="${escapeHTML(d.slice(0, 16))}">${cdText(d)}</span>`;
 function renderHeroNext() {
   const el = $('#hero-next');
   const g = games.filter(upcoming).sort((a, b) => a.release_date.localeCompare(b.release_date))[0];
   el.hidden = !g; if (!g) return;
   el.dataset.slug = g.slug;
-  el.innerHTML = `<span>⏳ 下一扇門《<b>${escapeHTML(g.title)}</b>》開放倒數</span>${cdSpan(g.release_date)}`;
+  el.innerHTML = `<span>⏳ 下一扇門《<b>${escapeHTML(g.title)}</b>》開放倒數</span>${cdSpan(openStr(g))}`;
 }
 $('#hero-next').addEventListener('click', (e) => {
   const card = document.querySelector(`.room[data-slug="${e.currentTarget.dataset.slug}"]`);
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); else location.hash = 'rooms';
 });
-let cdDay = today();
+let cdDay = today(), cdSoon = -1;
 function tickCountdown() {
   document.querySelectorAll('[data-cd]').forEach(el => { el.textContent = cdText(el.dataset.cd, el.hasAttribute('data-cd-short')); });
-  if (today() !== cdDay) { cdDay = today(); reshuffle(); renderAll(); }   // 過了午夜：剛開放的遊戲直接變成可以玩
+  const soon = games.filter(upcoming).length;
+  if (today() !== cdDay) { cdDay = today(); cdSoon = soon; reshuffle(); renderAll(); }   // 過了午夜：剛開放的遊戲直接變成可以玩
+  else if (soon < cdSoon) { cdSoon = soon; renderAll(); }   // 指定時間開放的遊戲（OPEN_TIME）一到點也直接變成可以玩
+  else cdSoon = soon;
 }
 setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
 
