@@ -23,12 +23,16 @@ const PUPU_SCENES = {
   hlane: 'Hlane 國家公園', market: 'Malkerns 市集', lobby: '旅館大廳', hall: '走廊', room: '113 號房', r103: '103 號房', maze: '相連的房間',
   store: '郝翔的秘密倉庫', black: '黑色的門',
 };
+const QS_CH = [['prologue', '序章'], ['ch1', '第一章'], ['ch2', '第二章'], ['ch3', '第三章'], ['ch4', '第四章'], ['finale', '終章'], ['ending', '最後的交班']];
 const PARTS8 = ['第一部分', '第二部分', '第三部分', '第四部分', '第五部分', '第六部分', '第七部分', '第八部分'];
 const ENDING_NAMES = {
   'qianchan-school': { e1: '封存的黎明', e2: '空白名冊', e3: '鏡子後面的走廊', e4: '名字還在（隱藏）' },
   school2: { e1: '沒有帶聖安', e2: 'TRUE END', e3: '她還在等我', e4: '她現在是我', e5: '逃跑失敗', e6: '邦瑜真正被放下', eh: '隱藏真結局' },
   bang: { pb: '彈珠王', xq_w: '象棋勝', xq_l: '象棋輸', xq_d: '象棋和', cd1: '撲克第一', cd2: '撲克第二', cd3: '撲克第三', mj1: '麻將第一', mj2: '麻將第二', mj3: '麻將第三', mj4: '麻將最後' },
   sea: { solo: '單人破案', duo: '雙人破案' },
+  'qianshan-night': { 'return-names': '把姓名還給原主', 'seal-building': '封閉舊住院大樓', 'stop-qianshan': '終止記憶保存程序', 'let-her-go': '讓四十七號病患離院',
+    'evidence-out': '讓所有證據離開和山醫院', 'stay-handover': '有人留下完成交班', leave: '離開醫院，不再追問', 'blank-patient': '空白病患（隱藏）',
+    'never-ending-night': '暮兒之夜：永不熄滅的夜', forgotten: '暮兒之夜：被遺忘的人', 'last-page': '暮兒之夜：最後一頁', 'still-searching': '暮兒之夜：她還在找人' },
   arg: { E1: '未完成', E2: '交接', E3: '記錄者', E4: '停止計算', E5: '沉默', E6: '第八位收件人', E7: '被遺忘的權利', E8: '你不知道' },
 };
 const BANG_CH = [['序章', '台北車站', 8], ['第一章', '故宮', 11], ['第二章', '台北市立美術館', 11], ['第三章', '九份', 11], ['第四章', '十分', 11],
@@ -105,6 +109,18 @@ function summarize(game, save) {
   if (game === 'mist') {
     const s = cnt(d.visited);
     return { part: `Lv ${save.level || 1}`, pi: 0, pn: 1, scene: save.station, solved: s, total: 118, note: `寶物 ${cnt(d.items)} / 6` };
+  }
+  if (game === 'qianshan-night') {
+    // 存檔：unlocks、endings（陣列）、current（玩到一半的這一場：房號、模式、難度、章節、解開幾題、已玩秒數、提示、角色、地點、剩幾顆藥）
+    const C = d.current, ends = (Array.isArray(d.endings) ? d.endings : []).map(e => ENDING_NAMES[game][e] || e);
+    const unlocked = Array.isArray(d.unlocks) && d.unlocks.includes('first-clear');
+    if (!C) return ends.length ? { done: true, endings: ends, part: '已完成', pi: QS_CH.length, pn: QS_CH.length, note: unlocked ? '已解鎖病患角色' : '還沒解鎖病患角色（要 180 分鐘內通關）' } : { part: '目前沒有進行中的一場', pi: 0, pn: 1 };
+    const muer = C.mode === 'muer', hell = C.difficulty === 'hell';
+    const pi = muer ? 0 : Math.max(0, QS_CH.findIndex(([id]) => id === C.chapter));
+    const unit = hell ? '針筒' : '藥', state = { vanished: '名字消失', anomaly: '異常', patient: '成為病患', caught: '被抓' }[C.state];
+    return { part: muer ? '暮兒之夜' : QS_CH[pi]?.[1] || C.chapter, pi, pn: muer ? 1 : QS_CH.length, scene: C.place || C.location,
+      solved: C.solved ?? null, total: muer ? 5 : hell ? 44 : 84, time: C.playSec ?? null, deaths: C.deaths, hints: C.hints, endings: ends,
+      note: [muer ? '暮兒之夜' : hell ? '地獄版' : '普通版', C.code && `房號 ${C.code}`, C.characterName, C.lives != null && `${unit} ${C.lives}`, state].filter(Boolean).join('・') };
   }
   return { part: '有存檔', pi: 0, pn: 1 };
 }
