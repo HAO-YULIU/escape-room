@@ -205,6 +205,7 @@ body:not(.home) { padding-top: 68px; }
 .rank-date { font-size: 12px; color: var(--muted); }
 .rank-time { font: 700 18px var(--serif); color: var(--gold); letter-spacing: .05em; font-variant-numeric: tabular-nums; }
 .rank-empty { color: var(--muted); text-align: center; padding: 40px 0; }
+.rank-variants { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; padding-top: 10px; border-top: 1px dashed var(--line); }
 .my-rec h3 { font-size: 20px; margin: 0; }
 .my-rec .muted, .muted { color: var(--muted); font-size: 14px; }
 .my-rec > .btn { margin-top: 14px; width: 100%; }
@@ -1665,6 +1666,10 @@ const inMaint = (g) => MAINT.includes(g.slug);
 const CONTACT = 'iho87061@gmail.com';
 let gameRows = [], allGames = [], retiredGames = [];
 // 我的紀錄：{ game_id: { plays, best（最佳秒數或 null）, last（最後遊玩時間） } }
+// 分版本的遊戲：排行榜各版本分開（遊玩紀錄的 variant）
+const VARIANTS = { 'qianshan-night': [['normal', '普通版'], ['hell', '地獄版']] };
+// 不算「逃脫」的模式（不進排行榜、不算最佳時間與通關類成就；結局照樣收集）
+const SIDE_MODES = new Set(['muer']);
 let mine = {}, myRecs = [], achCodes = new Set();
 let myMsgs = [];   // 管理員傳給這位玩家的訊息（player_messages，只讀得到自己的）
 // 有雲端存檔的遊戲：{ slug: 最後存檔時間 }（遊戲玩到一半的依據）
@@ -1690,7 +1695,7 @@ async function loadAuth() {
     if (error) console.error(error);
     profile = p;
     const { data: recs } = await supabase.from('play_records')
-      .select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending').eq('user_id', user.id);
+      .select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending,variant').eq('user_id', user.id);
     myRecs = recs ?? [];
     // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
     const { data: ms } = await supabase.from('game_saves').select('level,station,updated_at,visited:data->visited,items:data->items,name:data->name').eq('user_id', user.id).eq('game', 'mist').maybeSingle();
@@ -1710,7 +1715,7 @@ async function loadAuth() {
       m.deaths += r.deaths ?? 0;
       m.hints += r.hints ?? 0;
       if (r.created_at > m.last) m.last = r.created_at;
-      if (r.status === 'cleared' && r.clear_time_sec != null) {
+      if (r.status === 'cleared' && r.clear_time_sec != null && !SIDE_MODES.has(r.variant)) {
         m.clears++;
         if (m.best == null || r.clear_time_sec < m.best) { m.best = r.clear_time_sec; m.bestRec = r; }
       }
@@ -2353,6 +2358,7 @@ async function openAdmin() {
 // ================= 排行榜 =================
 let rankSlug = '';
 const MEDALS = ['🥇', '🥈', '🥉'];
+let rankVariant = {};
 async function renderRanking(slug = rankSlug) {
   const open = games.filter(isOpen);
   const tabs = $('#rank-tabs'), list = $('#rank-list');
@@ -2364,8 +2370,14 @@ async function renderRanking(slug = rankSlug) {
   rankSlug = open.some(g => g.slug === slug) ? slug : open[0].slug;
   tabs.innerHTML = open.map(g =>
     `<button class="chip" type="button" data-slug="${escapeHTML(g.slug)}" aria-pressed="${g.slug === rankSlug}">${escapeHTML(g.title)}</button>`).join('');
+  const vs = VARIANTS[rankSlug];
+  const variant = vs ? (rankVariant[rankSlug] ??= vs[0][0]) : null;
+  if (vs) tabs.insertAdjacentHTML('beforeend', `<div class="rank-variants" role="group" aria-label="選擇版本">${vs.map(([v, name]) =>
+    `<button class="chip" type="button" data-variant="${v}" aria-pressed="${v === variant}">${escapeHTML(name)}</button>`).join('')}</div>`);
   list.innerHTML = '<li class="rank-empty">讀取中…</li>';
-  const { data, error } = await supabase.rpc('get_leaderboard', { p_slug: rankSlug, p_limit: 10 });
+  const { data, error } = vs
+    ? await supabase.rpc('get_leaderboard_v', { p_slug: rankSlug, p_variant: variant, p_limit: 10 })
+    : await supabase.rpc('get_leaderboard', { p_slug: rankSlug, p_limit: 10 });
   if (error) { list.innerHTML = `<li class="rank-empty">讀取排行榜失敗：${escapeHTML(error.message)}</li>`; return; }
   if (!data.length) {
     list.innerHTML = '<li class="rank-empty">還沒有人成功逃脫。第一個名字，會是你嗎？</li>';
@@ -2382,7 +2394,8 @@ async function renderRanking(slug = rankSlug) {
 }
 $('#rank-tabs').addEventListener('click', (e) => {
   const b = e.target.closest('.chip');
-  if (b) renderRanking(b.dataset.slug);
+  if (b?.dataset.variant) { rankVariant[rankSlug] = b.dataset.variant; renderRanking(rankSlug); }
+  else if (b) renderRanking(b.dataset.slug);
 });
 
 // 一次通關紀錄的「死亡／提示／借錢」
@@ -2396,7 +2409,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2, arg: 8 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -2514,14 +2527,38 @@ const ACH = [
   { code: 'zr_2317', game: 'arg', icon: '🕚', title: '23:17', desc: '在信寄達的那一分鐘回到這裡', secret: 1 },
   { code: 'zr_guest', game: 'arg', icon: '👤', title: '訪客', desc: '以 guest_000 的身分登入', secret: 1 },
   { code: 'zr_source', game: 'arg', icon: '🧾', title: '背面', desc: '找到這個封存站本身的背面', secret: 1 },
+  // 千山夜錄：通關類由遊玩紀錄算（暮兒之夜不算通關）；「05:37 之前」與失敗結局由遊戲寫入（qianshan-first-clear、qianshan-ending-*）
+  { code: 'qs_clear', game: 'qianshan-night', icon: '🏥', title: '交班完成', desc: '通關千山夜錄（任何一個結局）', test: c => c.cl('qianshan-night').length > 0 },
+  { code: 'qianshan-first-clear', game: 'qianshan-night', icon: '⏰', title: '05:37 之前', desc: '在交班時間（180 分鐘）內通關，解鎖林意柔、蕭言赫與暮兒之夜' },
+  { code: 'qs_hell', game: 'qianshan-night', icon: '🩸', title: '地獄夜班', desc: '通關地獄版', test: c => c.cl('qianshan-night').some(r => r.variant === 'hell') },
+  { code: 'qs_nodeath', game: 'qianshan-night', icon: '💊', title: '名字都還在', desc: '全程沒有歸零就通關', test: c => c.cl('qianshan-night').some(r => !r.deaths) },
+  { code: 'qs_nohint', game: 'qianshan-night', icon: '📝', title: '便條一張都沒用', desc: '零提示通關', test: c => c.cl('qianshan-night').some(r => !r.hints) },
+  { code: 'qs_fast', game: 'qianshan-night', icon: '⏱', title: '天還沒亮', desc: '120 分鐘內通關', test: c => c.cl('qianshan-night').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
+  { code: 'qs_hell_nohint', game: 'qianshan-night', icon: '💉', title: '沒有打給任何人', desc: '零提示通關地獄版', test: c => c.cl('qianshan-night').some(r => r.variant === 'hell' && !r.hints) },
+  { code: 'qs_e_names', game: 'qianshan-night', icon: '📛', title: '把姓名還給原主', desc: '結局：把姓名還給原主', test: c => c.end('qianshan-night', 'return-names') },
+  { code: 'qs_e_seal', game: 'qianshan-night', icon: '🔒', title: '封閉舊住院大樓', desc: '結局：封閉舊住院大樓', test: c => c.end('qianshan-night', 'seal-building') },
+  { code: 'qs_e_stop', game: 'qianshan-night', icon: '⏹', title: '終止記憶保存程序', desc: '結局：終止記憶保存程序', test: c => c.end('qianshan-night', 'stop-qianshan') },
+  { code: 'qs_e_go', game: 'qianshan-night', icon: '🚪', title: '讓四十七號病患離院', desc: '結局：讓四十七號病患離院', test: c => c.end('qianshan-night', 'let-her-go') },
+  { code: 'qs_e_evidence', game: 'qianshan-night', icon: '📦', title: '讓所有證據離開和山醫院', desc: '結局：讓所有證據離開和山醫院', test: c => c.end('qianshan-night', 'evidence-out') },
+  { code: 'qs_e_stay', game: 'qianshan-night', icon: '🕯', title: '有人留下完成交班', desc: '結局：有人留下完成交班', test: c => c.end('qianshan-night', 'stay-handover') },
+  { code: 'qs_e_leave', game: 'qianshan-night', icon: '🌃', title: '離開醫院，不再追問', desc: '結局：離開醫院，不再追問', test: c => c.end('qianshan-night', 'leave') },
+  { code: 'qs_e_blank', game: 'qianshan-night', icon: '⬜', title: '空白病患', desc: '隱藏結局', secret: 1, test: c => c.end('qianshan-night', 'blank-patient') },
+  { code: 'qs_all', game: 'qianshan-night', icon: '📚', title: '八份交班紀錄', desc: '收集千山夜錄的全部 8 個結局（含隱藏結局）', test: c => ['return-names', 'seal-building', 'stop-qianshan', 'let-her-go', 'evidence-out', 'stay-handover', 'leave', 'blank-patient'].every(e => c.end('qianshan-night', e)) },
+  { code: 'qianshan-ending-no-handover', game: 'qianshan-night', icon: '🔕', title: '沒有人接班', desc: '地獄版：交班時間到了，還沒做出決定', secret: 1 },
+  { code: 'qianshan-ending-all-vanished', game: 'qianshan-night', icon: '📋', title: '值班表上的空白', desc: '普通版：全隊的名字都從值班表上消失', secret: 1 },
+  { code: 'qianshan-ending-hell-fail', game: 'qianshan-night', icon: '🏷', title: '身分確認中', desc: '地獄版：全隊都成為舊大樓的病患', secret: 1 },
+  { code: 'qs_m_forgotten', game: 'qianshan-night', icon: '🕊', title: '被遺忘的人', desc: '暮兒之夜：還沒讀到三頁就逃出醫院', test: c => c.end('qianshan-night', 'forgotten') },
+  { code: 'qs_m_search', game: 'qianshan-night', icon: '🔦', title: '她還在找人', desc: '暮兒之夜：讀完三頁以上再逃出醫院', test: c => c.end('qianshan-night', 'still-searching') },
+  { code: 'qs_m_page', game: 'qianshan-night', icon: '📖', title: '最後一頁', desc: '暮兒之夜：讀出最後一頁', test: c => c.end('qianshan-night', 'last-page') },
+  { code: 'qs_m_night', game: 'qianshan-night', icon: '👁', title: '永不熄滅的夜', desc: '暮兒之夜：以暮兒的身分，60 分鐘內沒有讓任何人離開', test: c => c.end('qianshan-night', 'never-ending-night') },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(allGames.map(g => [g.id, g.slug]));
   const recs = myRecs.map(r => ({ ...r, slug: slugOf[r.game_id] }));
-  const cleared = recs.filter(r => r.status === 'cleared');
+  const cleared = recs.filter(r => r.status === 'cleared' && !SIDE_MODES.has(r.variant));
   const bySlug = {}, endings = {};
   for (const r of recs) (bySlug[r.slug] ??= []).push(r);
-  for (const r of cleared) if (r.ending) (endings[r.slug] ??= new Set()).add(r.ending);
+  for (const r of recs) if (r.status === 'cleared' && r.ending) (endings[r.slug] ??= new Set()).add(r.ending);
   return { recs, cleared, bySlug, endings, openSlugs: games.filter(isOpen).map(g => g.slug),
     slugs: new Set(cleared.map(r => r.slug)),
     endingTotal: Object.values(endings).reduce((n, x) => n + x.size, 0),
