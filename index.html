@@ -1275,7 +1275,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </details>
           <details>
             <summary>密室可以多人一起玩嗎？</summary>
-            <p>可以。每間密室卡片上都有標示人數：《越南公主》支援 1–4 人連線、《沈園殘燭》可以單人或兩人搭檔推理。一人開房間，朋友輸入房號就能加入。</p>
+            <p>可以。每間密室卡片上都有標示人數：《越南公主》支援 1–4 人連線、《沈園殘燭》可以單人或兩人搭檔推理，《五星級救援隊》一定要 2–6 人、各用一支手機連線。一人開房間，朋友輸入房號就能加入。</p>
           </details>
           <details>
             <summary>《迷霧》是什麼？跟密室有什麼不一樣？</summary>
@@ -1664,7 +1664,7 @@ const RETIRED = ['love'];
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
-const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00' };
+const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', hotel1: '12:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
@@ -2374,7 +2374,7 @@ async function rankRows(slug, variant) {
     <li class="rank-row ${profile && r.username === profile.username ? 'me-row' : ''}">
       <span class="rank-no">${MEDALS[r.rank - 1] ?? r.rank}</span>
       ${avatarHTML(r, 40)}
-      <span class="rank-name">${escapeHTML(r.username)}<small class="rank-meta">${runMeta(r)}</small></span>
+      <span class="rank-name">${escapeHTML(r.username)}<small class="rank-meta">${runMeta(r, slug)}</small></span>
       <span class="rank-date">${new Date(r.cleared_at).toLocaleDateString('zh-TW')}</span>
       <span class="rank-time">${fmtTime(r.best_sec)}</span>
     </li>`).join('');
@@ -2442,9 +2442,11 @@ document.addEventListener('keydown', (e) => {
 }, true);
 
 // 一次通關紀錄的「死亡／提示／借錢」
-function runMeta(r) {
+// 五星級救援隊沒有死亡：deaths 是房卡用完、重新補發的次數
+function runMeta(r, slug) {
   const parts = [];
-  parts.push(r.deaths ? `💀 死亡 ${r.deaths} 次` : '💀 零死亡');
+  if (slug === 'hotel1') parts.push(r.deaths ? `🗝️ 房卡補發 ${r.deaths} 次` : '🗝️ 房卡沒補發');
+  else parts.push(r.deaths ? `💀 死亡 ${r.deaths} 次` : '💀 零死亡');
   parts.push(r.hints ? `💡 提示 ${r.hints} 次` : '💡 零提示');
   if (r.borrows) parts.push(`🙏 借錢 ${r.borrows} 次`);
   return parts.join('・');
@@ -2452,7 +2454,7 @@ function runMeta(r) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -2594,6 +2596,20 @@ const ACH = [
   { code: 'qs_m_search', game: 'qianshan-night', icon: '🔦', title: '她還在找人', desc: '暮兒之夜：讀完三頁以上再逃出醫院', test: c => c.end('qianshan-night', 'still-searching') },
   { code: 'qs_m_page', game: 'qianshan-night', icon: '📖', title: '最後一頁', desc: '暮兒之夜：讀出最後一頁', test: c => c.end('qianshan-night', 'last-page') },
   { code: 'qs_m_night', game: 'qianshan-night', icon: '👁', title: '永不熄滅的夜', desc: '暮兒之夜：以暮兒的身分，60 分鐘內沒有讓任何人離開', test: c => c.end('qianshan-night', 'never-ending-night') },
+  // 五星級救援隊：通關類由遊玩紀錄算（deaths＝房卡補發次數）；515、B3、零答錯、支線全解、六人滿編、封面尋寶由遊戲寫入（hotel1-*）
+  { code: 'h_clear', game: 'hotel1', icon: '👑', title: '皇后救出來了', desc: '通關五星級救援隊第一集', test: c => c.cl('hotel1').length > 0 },
+  { code: 'h_in180', game: 'hotel1', icon: '🛎', title: '準時退房', desc: '180 分鐘內通關（含罰時）', test: c => c.cl('hotel1').some(r => r.clear_time_sec != null && r.clear_time_sec <= 10800) },
+  { code: 'h_fast', game: 'hotel1', icon: '⚡', title: '快速入住', desc: '120 分鐘內通關（含罰時）', test: c => c.cl('hotel1').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
+  { code: 'h_norefill', game: 'hotel1', icon: '🗝️', title: '房卡一張都沒補', desc: '房卡沒有用完過就通關', test: c => c.cl('hotel1').some(r => !r.deaths) },
+  { code: 'h_nohint', game: 'hotel1', icon: '🧠', title: '不用打給櫃檯', desc: '零提示通關', test: c => c.cl('hotel1').some(r => !r.hints) },
+  { code: 'h_perfect', game: 'hotel1', icon: '⭐', title: '五星級服務', desc: '零提示、房卡沒補發，而且 180 分鐘內通關', test: c => c.cl('hotel1').some(r => !r.hints && !r.deaths && r.clear_time_sec != null && r.clear_time_sec <= 10800) },
+  { code: 'h_secret', game: 'hotel1', icon: '📸', title: '他們終於來了', desc: '解開全部 6 道隱藏謎題再通關', secret: 1, test: c => c.end('hotel1', 'secret') },
+  { code: 'hotel1-515', game: 'hotel1', icon: '🍟', title: '515 的勝利', desc: '515 單人任務贏過涼意' },
+  { code: 'hotel1-b3', game: 'hotel1', icon: '🕳', title: '不存在的樓層', desc: '走進飯店的隱藏樓層', secret: 1 },
+  { code: 'hotel1-side-all', game: 'hotel1', icon: '🧳', title: '飯店的好鄰居', desc: '解開全部 44 道支線謎題' },
+  { code: 'hotel1-nowrong', game: 'hotel1', icon: '🎯', title: '一次就答對', desc: '一次都沒答錯就通關' },
+  { code: 'hotel1-six', game: 'hotel1', icon: '🚐', title: '六人滿編', desc: '六位救援隊員到齊，一起通關' },
+  { code: 'hotel1-cover', game: 'hotel1', icon: '🔍', title: '眼尖的隊員', desc: '在遊戲封面找齊 6 樣藏起來的東西' },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(allGames.map(g => [g.id, g.slug]));
