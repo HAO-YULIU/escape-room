@@ -25,6 +25,10 @@ const PUPU_SCENES = {
 };
 const QS_FAIL = ['all-vanished', 'hell-fail', 'no-handover'];   // 千山夜錄的失敗結局
 const QS_CH = [['prologue', '序章'], ['ch1', '第一章'], ['ch2', '第二章'], ['ch3', '第三章'], ['ch4', '第四章'], ['finale', '終章'], ['ending', '最後的交班']];
+// 五星級救援隊：樓層順序（pi＝爬到第幾層）、隊員代號
+const HOTEL_FLOORS = [['palace', '序幕・亞西吉王宮'], ['B2', 'B2 地下停車場'], ['B1', 'B1 運動中心・游泳池'], ['1F', '1F 大廳'], ['2F', '2F 皇家餐廳'], ['3F', '3F 小遊戲區'],
+  ['4F', '4F 皇家宴會廳'], ['5F', '5F 客房區'], ['6F', '6F 辦公室・機房'], ['7F', '7F 總統套房'], ['RF', '頂樓']];
+const HOTEL_HEROES = { xueling: '雪鈴', yunfeng: '允楓', zixin: '子馨', guanxian: '冠賢', yixin: '誼心', junwei: '均為' };
 const PARTS8 = ['第一部分', '第二部分', '第三部分', '第四部分', '第五部分', '第六部分', '第七部分', '第八部分'];
 const ENDING_NAMES = {
   'qianchan-school': { e1: '封存的黎明', e2: '空白名冊', e3: '鏡子後面的走廊', e4: '名字還在（隱藏）' },
@@ -35,6 +39,7 @@ const ENDING_NAMES = {
     'evidence-out': '讓所有證據離開和山醫院', 'stay-handover': '有人留下完成交班', leave: '離開醫院，不再追問', 'blank-patient': '空白病患（隱藏）',
     'never-ending-night': '暮兒之夜：永不熄滅的夜', forgotten: '暮兒之夜：被遺忘的人', 'last-page': '暮兒之夜：最後一頁', 'still-searching': '暮兒之夜：她還在找人',
     'all-vanished': '失敗：全隊的名字都消失', 'hell-fail': '失敗：全隊成為病患（地獄版）', 'no-handover': '失敗：沒有人接班（地獄版）' },
+  hotel1: { rescue: '救出皇后', secret: '救出皇后＋看到 B3 的祕密（隱藏）' },
   arg: { E1: '未完成', E2: '交接', E3: '記錄者', E4: '停止計算', E5: '沉默', E6: '第八位收件人', E7: '被遺忘的權利', E8: '你不知道' },
 };
 const BANG_CH = [['序章', '台北車站', 8], ['第一章', '故宮', 11], ['第二章', '台北市立美術館', 11], ['第三章', '九份', 11], ['第四章', '十分', 11],
@@ -126,6 +131,18 @@ function summarize(game, save) {
     return { part: muer ? '暮兒之夜' : QS_CH[pi]?.[1] || C.chapter, pi, pn: muer ? 1 : QS_CH.length, scene: C.place || C.location,
       solved: C.solved ?? null, total: muer ? 5 : hell ? 44 : 84, time: C.playSec ?? null, deaths: C.deaths, hints: C.hints, endings: ends,
       note: [muer ? '暮兒之夜' : hell ? '地獄版' : '普通版', C.code && `房號 ${C.code}`, C.characterName, C.lives != null && `${unit} ${C.lives}`, state].filter(Boolean).join('・') };
+  }
+  if (game === 'hotel1') {
+    // 存檔就是遊戲狀態本身：scene（所在樓層）、solved（M 主線 74／S 支線 44／X 隱藏 6）、play（實際遊玩毫秒）、hintsUsed、refillSeen（房卡補發）、team、mode、room
+    const ids = keysOf(d.solved) || [], n = (c) => ids.filter(x => x[0] === c).length;
+    const seen = keysOf(d.seen) || [], top = HOTEL_FLOORS.reduce((i, [id], k) => seen.includes(id) || d.scene === id ? k : i, 0);
+    const at = HOTEL_FLOORS.find(([id]) => id === d.scene)?.[1] || (d.scene === 'B3' ? 'B3 下水道（隱藏樓層）' : d.scene);
+    const done = !!d.solved?.M74 && d.scene === 'RF';
+    const team = Array.isArray(d.team) ? d.team.map(h => HOTEL_HEROES[h] || h) : [];
+    return { part: done ? '已到頂樓' : HOTEL_FLOORS[top][1], pi: top, pn: HOTEL_FLOORS.length - 1, scene: at,
+      solved: ids.length ? n('M') : cnt(d.solved), total: 74, time: d.play > 0 ? d.play / 1000 : null, hints: d.hintsUsed || 0,
+      note: [d.mode === 'online' ? `連線${d.room ? `・房號 ${d.room}` : ''}` : '單機測試', team.length && `${team.length} 人：${team.join('、')}`,
+        ids.length && `支線 ${n('S')} / 44・隱藏 ${n('X')} / 6`, d.refillSeen && `房卡補發 ${d.refillSeen} 次`].filter(Boolean).join('・') };
   }
   return { part: '有存檔', pi: 0, pn: 1 };
 }
