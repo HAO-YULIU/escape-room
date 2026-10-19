@@ -2596,7 +2596,7 @@ const ACH = [
   { code: 'qs_m_search', game: 'qianshan-night', icon: '🔦', title: '她還在找人', desc: '暮兒之夜：讀完三頁以上再逃出醫院', test: c => c.end('qianshan-night', 'still-searching') },
   { code: 'qs_m_page', game: 'qianshan-night', icon: '📖', title: '最後一頁', desc: '暮兒之夜：讀出最後一頁', test: c => c.end('qianshan-night', 'last-page') },
   { code: 'qs_m_night', game: 'qianshan-night', icon: '👁', title: '永不熄滅的夜', desc: '暮兒之夜：以暮兒的身分，60 分鐘內沒有讓任何人離開', test: c => c.end('qianshan-night', 'never-ending-night') },
-  // 五星級救援隊：通關類由遊玩紀錄算（deaths＝房卡補發次數）；515、B3、支線全解、六人滿編、封面尋寶由遊戲寫入（hotel1-*）
+  // 五星級救援隊：通關類由遊玩紀錄算（deaths＝房卡補發次數）；515、B3、零答錯、支線全解、六人滿編、封面尋寶由遊戲寫入（hotel1-*）
   { code: 'h_clear', game: 'hotel1', icon: '👑', title: '皇后救出來了', desc: '通關五星級救援隊第一集', test: c => c.cl('hotel1').length > 0 },
   { code: 'h_in180', game: 'hotel1', icon: '🛎', title: '準時退房', desc: '180 分鐘內通關（含罰時）', test: c => c.cl('hotel1').some(r => r.clear_time_sec != null && r.clear_time_sec <= 10800) },
   { code: 'h_fast', game: 'hotel1', icon: '⚡', title: '快速入住', desc: '120 分鐘內通關（含罰時）', test: c => c.cl('hotel1').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
@@ -2607,6 +2607,7 @@ const ACH = [
   { code: 'hotel1-515', game: 'hotel1', icon: '🍟', title: '515 的勝利', desc: '515 單人任務贏過涼意' },
   { code: 'hotel1-b3', game: 'hotel1', icon: '🕳', title: '不存在的樓層', desc: '走進飯店的隱藏樓層', secret: 1 },
   { code: 'hotel1-side-all', game: 'hotel1', icon: '🧳', title: '飯店的好鄰居', desc: '解開全部 44 道支線謎題' },
+  { code: 'hotel1-nowrong', game: 'hotel1', icon: '🎯', title: '一次就答對', desc: '一次都沒答錯就通關' },
   { code: 'hotel1-six', game: 'hotel1', icon: '🚐', title: '六人滿編', desc: '六位救援隊員到齊，一起通關' },
   { code: 'hotel1-cover', game: 'hotel1', icon: '🔍', title: '眼尖的隊員', desc: '在遊戲封面找齊 6 樣藏起來的東西' },
 ];
