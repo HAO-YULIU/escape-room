@@ -10,12 +10,12 @@
   <meta property="og:site_name" content="夜語工作室">
   <meta property="og:title" content="夜語工作室｜線上密室逃脫・大型開放RPG網頁遊戲">
   <meta property="og:description" content="建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
-  <meta property="og:url" content="https://hao-yuliu.github.io/escape-room/">
-  <meta property="og:image" content="https://hao-yuliu.github.io/escape-room/covers/og.jpg">
+  <meta property="og:url" content="https://yuu206.github.io/escape-room/">
+  <meta property="og:image" content="https://yuu206.github.io/escape-room/covers/og.jpg">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://hao-yuliu.github.io/escape-room/covers/og.jpg">
+  <meta name="twitter:image" content="https://yuu206.github.io/escape-room/covers/og.jpg">
   <!-- 加到主畫面（App 模式） -->
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#080A14">
@@ -2040,7 +2040,7 @@ const RPGS = [{
   slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You',
   description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
   feats: ['台北捷運 118 站', '3D 開放世界', '主線・支線・秘密任務', '00:30 迷霧之城', '手機・電腦都能玩'],
-  cover_url: 'covers/mist.jpg', play_url: 'https://hao-yuliu.github.io/MRT-station-/', release_date: '2026-10-23', status: 'available',
+  cover_url: 'covers/mist.jpg', play_url: 'https://yuu206.github.io/MRT-station-/', release_date: '2026-10-23', status: 'available',
 }];
 function renderRpgs() {
   $('#rpg-list').innerHTML = RPGS.map(g => {
@@ -2773,7 +2773,7 @@ function tickCountdown() {
 setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
 
 // ================= 分享圖 =================
-const LOBBY_URL = 'https://hao-yuliu.github.io/escape-room/';
+const LOBBY_URL = 'https://yuu206.github.io/escape-room/';
 const loadImg = (src) => new Promise((ok) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
 function cover(ctx, img, x, y, w, h) {
   const r = Math.max(w / img.width, h / img.height), sw = w / r, sh = h / r;
