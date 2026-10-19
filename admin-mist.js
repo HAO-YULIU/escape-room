@@ -15,7 +15,7 @@ const treasN = (d) => d && d.items && typeof d.items === 'object' ? Object.keys(
 // 迷霧的節慶活動（遊戲裡的任務 id）
 const EVENTS = [['event_double10', '雙十節'], ['event_halloween', '萬聖節（含小活動）'], ['event_xmas', '聖誕節'], ['event_newyear', '跨年'], ['event_lunar', '春節'], ['event_midautumn', '中秋節'], ['event_valentine', '情人節']];
 // 回報問題的遊戲名稱（bug_reports.game）
-const GAME_NAMES = { mist: '迷霧', 'qianchan-school': '千嬋高級中學：第一章', school2: '千嬋高級中學：第二章', pupu: '「屎」瓦帝尼', love: '大直愛情摩天輪', bang: '越南公主', sea: '沈園殘燭', arg: '零號回信' };
+const GAME_NAMES = { mist: '迷霧', 'qianchan-school': '千嬋高級中學：第一章', school2: '千嬋高級中學：第二章', pupu: '「屎」瓦帝尼', love: '大直愛情摩天輪', bang: '越南公主', sea: '沈園殘燭', arg: '零號回信', 'qianshan-night': '千山夜錄', hotel1: '五星級救援隊' };
 const STATUS = [['open', '待處理', ''], ['doing', '處理中', 'warn'], ['done', '已解決', 'ok'], ['ignored', '不處理', 'bad']];
 
 export const CSS_MIST = `
@@ -27,6 +27,7 @@ export const CSS_MIST = `
 .adm-hist { margin: 8px 0 0; padding: 10px 12px; border-radius: 10px; background: rgba(14,17,32,.6); border: 1px solid var(--line); }
 .adm-hist .row { display: flex; gap: 10px; align-items: center; padding: 6px 0; border-bottom: 1px dashed rgba(239,230,210,.1); font-size: 13px; }
 .adm-hist .row span { flex: 1; min-width: 0; }
+.adm-shot { display: block; max-width: min(320px, 100%); margin: 6px 0; border: 1px solid var(--line); border-radius: 6px; image-rendering: pixelated; }
 .adm-rep { padding: 12px 0; border-bottom: 1px solid rgba(239,230,210,.08); }
 .adm-rep pre { white-space: pre-wrap; word-break: break-word; font: 12px/1.45 ui-monospace, monospace; color: var(--muted); margin: 6px 0; max-height: 180px; overflow: auto; background: rgba(0,0,0,.2); padding: 8px; border-radius: 8px; }
 .adm-rep .ctl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
@@ -139,8 +140,8 @@ export function mountMist(ctx) {
     const ids = (data || []).map(r => r.id), sent = {};
     if (ids.length) { const { data: ms } = await supabase.from('player_messages').select('report_id,body,created_at,read_at').in('report_id', ids).order('created_at'); for (const m of ms || []) (sent[m.report_id] ||= []).push(m); }
     const infoTxt = (i) => { if (!i || typeof i !== 'object') return ''; const e = (i.errors || []).slice(-3).map(x => '• ' + (x.t ? x.t + ' ' : '') + (x.m || x.message || JSON.stringify(x))).join('\n');
-      const extra = ['mode', 'ch', 'sc', 'phase', 'players', 'lives', 'chapter', 'p2', 'solved', 'hints', 'wrong'].filter(k => i[k] != null).map(k => `${k}=${i[k]}`).join('  ');
-      return [i.at && `位置 ${i.at}`, i.v && `版本 ${i.v}`, i.zone && `區域 ${i.zone}`, i.pos && `位置 ${Array.isArray(i.pos) ? i.pos.map(v => (+v).toFixed?.(1) ?? v).join(', ') : JSON.stringify(i.pos)}`, i.time && `遊戲時間 ${i.time}`, extra, i.vp && `畫面 ${[].concat(i.vp).join(' × ')}`, i.lv && `Lv ${i.lv}`, i.quality && `畫質 ${i.quality}`, i.fps && `fps ${i.fps}`, i.ua && i.ua.slice(0, 140), e && '最近錯誤：\n' + e].filter(Boolean).join('\n'); };
+      const extra = ['mode', 'ch', 'sc', 'phase', 'players', 'lives', 'chapter', 'p2', 'solved', 'hints', 'wrong', 'mins'].filter(k => i[k] != null).map(k => `${k}=${i[k]}`).join('  ');
+      return [i.kind && `類型 ${i.kind}`, i.puzzle && `謎題 ${i.puzzle}`, i.where && `位置 ${i.where}`, i.progress && `進度 ${i.progress}`, i.at && !/^\d{4}-\d\d-\d\dT/.test(i.at) && `位置 ${i.at}`, i.v && `版本 ${i.v}`, i.zone && `區域 ${i.zone}`, i.pos && `位置 ${Array.isArray(i.pos) ? i.pos.map(v => (+v).toFixed?.(1) ?? v).join(', ') : JSON.stringify(i.pos)}`, i.time && `遊戲時間 ${i.time}`, extra, i.vp && `畫面 ${[].concat(i.vp).join(' × ')}`, i.lv && `Lv ${i.lv}`, i.quality && `畫質 ${i.quality}`, i.fps && `fps ${i.fps}`, i.ua && i.ua.slice(0, 140), e && '最近錯誤：\n' + e].filter(Boolean).join('\n'); };
     body.innerHTML = `<div class="adm-card"><h3>傳訊息給玩家</h3><p class="muted" style="margin:0 0 8px;font-size:13px">玩家回到大廳時會跳出通知，「我的進度」裡也看得到。</p>
       <div class="adm-msg-new"><input class="adm-sel" data-to placeholder="玩家名字（角色名稱，要完全一樣）" maxlength="40"><textarea data-body placeholder="要說的話" maxlength="2000"></textarea><button class="btn btn-gold btn-sm" data-send-any>傳送</button></div></div>
       <div class="adm-card"><h3>玩家回報的問題</h3>
@@ -148,7 +149,7 @@ export function mountMist(ctx) {
       <div class="adm-acts" style="margin-bottom:8px">${[['all', '全部遊戲'], ...games.map(g => [g, GAME_NAMES[g] || g])].map(([k, t]) => `<button class="btn ${repGame === k ? 'btn-gold' : 'btn-ghost'} btn-sm" data-g="${esc(k)}">${esc(t)}${k !== 'all' && ng[k] ? `（待處理 ${ng[k]}）` : ''}</button>`).join('')}</div>
       ${(data || []).map(r => `<div class="adm-rep" data-id="${r.id}"><b>${esc(GAME_NAMES[r.game] || r.game || '大廳')}</b>${r.station ? `<span class="adm-tag">${esc(r.station)}</span>` : ''}<span class="adm-tag ${STATUS.find(s => s[0] === r.status)?.[2] || ''}">${STATUS.find(s => s[0] === r.status)?.[1] || r.status}</span>
         <span class="muted" style="font-size:12px;margin-left:6px">${dt(r.created_at)}・${r.user_id ? esc(pr[r.user_id] || '有登入') : '沒登入'}</span>
-        <p style="margin:6px 0">${esc(r.message || '')}</p>${r.info ? `<pre>${esc(infoTxt(r.info))}</pre>` : ''}
+        <p style="margin:6px 0">${esc(r.message || '')}</p>${r.info ? `<pre>${esc(infoTxt(r.info))}</pre>` : ''}${/^data:image\/(jpeg|png);base64,/.test(r.info?.shot || '') ? `<img class="adm-shot" src="${esc(r.info.shot)}" alt="玩家附的遊戲畫面">` : r.info?.shotDropped ? '<p class="muted" style="font-size:12px">（截圖太大，沒有送出）</p>' : ''}
         ${(sent[r.id] || []).map(m => `<div class="adm-sent">✉️ ${esc(m.body)}<small>${dt(m.created_at)}・${m.read_at ? '玩家已讀' : '玩家還沒看'}</small></div>`).join('')}
         ${r.user_id ? `<div class="adm-msg" hidden><textarea data-reply placeholder="傳給${esc(pr[r.user_id] || '這位玩家')}的訊息（會附上這則回報的內容）" maxlength="2000"></textarea><label class="muted" style="font-size:12px"><input type="checkbox" data-done checked> 同時標成「已解決」</label><button class="btn btn-gold btn-sm" data-reply-send>傳送</button></div>` : ''}
         <div class="ctl"><select class="adm-sel" data-st>${STATUS.map(([k, t]) => `<option value="${k}"${r.status === k ? ' selected' : ''}>${t}</option>`).join('')}</select>

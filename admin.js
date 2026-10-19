@@ -343,7 +343,7 @@ export function mountAdmin(ctx) {
       <div class="adm-card"><h3>最近 14 天註冊</h3><div class="adm-bars">${days.map(d => `<div><b>${byDay[d] || ''}</b><i style="height:${byDay[d] / mx * 70}px"></i><em>${d.slice(8)}</em></div>`).join('')}</div></div>
       <div class="adm-card"><h3>最新註冊的玩家</h3>${recent.map(p => `<div class="adm-row">${avatarHTML(p, 40)}<div><b>${esc(p.name)}</b>
         <p>${dt(p.created_at)} 註冊・最後上線 ${ago(p.last)}・${esc(p.email || '')}</p></div></div>`).join('') || '<p class="adm-empty">還沒有玩家。</p>'}</div>
-      <div class="adm-card"><h3>Bug 回報<small>最近 50 筆</small></h3>${D.bugs.length ? D.bugs.map(b => `<div class="adm-row"><div><b>${esc(b.game || '大廳')}</b>
+      <div class="adm-card"><h3>Bug 回報<small>最近 50 筆</small></h3>${D.bugs.length ? D.bugs.map(b => `<div class="adm-row"><div><b>${esc(gameBySlug[b.game]?.title || b.game || '大廳')}</b>
         <span class="adm-tag">${dt(b.created_at)}</span>${b.user_id && P[b.user_id] ? `<span class="adm-tag">${esc(P[b.user_id].name)}</span>` : ''}
         <p class="prog">${esc(b.message || '')}</p>${b.station ? `<p>位置：${esc(b.station)}</p>` : ''}</div></div>`).join('') : '<p class="adm-empty">目前沒有回報。</p>'}</div>`;
   }
