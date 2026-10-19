@@ -36,7 +36,7 @@ const ENDING_NAMES = {
   bang: { pb: '彈珠王', xq_w: '象棋勝', xq_l: '象棋輸', xq_d: '象棋和', cd1: '撲克第一', cd2: '撲克第二', cd3: '撲克第三', mj1: '麻將第一', mj2: '麻將第二', mj3: '麻將第三', mj4: '麻將最後' },
   sea: { solo: '單人破案', duo: '雙人破案' },
   'qianshan-night': { 'return-names': '把姓名還給原主', 'seal-building': '封閉舊住院大樓', 'stop-qianshan': '終止記憶保存程序', 'let-her-go': '讓四十七號病患離院',
-    'evidence-out': '讓所有證據離開和山醫院', 'stay-handover': '有人留下完成交班', leave: '離開醫院，不再追問', 'blank-patient': '空白病患（隱藏）',
+    'evidence-out': '讓所有證據離開和山醫院', 'stay-handover': '有人留下完成交班', leave: '離開醫院，不再追問', 'leave-early': '提早離開（失敗）', 'blank-patient': '空白病患（隱藏）',
     'never-ending-night': '暮兒之夜：永不熄滅的夜', forgotten: '暮兒之夜：被遺忘的人', 'last-page': '暮兒之夜：最後一頁', 'still-searching': '暮兒之夜：她還在找人',
     'all-vanished': '失敗：全隊的名字都消失', 'hell-fail': '失敗：全隊成為病患（地獄版）', 'no-handover': '失敗：沒有人接班（地獄版）' },
   hotel1: { rescue: '救出皇后', secret: '救出皇后＋看到 B3 的祕密（隱藏）' },
