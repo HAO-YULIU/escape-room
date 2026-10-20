@@ -199,6 +199,12 @@ body:not(.home) { padding-top: 68px; }
 .rank-row { display: grid; grid-template-columns: 40px 40px 1fr auto auto; gap: 12px; align-items: center; padding: 10px 12px; border-radius: 8px; background: var(--ink-2); }
 .rank-row:nth-child(-n+3) { background: linear-gradient(90deg, rgba(232,212,160,.14), var(--ink-2)); }
 .rank-row.me-row { outline: 1px solid var(--gold); }
+/* 多人遊戲：一組一列，隊員頭像疊在一起 */
+.rank-row.team { grid-template-columns: 40px 1fr auto auto; }
+.rank-avs { display: flex; align-items: center; margin-bottom: 4px; }
+.rank-avs .avatar-img, .rank-avs .avatar-svg { width: 32px; height: 32px; border: 2px solid var(--ink-2); border-radius: 50%; }
+.rank-avs > * + * { margin-left: -12px; }
+.rank-row.team .rank-name { white-space: normal; }
 .rank-row .avatar-img, .rank-row .avatar-svg { width: 40px; height: 40px; }
 .rank-no { font: 700 20px var(--serif); text-align: center; color: var(--gold); }
 .rank-name { font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -832,7 +838,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .gh-body .rank-list { margin-top: 10px; }
 .gh-body .rank-variants { border-top: 0; padding-top: 0; }
 .gh-play { width: 100%; margin-top: 16px; }
-@media (max-width: 520px) { .gh-body .rank-row { grid-template-columns: 30px 32px 1fr auto; gap: 8px; } .gh-body .rank-date { display: none; } .gh-body .rank-row .avatar-img, .gh-body .rank-row .avatar-svg { width: 32px; height: 32px; } }
+@media (max-width: 520px) { .gh-body .rank-row { grid-template-columns: 30px 32px 1fr auto; gap: 8px; } .gh-body .rank-row.team { grid-template-columns: 30px 1fr auto; } .gh-body .rank-avs .avatar-img, .gh-body .rank-avs .avatar-svg { width: 26px; height: 26px; } .gh-body .rank-date { display: none; } .gh-body .rank-row .avatar-img, .gh-body .rank-row .avatar-svg { width: 32px; height: 32px; } }
 #share-dlg { max-width: 420px; width: calc(100% - 32px); max-height: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 20px; }
 #share-dlg::backdrop { background: rgba(4,6,14,.75); }
 #share-dlg h3 { font: 700 18px var(--serif); margin: 0 0 12px; color: var(--gold); }
@@ -2364,7 +2370,27 @@ async function openAdmin() {
 const MEDALS = ['🥇', '🥈', '🥉'];
 let rankVariant = {};   // 有分版本的遊戲（千山夜錄）目前看哪一版
 // 一款遊戲（一個版本）的前 10 名，回傳排行榜的 <li>；探索區的排行榜和遊戲的排行榜・成就視窗共用
-async function rankRows(slug, variant) {
+// 多人遊戲（最多人數大於 1）：排行榜依人數分開，一組一個成績（資料庫 get_team_leaderboard）
+const isTeamGame = (g) => (g?.max_players ?? 1) > 1;
+const teamSizes = (g) => Array.from({ length: g.max_players - (g.min_players || 1) + 1 }, (_, i) => (g.min_players || 1) + i);
+let rankSize = {};   // 多人遊戲目前看幾人的排行榜
+async function teamRows(slug, variant, size) {
+  const { data, error } = await supabase.rpc('get_team_leaderboard', { p_slug: slug, p_size: size, p_variant: variant, p_limit: 10 });
+  if (error) return `<li class="rank-empty">讀取排行榜失敗：${escapeHTML(error.message)}</li>`;
+  if (!data.length) return `<li class="rank-empty">還沒有${size > 1 ? ` ${size} 人的隊伍` : '人單獨'}通關。第一個名字，會是你們嗎？</li>`;
+  return data.map(r => {
+    const ms = r.members ?? [], mine = profile && ms.some(x => x.username === profile.username);
+    return `
+    <li class="rank-row team ${mine ? 'me-row' : ''}">
+      <span class="rank-no">${MEDALS[r.rank - 1] ?? r.rank}</span>
+      <span class="rank-name"><span class="rank-avs">${ms.slice(0, 6).map(x => avatarHTML(x, 32)).join('')}</span>${ms.map(x => escapeHTML(x.username)).join('、')}<small class="rank-meta">${runMeta(r, slug)}</small></span>
+      <span class="rank-date">${new Date(r.cleared_at).toLocaleDateString('zh-TW')}</span>
+      <span class="rank-time">${fmtTime(r.best_sec)}</span>
+    </li>`;
+  }).join('');
+}
+async function rankRows(slug, variant, size) {
+  if (size) return teamRows(slug, variant, size);
   const { data, error } = variant
     ? await supabase.rpc('get_leaderboard_v', { p_slug: slug, p_variant: variant, p_limit: 10 })
     : await supabase.rpc('get_leaderboard', { p_slug: slug, p_limit: 10 });
@@ -2411,23 +2437,26 @@ async function renderHub() {
     : '你還沒挑戰過這款。逃出來的時間會登上這裡的排行榜。';
   const tabs = `<div class="gh-tabs"><button class="chip" type="button" data-ght="rank" aria-pressed="${hubTab === 'rank'}">🏆 排行榜</button>${ach.length ? `<button class="chip" type="button" data-ght="ach" aria-pressed="${hubTab === 'ach'}">🎖 成就 ${isPlayer() ? `${k}/${ach.length}` : ach.length}</button>` : ''}</div>`;
   const vs = VARIANTS[g.slug], variant = vs ? (rankVariant[g.slug] ??= vs[0][0]) : null;
+  const team = isTeamGame(g), sizes = team ? teamSizes(g) : [], size = team ? (rankSize[g.slug] = sizes.includes(rankSize[g.slug]) ? rankSize[g.slug] : sizes[0]) : null;
   const body = hubTab === 'ach'
     ? `<div class="ach-bar"><i style="width:${ach.length ? k / ach.length * 100 : 0}%"></i></div><div class="ach-grid">${ach.map(a => achItem(a, isPlayer() && got(a))).join('')}</div>`
     : `${vs ? `<div class="rank-variants" role="group" aria-label="選擇版本">${vs.map(([v, name]) => `<button class="chip" type="button" data-ghv="${v}" aria-pressed="${v === variant}">${escapeHTML(name)}</button>`).join('')}</div>` : ''}
-      <p class="muted small">每位玩家只取最快的一次。</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
+      ${team ? `<div class="rank-variants" role="group" aria-label="選擇人數">${sizes.map(n => `<button class="chip" type="button" data-ghs="${n}" aria-pressed="${n === size}">${n} 人</button>`).join('')}</div>` : ''}
+      <p class="muted small">${team ? '依人數分開排名，同一組隊員只取最快的一次。' : '每位玩家只取最快的一次。'}</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
   const cta = !isOpen(g) ? '' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>${tabs}${body}${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}`;
   if (hubTab === 'rank') {
-    const seq = ++hubSeq, html = await rankRows(g.slug, variant);
+    const seq = ++hubSeq, html = await rankRows(g.slug, variant, size);
     if (seq === hubSeq && $('#gh-rank')) $('#gh-rank').innerHTML = html;   // 切換很快時，只放最後一次的結果
   }
 }
 $('#game-hub').addEventListener('click', (e) => {
   const dlg = e.currentTarget;
   if (e.target === dlg) return dlg.close();   // 點視窗外面關閉
-  const t = e.target.closest('[data-ght]'), v = e.target.closest('[data-ghv]');
+  const t = e.target.closest('[data-ght]'), v = e.target.closest('[data-ghv]'), n = e.target.closest('[data-ghs]');
   if (t) { hubTab = t.dataset.ght; renderHub(); }
   else if (v) { rankVariant[hubSlug] = v.dataset.ghv; renderHub(); }
+  else if (n) { rankSize[hubSlug] = +n.dataset.ghs; renderHub(); }
   else if (e.target.closest('[data-go]')) dlg.close();   // 進遊戲：關掉視窗，交給下面的 data-go 處理
 });
 // 卡片上的「排行榜・成就」：遊戲卡片本身是按鈕（點了會進遊戲），所以在最前面攔下來
