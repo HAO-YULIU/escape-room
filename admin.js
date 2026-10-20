@@ -256,14 +256,28 @@ export function mountAdmin(ctx) {
   async function load() {
     if (loading) return; loading = true;
     try {
-      const [{ data, error }, g] = await Promise.all([supabase.rpc('admin_dump'), supabase.from('games').select('*').order('sort_order')]);
+      // 偶爾逾時或網路不穩：自動再試一次
+      let res;
+      for (let i = 0; i < 2; i++) {
+        res = await Promise.all([supabase.rpc('admin_dump'), supabase.from('games').select('*').order('sort_order')]);
+        if (!res[0].error && !res[1].error) break;
+        if (i === 0) await new Promise((r) => setTimeout(r, 1500));
+      }
+      const [{ data, error }, g] = res;
       if (error) throw error;
+      if (g.error) throw g.error;
       D = data; games = g.data || [];
       prep();
       root.querySelector('#adm-upd').textContent = '更新於 ' + new Date().toLocaleTimeString('zh-TW', { ...TZ, hour12: false });
       render();
     } catch (e) {
-      body.innerHTML = `<p class="adm-empty">讀取失敗：${esc(e.message || String(e))}</p>`;
+      const m = esc(e.message || String(e));
+      // 已經有資料（例如即時動態自動更新失敗）：保留畫面，只在上方提示
+      if (D) root.querySelector('#adm-upd').textContent = `更新失敗（${e.message || e}），目前顯示的是上一次的資料`;
+      else {
+        body.innerHTML = `<p class="adm-empty">讀取失敗：${m}</p><button class="btn btn-gold btn-sm" type="button" data-retry>重試</button>`;
+        body.querySelector('[data-retry]').onclick = () => load();
+      }
     } finally { loading = false; }
   }
 

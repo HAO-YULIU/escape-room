@@ -1713,7 +1713,9 @@ async function loadAuth() {
     mist = ms ? { level: ms.level || 1, station: ms.station, at: ms.updated_at, stations: Object.keys(ms.visited || {}).length, treasures: Object.keys(ms.items || {}).length, name: ms.name } : null;
     const { data: sv } = await supabase.from('game_saves').select('game,updated_at').eq('user_id', user.id);
     for (const r of sv ?? []) saves[r.game] = r.updated_at;
-    const { data: adm } = await supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle();
+    // 網路偶爾失敗時再試一次，免得管理員被當成一般玩家、進不了管理頁
+    let { data: adm, error: admErr } = await supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle();
+    if (admErr) ({ data: adm } = await supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle());
     isAdmin = !!adm;
     const { data: ach } = await supabase.from('user_achievements').select('code').eq('user_id', user.id);
     achCodes = new Set((ach ?? []).map(a => a.code));
@@ -2358,7 +2360,7 @@ let adminUI = null;
 async function openAdmin() {
   if (adminUI) return adminUI.refresh();
   try {
-    const m = await import('./admin.js?v=4');
+    const m = await import('./admin.js?v=5');
     adminUI = m.mountAdmin({
       supabase, root: $('#view-admin'), escapeHTML, avatarHTML, toast,
       onContentChange: async () => { await loadGames(); await loadNews(); renderAll(); },
