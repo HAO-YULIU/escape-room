@@ -25,6 +25,10 @@ const PUPU_SCENES = {
 };
 const QS_FAIL = ['all-vanished', 'hell-fail', 'no-handover'];   // 千山夜錄的失敗結局
 const QS_CH = [['prologue', '序章'], ['ch1', '第一章'], ['ch2', '第二章'], ['ch3', '第三章'], ['ch4', '第四章'], ['finale', '終章'], ['ending', '最後的交班']];
+// 千山夜錄的房間狀態（即時動態用）
+const qsStatus = (q) => q.status === 'playing' ? (Object.fromEntries(QS_CH)[q.chapter] || '遊戲中') + (q.difficulty === 'hell' ? '・地獄版' : '')
+  : q.status === 'lobby' ? '等待開始' : q.status === 'ended' ? '已結束' : q.status || '';
+const qsLine = (q) => `千山夜錄・房間 ${q.code}・${qsStatus(q)}${q.location ? '・' + q.location : ''}`;
 // 五星級救援隊：樓層順序（pi＝爬到第幾層）、隊員代號
 const HOTEL_FLOORS = [['palace', '序幕・亞西吉王宮'], ['B2', 'B2 地下停車場'], ['B1', 'B1 運動中心・游泳池'], ['1F', '1F 大廳'], ['2F', '2F 皇家餐廳'], ['3F', '3F 小遊戲區'],
   ['4F', '4F 皇家宴會廳'], ['5F', '5F 客房區'], ['6F', '6F 辦公室・機房'], ['7F', '7F 總統套房'], ['RF', '頂樓']];
@@ -299,6 +303,8 @@ export function mountAdmin(ctx) {
       x.status = x.cleared || x.sum?.done ? 'done' : x.sum ? 'progress' : 'started';
       p.last = maxT(p.last, x.last);
     }
+    // 千山夜錄的房間（每位玩家只留最近的一間）
+    for (const q of D.qs || []) { const p = P[q.user_id]; if (p && !p.qs) { p.qs = q; p.last = maxT(p.last, q.last_seen); } }
   }
 
   function show(k) {
@@ -369,14 +375,23 @@ export function mountAdmin(ctx) {
     const row = (p, live) => {
       const xs = Object.values(p.games).filter(x => x.last).sort((a, b) => String(b.last).localeCompare(String(a.last)));
       const cur = xs[0] && now - new Date(xs[0].last) < (live ? 15 * 60e3 : 864e5) ? xs[0] : null;
-      const where = cur ? progLine(cur.slug, cur) + `<br><small>存檔 ${ago(cur.last)}</small>` : live ? '在大廳（最近 15 分鐘沒有遊戲存檔）' : '沒有玩遊戲';
+      const q = p.qs && now - new Date(p.qs.last_seen) < (live ? 15 * 60e3 : 864e5) && !(cur && cur.last > p.qs.last_seen) ? p.qs : null;
+      const where = q ? esc(qsLine(q)) + `<br><small>${ago(q.last_seen)}有動作</small>`
+        : cur ? progLine(cur.slug, cur) + `<br><small>存檔 ${ago(cur.last)}</small>` : live ? '在大廳，或剛打開遊戲還沒有新進度' : '沒有玩遊戲';
       return `<div class="adm-row">${avatarHTML(p, 40)}<div><b><span class="adm-dot ${live ? '' : 'idle'}"></span>${esc(p.name)}</b>${p.admin ? '<span class="adm-tag">你</span>' : ''}
         <span class="adm-tag">${ago(p.last)}</span><p>${where}</p></div></div>`;
     };
+    // 千山夜錄：15 分鐘內有人在的房間
+    const rooms = {};
+    for (const p of Object.values(P)) if (p.qs && now - new Date(p.qs.last_seen) < 15 * 60e3) (rooms[p.qs.code] ??= { q: p.qs, ps: [] }).ps.push(p);
+    const roomList = Object.values(rooms).sort((a, b) => String(b.q.last_seen).localeCompare(String(a.q.last_seen)));
     body.innerHTML = `
       <div class="adm-card"><h3>現在在線<small>最近 15 分鐘有動作・每 20 秒自動更新</small></h3>${on.map(p => row(p, true)).join('') || '<p class="adm-empty">現在沒有人在線。</p>'}</div>
+      ${roomList.length ? `<div class="adm-card"><h3>千山夜錄・進行中的房間<small>${roomList.length} 間</small></h3>${roomList.map(({ q, ps }) => `<div class="adm-row"><div>
+        <b>房間 ${esc(q.code)}</b><span class="adm-tag">${esc(qsStatus(q))}</span><span class="adm-tag">${q.members} 人</span>
+        <p>${ps.map(p => `${esc(p.name)}${p.qs.character ? '（' + esc(p.qs.character) + '）' : ''}${p.qs.location ? '・' + esc(p.qs.location) : ''}`).join('、')}</p></div></div>`).join('')}</div>` : ''}
       <div class="adm-card"><h3>今天來過<small>24 小時內</small></h3>${day1.map(p => row(p, false)).join('') || '<p class="adm-empty">今天還沒有其他人來過。</p>'}</div>
-      <p class="adm-note">「在線」是用登入狀態和遊戲存檔推算的：遊戲裡一有進度，最多 10 秒就會存到雲端；打開遊戲但完全沒動作的人看不出來。</p>`;
+      <p class="adm-note">「在線」是用登入狀態、遊戲存檔和千山夜錄的房間推算的：遊戲裡一有進度，最多 10 秒就會存到雲端；千山夜錄每隔幾秒回報一次。打開遊戲但完全沒動作的人，只能從登入狀態看出來（約一小時更新一次）。</p>`;
   }
 
   // ---------- 3. 卡關分析 ----------
