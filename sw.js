@@ -1,7 +1,7 @@
 // 夜語工作室大廳：讓大廳可以「加到主畫面」當成 App 開啟
 // 策略：大廳頁面一律先拿網路上的最新版（網路不通時才用上次存的），圖示等靜態檔用快取。
 // 只處理大廳自己的檔案；Supabase、遊戲、字型等其他網站的請求一律不經過這裡。
-const CACHE = 'yeyu-lobby-v3';
+const CACHE = 'yeyu-lobby-v4';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -15,8 +15,10 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || url.origin !== location.origin || !url.pathname.startsWith(new URL('./', location).pathname)) return;
   if (req.mode === 'navigate') {
     // 頁面：網路優先，確保大廳永遠是最新的；離線時才顯示上次的版本
-    e.respondWith(fetch(req).then((res) => { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); return res; })
-      .catch(() => caches.match('./index.html')));
+    // 只把大廳首頁存起來（分享頁 g/<遊戲>/ 等其他頁面不要蓋掉它）
+    const home = url.pathname === new URL('./', location).pathname || url.pathname.endsWith('/index.html') && !url.pathname.includes('/g/');
+    e.respondWith(fetch(req).then((res) => { if (home && res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put('./index.html', copy)); } return res; })
+      .catch(() => caches.match(home ? './index.html' : req).then((hit) => hit || caches.match('./index.html'))));
     return;
   }
   // 程式檔（admin.js 等）：網路優先，改版後馬上拿到新的

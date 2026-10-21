@@ -518,6 +518,11 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .gate h2 { font-size: 24px; margin-bottom: 10px; }
 .gate p { color: var(--muted); margin: 0 0 24px; }
 .gate-actions { display: flex; flex-direction: column; gap: 10px; }
+/* 朋友的邀請（從分享連結 g/<遊戲>/ 進來） */
+.invite-cover { width: 120px; aspect-ratio: 3 / 4; object-fit: cover; border-radius: 10px; margin: 0 auto 14px; display: block; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+.invite-who { color: var(--gold); font-weight: 700; }
+.invite-dare { display: block; margin-top: 6px; color: #FFD9A0; font-weight: 500; }
+.invite-code { display: inline-block; margin-top: 8px; padding: 4px 12px; border: 1px dashed var(--gold-dark); border-radius: 8px; color: var(--gold); font: 700 18px var(--serif); letter-spacing: .15em; }
 
 /* Forms / panels */
 .panel { background: var(--wall); border: 1px solid var(--line); border-radius: var(--radius); padding: 32px; }
@@ -2014,14 +2019,19 @@ function onRoomClick(e) {
   if (!card) return;
   openGame(card.dataset.slug);
 }
-function openGame(slug) {
+function openGame(slug, join = null) {
   const g = games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug);
   if (!g) return;
   if (inMaint(g)) return toast(`「${g.title}」正在改版維修中，全新版本敬請期待！`);
   if (upcoming(g)) return toast(`「${g.title}」將在 ${openLabel(g)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
-  goPlay(g.play_url);
+  goPlay(join ? withJoin(g.play_url, join) : g.play_url);
+}
+// 朋友邀請的房號：遊戲網址加上 ?join=房號，遊戲打開後直接加入那間房
+function withJoin(url, code) {
+  const [base, hash] = url.split('#');
+  return base + (base.includes('?') ? '&' : '?') + 'join=' + encodeURIComponent(code) + (hash ? '#' + hash : '');
 }
 
 // 遊戲在別的網域（例如 Cloudflare workers.dev）時，登入狀態不會自動帶過去：
@@ -2352,7 +2362,9 @@ function route() {
   if (target) target.scrollIntoView();
   else window.scrollTo(0, 0);
   onScroll();
+  if (view === 'home' && booted) afterRoute();
 }
+let booted = false;   // 第一次載入完成後，回到首頁才處理邀請與分享
 window.addEventListener('hashchange', route);
 
 // 管理頁：第一次打開才載入 admin.js（一般玩家不會下載）
@@ -2446,7 +2458,8 @@ async function renderHub() {
       ${team ? `<div class="rank-variants" role="group" aria-label="選擇人數">${sizes.map(n => `<button class="chip" type="button" data-ghs="${n}" aria-pressed="${n === size}">${n} 人</button>`).join('')}</div>` : ''}
       <p class="muted small">${team ? '依人數分開排名，同一組隊員只取最快的一次。' : '每位玩家只取最快的一次。'}</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
   const cta = !isOpen(g) ? '' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
-  $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>${tabs}${body}${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}`;
+  const share = isPlayer() && m ? `<button class="btn btn-ghost gh-play" type="button" data-share="${escapeHTML(g.slug)}">📤 分享給朋友，看誰比較快</button>` : '';
+  $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>${tabs}${body}${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}${share}`;
   if (hubTab === 'rank') {
     const seq = ++hubSeq, html = await rankRows(g.slug, variant, size);
     if (seq === hubSeq && $('#gh-rank')) $('#gh-rank').innerHTML = html;   // 切換很快時，只放最後一次的結果
@@ -2742,6 +2755,74 @@ document.addEventListener('click', (e) => {
   const sh = e.target.closest('[data-share]'); if (sh) { e.stopPropagation(); openShare(sh.dataset.share); }
 });
 
+// ================= 分享與邀請 =================
+// 遊戲結局畫面的「分享」→ 大廳 ?share=<slug>：直接打開那款遊戲的分享圖
+// 朋友點分享連結 g/<slug>/?from=…&t=…&join=… → 大廳 ?g=<slug>&…：跳出邀請；記在這台裝置一天，註冊、驗證信回來後還會再出現
+const INVITE_KEY = 'yeyu-invite';
+let invite = null, inviteShown = false, shareAsk = null;
+function readInvite() {
+  const q = new URLSearchParams(location.search), slug = q.get('g');
+  if (slug) {
+    const join = q.get('join') || '';
+    invite = { slug, from: (q.get('from') || '').slice(0, 20), t: Math.max(0, +q.get('t') || 0) || null, join: /^[A-Za-z0-9]{4,8}$/.test(join) ? join : null, at: Date.now() };
+    try { localStorage.setItem(INVITE_KEY, JSON.stringify(invite)); } catch (_) {}
+  } else {
+    try { const s = JSON.parse(localStorage.getItem(INVITE_KEY)); if (s?.slug && Date.now() - s.at < 864e5) invite = s; } catch (_) {}
+  }
+  shareAsk = q.get('share');
+  if (slug || shareAsk || q.has('from')) {
+    for (const k of ['g', 'from', 't', 'join', 'share']) q.delete(k);
+    history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+  }
+}
+function clearInvite() { invite = null; try { localStorage.removeItem(INVITE_KEY); } catch (_) {} }
+function showInvite() {
+  const g = invite && allGames.find(x => x.slug === invite.slug);
+  if (!g || inviteShown) return;
+  inviteShown = true;
+  let dlg = $('#invite');
+  if (!dlg) {
+    dlg = document.createElement('dialog'); dlg.id = 'invite'; dlg.className = 'gate'; document.body.appendChild(dlg);
+    dlg.addEventListener('click', (e) => {
+      if (e.target === dlg || e.target.closest('[data-close]')) { clearInvite(); return dlg.close(); }
+      const go = e.target.closest('[data-invite-go]'), hub = e.target.closest('[data-invite-hub]');
+      if (hub) { dlg.close(); return openHub(hub.dataset.inviteHub); }
+      if (!go || !invite) return;
+      const it = invite, gg = allGames.find(x => x.slug === it.slug); dlg.close();
+      if (!isPlayer()) return showGate(gg?.title ?? '');   // 邀請先留著，註冊、建好角色回到大廳會再問一次
+      clearInvite(); openGame(it.slug, it.join);
+    });
+  }
+  const who = invite.from ? `<span class="invite-who">${escapeHTML(invite.from)}</span>` : '有朋友';
+  const open = isOpen(g);
+  dlg.innerHTML = `
+    <div class="gate-inner">
+      <button class="gate-x" data-close type="button" aria-label="關閉">×</button>
+      ${g.cover_url ? `<img class="invite-cover" src="${escapeHTML(g.cover_url)}" alt="">` : ''}
+      <h2>${invite.join ? '來組隊吧！' : '有人向你下戰帖'}</h2>
+      <p>${who}${invite.join ? ' 開好房間了，邀請你一起玩' : ' 邀請你挑戰'}《${escapeHTML(g.title)}》。
+        ${invite.t ? `<span class="invite-dare">對方用了 ${fmtTime(invite.t)} 逃出來，你能更快嗎？</span>` : ''}
+        ${invite.join ? `<span class="invite-code">房號 ${escapeHTML(invite.join)}</span>` : ''}
+        ${!open ? `<span class="invite-dare">這款${upcoming(g) ? `將在 ${openLabel(g)} 開放` : '暫時沒有開放'}。</span>` : ''}</p>
+      <div class="gate-actions">
+        ${open ? `<button class="btn btn-gold" type="button" data-invite-go>${invite.join ? '加入房間 →' : '接受挑戰 →'}</button>` : ''}
+        ${open ? `<button class="btn btn-ghost" type="button" data-invite-hub="${escapeHTML(g.slug)}">先看排行榜</button>` : ''}
+        <button class="btn btn-ghost" type="button" data-close>之後再說</button>
+      </div>
+      ${!isPlayer() ? '<p class="muted small" style="margin:14px 0 0">要先免費註冊、建立角色才能遊玩，完成後會回到這裡。</p>' : ''}
+    </div>`;
+  dlg.showModal();
+}
+// 回到大廳首頁時：還沒處理的邀請、從遊戲按「分享」過來的分享圖
+function afterRoute() {
+  if (shareAsk) {
+    const slug = shareAsk; shareAsk = null;
+    if (!isPlayer()) { toast('登入後就能分享你的紀錄。'); location.hash = user ? 'character' : 'login'; return; }
+    if (allGames.some(g => g.slug === slug)) return openShare(slug);
+  }
+  if (invite && (!user || profile)) showInvite();
+}
+
 // ================= 新成就通知：回到大廳時，告訴玩家這次解鎖了什麼 =================
 function checkNewAch() {
   if (!isPlayer()) return;
@@ -2821,6 +2902,14 @@ setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
 
 // ================= 分享圖 =================
 const LOBBY_URL = 'https://hao-yuliu.github.io/escape-room/';
+// 每款遊戲的分享連結：g/<slug>/ 是有那款封面預覽圖的小頁面（社群貼文會顯示），打開後帶著參數回到大廳
+// from：誰邀請的、t：他的最佳秒數、join：多人遊戲的房號。新遊戲上線時要複製一份 g/<slug>/index.html
+const SHARE_PAGES = ['qianchan-school', 'school2', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1'];
+function gameLink(slug, extra = {}) {
+  const q = new URLSearchParams(Object.entries(extra).filter(([, v]) => v != null && v !== ''));
+  const base = SHARE_PAGES.includes(slug) ? `${LOBBY_URL}g/${slug}/` : LOBBY_URL;
+  return base + (q.toString() ? '?' + q : '');
+}
 const loadImg = (src) => new Promise((ok) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
 function cover(ctx, img, x, y, w, h) {
   const r = Math.max(w / img.width, h / img.height), sw = w / r, sh = h / r;
@@ -2859,19 +2948,24 @@ async function drawShare(kind) {
     });
     const cleared = list.filter(g => mine[g.id]?.best != null).length;
     stat([[`${cleared}/${list.length}`, '逃出的密室'], [`${got.length}`, '解鎖成就'], [`${Object.values(mine).reduce((n, m) => n + m.endings.size, 0)}`, '收集結局']], 1090);
-    text = `我在夜語工作室已經逃出 ${cleared} 間密室，稱號「${t.name}」。你敢來挑戰嗎？ ${LOBBY_URL}`;
+    text = `我在夜語工作室已經逃出 ${cleared} 間密室，稱號「${t.name}」。你敢來挑戰嗎？ ${LOBBY_URL}?from=${encodeURIComponent(profile.username)}`;
   } else {
-    const g = allGames.find(z => z.slug === kind), m = mine[g.id];
+    const g = allGames.find(z => z.slug === kind), m = mine[g.id] ?? { best: null, plays: 0, endings: new Set() }, won = m.best != null;
     const img = g.cover_url ? await loadImg(g.cover_url) : null;
     if (img) cover(x, img, 0, 0, W, 720);
     const f = x.createLinearGradient(0, 540, 0, 722); f.addColorStop(0, 'rgba(11,13,29,0)'); f.addColorStop(1, '#0F1226'); x.fillStyle = f; x.fillRect(0, 540, W, 182);
-    center('我逃出來了', 800, `700 44px ${SERIF}`, '#FFD9A0');
+    center(won ? '我逃出來了' : '我走進了', 800, `700 44px ${SERIF}`, '#FFD9A0');
     let fs = 96; x.font = `900 ${fs}px ${SERIF}`; while (x.measureText(`《${g.title}》`).width > W - 100 && fs > 48) x.font = `900 ${fs -= 6}px ${SERIF}`;
     center(`《${g.title}》`, 910, x.font);
     const ends = ENDING_COUNT[g.slug], list = ACH.filter(a => a.game === g.slug), k = list.filter(a => got.some(b => b.code === a.code)).length;
-    stat([[fmtTime(m.best), '最佳通關時間'], ends ? [`${m.endings.size}/${ends}`, '收集結局'] : [`${m.plays}`, '挑戰次數'], [`${k}/${list.length}`, '成就']], 1040);
+    stat([won ? [fmtTime(m.best), '最佳通關時間'] : [`${m.plays}`, '挑戰次數'], ends ? [`${m.endings.size}/${ends}`, '收集結局'] : [`${m.plays}`, '挑戰次數'], [`${k}/${list.length}`, '成就']], 1040);
     center(`${profile.username}・${t.name}`, 1180, `700 38px ${SERIF}`, '#ECEAF5');
-    text = `我在夜語工作室逃出了《${g.title}》，最佳 ${fmtTime(m.best)}！你敢來挑戰嗎？ ${LOBBY_URL}`;
+    // 挑戰句：時間、零提示等亮點放前面，連結點開就是這款遊戲
+    const link = gameLink(g.slug, { from: profile.username, t: won ? m.best : null });
+    const brag = !won ? '' : m.bestRec && !m.bestRec.hints ? '，而且一個提示都沒用' : m.bestRec && !m.bestRec.deaths ? '，零死亡' : '';
+    text = won
+      ? `我在《${g.title}》用了 ${fmtTime(m.best)} 逃出來${brag}！你敢來挑戰嗎？比比看誰比較快 👉 ${link}`
+      : `我正在挑戰《${g.title}》，${isTeamGame(g) ? '缺隊友，一起來玩' : '你也來試試看'}？👉 ${link}`;
   }
   x.fillStyle = 'rgba(232,212,160,.35)'; x.fillRect(W / 2 - 160, 1238, 320, 2);
   center('夜 語 工 作 室 ・ 線 上 密 室', 1290, `700 32px ${SERIF}`);
@@ -3239,6 +3333,7 @@ async function doInstall(e) {
 $('#install-btn').addEventListener('click', doInstall);
 $('#install-link').addEventListener('click', doInstall);
 
+readInvite();
 await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMistTop().catch(() => {})]); // 消息要等密室資料，才知道哪些可以點
 reshuffle();
 renderAll();
@@ -3251,6 +3346,7 @@ checkNewMsgs();
 if (user && !profile && !['login', 'signup', 'character'].includes(location.hash.slice(1))) {
   location.hash = 'character';
 }
+booted = true;
 route();
 
 // 從密室按「上一頁」回來時，重新讀取最新紀錄
