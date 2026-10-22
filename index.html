@@ -374,6 +374,13 @@ body:not(.home) { padding-top: 68px; }
 .pf-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
 .pf-empty { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
 .pf-sub { font: 500 12px var(--sans); color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+.pf-achp { display: grid; gap: 4px; }
+.pf-achrow { display: grid; grid-template-columns: minmax(0, 1fr) 90px 52px; align-items: center; gap: 10px; padding: 7px 10px; border: 0; border-radius: 8px; background: rgba(255,255,255,.03); color: var(--parchment); font: 500 13px var(--sans); text-align: left; cursor: pointer; }
+.pf-achrow:hover { background: rgba(232,212,160,.08); }
+.pf-achrow span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-achrow i { height: 5px; border-radius: 5px; background: var(--ink-2); overflow: hidden; }
+.pf-achrow b { display: block; height: 100%; background: linear-gradient(90deg, var(--gold-dark), var(--gold)); }
+.pf-achrow small { text-align: right; color: var(--muted); font-size: 12px; }
 .pf-ach { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
 .pf-ach .ach { padding: 6px 8px; align-items: center; }
 .pf-ach .ach > span { font-size: 0; }   /* 個人資料只列名稱和哪款遊戲，說明放在 title（滑過／長按看得到） */
@@ -386,6 +393,7 @@ body:not(.home) { padding-top: 68px; }
 /* 稱號 */
 .ttl { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font: 700 13px var(--serif); color: var(--gold); border: 1px solid rgba(232,212,160,.35); background: rgba(232,212,160,.06); white-space: nowrap; }
 .ttl i { font: 700 10px var(--sans); font-style: normal; padding: 1px 6px; border-radius: 999px; letter-spacing: .05em; }
+.ttl.common i { background: rgba(232,212,160,.75); color: #14162A; }
 .ttl.rare { color: #BFD9FF; border-color: rgba(143,184,232,.5); background: rgba(143,184,232,.1); } .ttl.rare i { background: #8FB8E8; color: #0E1424; }
 .ttl.epic { color: #E4C8FF; border-color: rgba(190,140,255,.55); background: rgba(160,110,240,.12); } .ttl.epic i { background: #B48CF0; color: #160E24; }
 .ttl.legend { color: #FFD9A0; border-color: rgba(255,190,110,.7); background: linear-gradient(90deg, rgba(255,170,80,.16), rgba(255,220,150,.08)); box-shadow: 0 0 12px rgba(255,190,110,.18); } .ttl.legend i { background: linear-gradient(180deg, #FFE3A8, #E8A04A); color: #2A1404; }
@@ -2918,7 +2926,8 @@ function titleOf(n) {
 // ================= 稱號 =================
 // 等級稱號（TITLES）：依解鎖的成就數量自動升級。特殊稱號（SPECIAL_TITLES）：比成就難，大多要同時完成好幾個成就。
 // 玩家可以在個人資料換上任何已經拿到的稱號：存在 profiles.title_code（'lv:<門檻>' 或特殊稱號代號）；沒選就用目前的等級稱號
-const RARITY = { rare: '稀有', epic: '史詩', legend: '傳說' };
+const RARITY = { common: '一般', rare: '稀有', epic: '史詩', legend: '傳說' };
+const LV_RARITY = { 0: 'common', 3: 'common', 8: 'rare', 15: 'rare', 25: 'epic', 40: 'epic', 60: 'legend', 85: 'legend' };   // 等級稱號的稀有度（依門檻）
 const ENDING_ALLS = ['q1_all', 's2_all', 'bg_all', 'zr_all', 'qs_all', 'lv_all'];
 const SPECIAL_TITLES = [
   { code: 't_speed', name: '速通狂人', rarity: 'rare', desc: '3 間不同的密室都在 60 分鐘內逃出', test: (c) => new Set(c.cleared.filter(r => r.clear_time_sec != null && r.clear_time_sec <= 3600).map(r => r.slug)).size >= 3 },
@@ -2937,15 +2946,34 @@ const SPECIAL_TITLES = [
   { code: 't_arg', name: '第零號收件人', rarity: 'legend', desc: '《零號回信》：收集全部 8 個結局，並完成全部 57 個秘密任務', test: (c, has) => has('zr_all', 'zr_cbsecret') },
   { code: 't_qs', name: '地獄交班者', rarity: 'legend', desc: '《千山夜錄》：零提示通關地獄版，並收集全部 8 個結局', test: (c, has) => has('qs_hell_nohint', 'qs_all') },
   { code: 't_ambassador', name: '夜語代言人', rarity: 'legend', desc: '邀請 10 位朋友，而且其中 5 位已經開始玩', test: (c) => c.invited >= 10 && c.invitedPlayed >= 5 },
+  // 第二批
+  { code: 't_nightowl', name: '夜行性生物', rarity: 'rare', desc: '在凌晨 0 點到 4 點之間，逃出 3 間不同的密室', test: (c) => new Set(c.cleared.filter(r => new Date(r.updated_at || r.created_at).getHours() < 4).map(r => r.slug)).size >= 3 },
+  { code: 't_comeback', name: '逆轉之夜', rarity: 'rare', desc: '同時達成「再推一次門」和「鍥而不捨」', test: (c, has) => has('g_comeback', 'g_retry') },
+  { code: 't_stubborn', name: '不服輸', rarity: 'rare', desc: '同一間密室挑戰 10 次以上，而且最後逃出來了', test: (c) => Object.entries(c.bySlug).some(([k, a]) => a.length >= 10 && c.cl(k).length > 0) },
+  { code: 't_ironman', name: '鋼鐵之夜', rarity: 'epic', desc: '零死亡逃出 5 間不同的密室', test: (c) => new Set(c.cleared.filter(r => !r.deaths).map(r => r.slug)).size >= 5 },
+  { code: 't_lightspeed', name: '光速逃脫者', rarity: 'epic', desc: '5 間不同的密室都在 60 分鐘內逃出', test: (c) => new Set(c.cleared.filter(r => r.clear_time_sec != null && r.clear_time_sec <= 3600).map(r => r.slug)).size >= 5 },
+  { code: 't_marathon', name: '夜語馬拉松', rarity: 'epic', desc: '累計挑戰 100 次密室', test: (c) => c.recs.length >= 100 },
+  { code: 't_qc_guard', name: '千嬋守護者', rarity: 'epic', desc: '《千嬋高級中學》第一章、第二章都零死亡通關', test: (c, has) => has('q1_nodeath', 's2_nodeath') },
+  { code: 't_gambler', name: '越南賭神', rarity: 'epic', desc: '《越南公主》：彈珠王、象棋勝者、撲克牌冠軍、麻將之王全部拿到', test: (c, has) => has('bg_pb', 'bg_xq_w', 'bg_cd1', 'bg_mj1') },
+  { code: 't_archivist', name: '封存站管理員', rarity: 'epic', desc: '《零號回信》：解開卷宗 100 題，並找到封存站的背面和訪客入口', test: (c, has) => has('zr_cb100', 'zr_source', 'zr_guest') },
+  { code: 't_muer', name: '暮兒', rarity: 'epic', desc: '《千山夜錄》暮兒之夜：讀出最後一頁，並以暮兒的身分守住整夜', test: (c, has) => has('qs_m_page', 'qs_m_night') },
+  { code: 't_flawless5', name: '無瑕傳說', rarity: 'legend', desc: '零死亡、零提示逃出 5 間不同的密室', test: (c) => new Set(c.cleared.filter(r => !r.deaths && !r.hints).map(r => r.slug)).size >= 5 },
+  { code: 't_bookofends', name: '結局之書', rarity: 'legend', desc: '收集 5 款密室的全部結局', test: (c, has) => ENDING_ALLS.filter(x => has(x)).length >= 5 },
+  { code: 't_collector', name: '稱號收藏家', rarity: 'legend', desc: '拿到 10 個特殊稱號', meta: true, test: (c) => c.spTitles >= 10 },
   { code: 't_dev', name: '夜語工作室・開發者', rarity: 'legend', desc: '夜語工作室的工作人員', hidden: true, test: () => isAdmin },
 ];
-const levelTitles = () => TITLES.map(([n, name]) => ({ code: `lv:${n}`, name, need: n, rarity: null, desc: n ? `解鎖 ${n} 個成就` : '一開始就有' }));
-// 所有稱號和有沒有拿到：[{ code, name, rarity, desc, ok }]
+const levelTitles = () => TITLES.map(([n, name]) => ({ code: `lv:${n}`, kind: 'lv', name, need: n, rarity: LV_RARITY[n] ?? 'common', desc: n ? `解鎖 ${n} 個成就` : '一開始就有' }));
+// 所有稱號和有沒有拿到：[{ code, kind, name, rarity, desc, ok }]
+// 「稱號收藏家」這類看其他特殊稱號的（meta），等其他稱號算完再算
 function titleList() {
   const got = achGot(), codes = new Set(got.map(a => a.code)), c = achContext(), has = (...xs) => xs.every(x => codes.has(x));
+  const sp = SPECIAL_TITLES.filter(t => !t.meta).map(t => ({ ...t, kind: 'sp', ok: !!t.test(c, has) }));
+  c.spTitles = sp.filter(t => t.ok && !t.hidden).length;
   return [
     ...levelTitles().map(t => ({ ...t, ok: got.length >= t.need })),
-    ...SPECIAL_TITLES.map(t => ({ ...t, ok: !!t.test(c, has) })).filter(t => t.ok || !t.hidden),
+    ...[...sp, ...SPECIAL_TITLES.filter(t => t.meta).map(t => ({ ...t, kind: 'sp', ok: !!t.test(c, has) }))]
+      .sort((a, b) => Object.keys(RARITY).indexOf(a.rarity) - Object.keys(RARITY).indexOf(b.rarity))
+      .filter(t => t.ok || !t.hidden),
   ];
 }
 // 目前顯示的稱號：玩家選的（還拿得到才算），不然就是等級稱號
@@ -2962,17 +2990,22 @@ async function equipTitle(code) {
   if ($('#profile-dlg').open) openProfile();
   if ($('#ach-dlg').open) openAch(achTab);
 }
-const titleChip = (t) => `<span class="ttl ${t.rarity ?? 'lv'}">${t.rarity ? `<i>${RARITY[t.rarity]}</i>` : ''}${escapeHTML(t.name)}</span>`;
+const titleChip = (t) => `<span class="ttl ${t.rarity ?? 'common'}"><i>${RARITY[t.rarity ?? 'common']}</i>${escapeHTML(t.name)}</span>`;
 
 // ================= 成就與稱號（英雄區「成就」按鈕）：解鎖和還沒解鎖的都列出來 =================
+// 成就依「夜語工作室（通用）」和各款遊戲分組；下架或還沒開放、也沒解鎖過的遊戲不列
+function achGroups(got) {
+  return [{ key: null, name: '夜語工作室' }, ...allGames.filter(g => ACH.some(a => a.game === g.slug)).map(g => ({ key: g.slug, name: g.title, g }))]
+    .map(gr => ({ ...gr, items: ACH.filter(a => a.game === gr.key) }))
+    .filter(gr => gr.items.length && (!gr.g || isOpen(gr.g) || gr.items.some(a => got.has(a.code))))
+    .map(gr => ({ ...gr, n: gr.items.filter(a => got.has(a.code)).length }));
+}
 let achTab = 'ach';
 function openAch(tab = achTab) {
   if (!isPlayer()) { location.hash = user ? 'character' : 'login'; return; }
   achTab = tab;
   const dlg = $('#ach-dlg'), got = new Set(achGot().map(a => a.code)), list = titleList(), cur = myTitle(list);
-  const groups = [{ key: null, name: '夜語工作室' }, ...allGames.filter(g => ACH.some(a => a.game === g.slug)).map(g => ({ key: g.slug, name: g.title, g }))]
-    .map(gr => ({ ...gr, items: ACH.filter(a => a.game === gr.key) }))
-    .filter(gr => gr.items.length && (!gr.g || isOpen(gr.g) || gr.items.some(a => got.has(a.code))));
+  const groups = achGroups(got);
   const total = groups.reduce((n, gr) => n + gr.items.length, 0), k = groups.reduce((n, gr) => n + gr.items.filter(a => got.has(a.code)).length, 0);
   const achBody = `<p class="ad-sum">已解鎖 <b>${k}</b> / ${total}</p><div class="ach-bar"><i style="width:${total ? k / total * 100 : 0}%"></i></div>
     ${groups.map(gr => {
@@ -2982,7 +3015,7 @@ function openAch(tab = achTab) {
     }).join('')}`;
   const row = (t) => `<div class="ad-title ${t.ok ? 'ok' : ''}">${titleChip(t)}<span class="ad-desc">${escapeHTML(t.desc)}</span>
     ${!t.ok ? '<span class="ad-lock">🔒</span>' : t.code === profile.title_code ? '<span class="ad-on">使用中</span>' : `<button class="btn btn-ghost btn-sm" type="button" data-equip="${t.code}">換上</button>`}</div>`;
-  const sp = list.filter(t => t.rarity), lv = list.filter(t => !t.rarity);
+  const sp = list.filter(t => t.kind === 'sp'), lv = list.filter(t => t.kind === 'lv');
   const titleBody = `<p class="ad-sum">目前的稱號：${titleChip(cur)}${cur.auto ? '<small>（自動：依成就數量）</small>' : ` <button class="linkbtn" type="button" data-equip="">改回自動</button>`}</p>
     <h4>✦ 特殊稱號 <small>${sp.filter(t => t.ok).length} / ${sp.length}</small></h4><p class="muted small">比成就更難拿，大多要同時完成好幾個成就。</p>${sp.map(row).join('')}
     <h4>等級稱號 <small>${lv.filter(t => t.ok).length} / ${lv.length}</small></h4><p class="muted small">解鎖越多成就，等級稱號會自動升級。</p>${lv.map(row).join('')}`;
@@ -3094,6 +3127,7 @@ const fmtDay = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.g
 async function openProfile() {
   if (!isPlayer()) { location.hash = user ? 'character' : 'login'; return; }
   const dlg = $('#profile-dlg'), got = achGot(), t = titleOf(got.length), tl = titleList(), cur = myTitle(tl);
+  const ag = achGroups(new Set(got.map(a => a.code)));
   const played = allGames.filter(g => mine[g.id]).sort((a, b) => String(mine[b.id].last).localeCompare(String(mine[a.id].last)));
   const list = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug));
   const cleared = allGames.filter(g => mine[g.id]?.best != null).length;
@@ -3110,9 +3144,9 @@ async function openProfile() {
     </div>
     <h4>👑 我的稱號 <small class="pf-sub">點一下就能換上</small></h4>
     <div class="pf-titles">
-      <button type="button" class="pf-tchip ${cur.auto ? 'on' : ''}" data-equip="">${titleChip({ name: t.name, rarity: null })}<small>自動</small></button>
-      ${tl.filter(x => x.ok && x.rarity).map(x => `<button type="button" class="pf-tchip ${x.code === profile.title_code ? 'on' : ''}" data-equip="${x.code}">${titleChip(x)}</button>`).join('')}
-      ${tl.filter(x => x.ok && !x.rarity && x.name !== t.name).reverse().map(x => `<button type="button" class="pf-tchip ${x.code === profile.title_code ? 'on' : ''}" data-equip="${x.code}">${titleChip(x)}</button>`).join('')}
+      <button type="button" class="pf-tchip ${cur.auto ? 'on' : ''}" data-equip="">${titleChip({ name: t.name, rarity: LV_RARITY[t.from] })}<small>自動</small></button>
+      ${tl.filter(x => x.ok && x.kind === 'sp').map(x => `<button type="button" class="pf-tchip ${x.code === profile.title_code ? 'on' : ''}" data-equip="${x.code}">${titleChip(x)}</button>`).join('')}
+      ${tl.filter(x => x.ok && x.kind === 'lv' && x.name !== t.name).reverse().map(x => `<button type="button" class="pf-tchip ${x.code === profile.title_code ? 'on' : ''}" data-equip="${x.code}">${titleChip(x)}</button>`).join('')}
     </div>
     <button class="linkbtn" type="button" data-ach="title">看看還有哪些稱號、怎麼拿 →</button>
     <h4>我的密室紀錄</h4>
@@ -3126,12 +3160,8 @@ async function openProfile() {
       const g = allGames.find(x => x.id === r.game_id);
       return `<li><span class="d">${fmtDay(r.updated_at ?? r.created_at)}</span><span>${escapeHTML(g?.title ?? '')}${r.hints ? `<span class="d">・提示 ${r.hints}</span>` : ''}</span>${status(r)}</li>`;
     }).join('')}</ul>` : ''}
-    <h4>🎖 我的成就 <small class="pf-sub">${got.length} / ${ACH.length}</small></h4>
-    <div class="ach-bar"><i style="width:${ACH.length ? got.length / ACH.length * 100 : 0}%"></i></div>
-    ${got.length ? `<div class="ach-grid pf-ach">${got.map(a => {
-      const g = a.game && allGames.find(x => x.slug === a.game);
-      return achItem(a, true).replace('</span></div>', `${g ? `<em>${escapeHTML(stampName(g))}</em>` : ''}</span></div>`);
-    }).join('')}</div>` : '<p class="pf-empty">還沒有解鎖成就。逃出密室、找到隱藏結局都能拿到成就。</p>'}
+    <h4>🎖 成就進度 <small class="pf-sub">${ag.reduce((n, gr) => n + gr.n, 0)} / ${ag.reduce((n, gr) => n + gr.items.length, 0)}</small></h4>
+    <div class="pf-achp">${ag.map(gr => `<button type="button" class="pf-achrow" data-ach="ach"><span>${escapeHTML(gr.name)}</span><i><b style="width:${gr.items.length ? gr.n / gr.items.length * 100 : 0}%"></b></i><small>${gr.n} / ${gr.items.length}</small></button>`).join('')}</div>
     <button class="linkbtn" type="button" data-ach="ach">查看全部成就（包含還沒解鎖的）→</button>
     <h4>👥 邀請的朋友 <small class="pf-sub" id="pf-inv-n">讀取中…</small></h4>
     <div id="pf-inv"></div>
@@ -3256,7 +3286,7 @@ function checkNewAch() {
   if (!Array.isArray(seen)) return;   // 這台裝置第一次看：先記下來，不一次跳出一大堆
   const fresh = got.filter(a => !seen.includes(a.code));
   const before = titleOf(got.length - fresh.length).name, now = titleOf(got.length).name;
-  const TK = 'yeyu_title_seen:' + user.id, sp = titleList().filter(t => t.rarity && t.ok);
+  const TK = 'yeyu_title_seen:' + user.id, sp = titleList().filter(t => t.kind === 'sp' && t.ok);
   let tSeen = null; try { tSeen = JSON.parse(localStorage.getItem(TK)); localStorage.setItem(TK, JSON.stringify(sp.map(t => t.code))); } catch (_) {}
   const newT = Array.isArray(tSeen) ? sp.filter(t => !tSeen.includes(t.code)) : [];
   if (!fresh.length && !newT.length) return;
