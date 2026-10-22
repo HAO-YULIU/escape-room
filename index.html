@@ -2199,6 +2199,7 @@ function openGame(slug, join = null) {
   const g = games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug);
   if (!g) return;
   if (inMaint(g)) return toast(`「${g.title}」正在改版維修中，全新版本敬請期待！`);
+  if (upcoming(g) && earlyLeft(g)) return isPlayer() ? goPlay(g.play_url) : showGate(g.title);   // 搶先體驗：名額由遊戲那邊向伺服器領
   if (upcoming(g)) return toast(`「${g.title}」將在 ${openLabel(g)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
   if (!isPlayer()) return showGate(g.title);
@@ -2229,6 +2230,12 @@ listEl.addEventListener('click', onRoomClick);
 $('#newest-box').addEventListener('click', onRoomClick);
 $('#monthly-list').addEventListener('click', onRoomClick);
 
+// 《迷霧》搶先體驗：正式開放前只有前 10 位玩家能先玩（名額在資料庫 early_access，遊戲打開時才真的領）
+let mistEarly = { left: 0, limit: 10 };
+const earlyLeft = (g) => g.slug === 'mist' && !mistEarly.launched ? mistEarly.left : 0;
+async function loadEarly() {
+  try { const { data } = await supabase.rpc('mist_early_slots'); if (data) mistEarly = data; } catch (_) {}
+}
 // ================= 大型網頁解謎遊戲（不是密室：不計時、不分難度、不進排行榜） =================
 const RPGS = [{
   slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You',
@@ -2238,10 +2245,10 @@ const RPGS = [{
 }];
 function renderRpgs() {
   $('#rpg-list').innerHTML = RPGS.map(g => {
-    const open = isOpen(g), soon = upcoming(g);
-    const cta = soon ? `${openLabel(g)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
+    const open = isOpen(g), soon = upcoming(g), early = soon && earlyLeft(g);
+    const cta = early ? `🎟 搶先體驗（剩 ${early} / ${mistEarly.limit} 名）→` : soon ? `${openLabel(g)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
     return `
-    <button class="rpg ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
+    <button class="rpg ${open || early ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
       <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(g.cover_url)}" alt=""></div>
       <div class="rpg-cover"><img src="${escapeHTML(g.cover_url)}" alt="${escapeHTML(g.title)} 封面" loading="lazy"></div>
       <div class="rpg-body">
@@ -2250,7 +2257,7 @@ function renderRpgs() {
         <p class="sub">${escapeHTML(g.subtitle)}</p>
         <p class="desc">${escapeHTML(g.description)}</p>
         <ul class="rpg-feats">${g.feats.map(f => `<li>${escapeHTML(f)}</li>`).join('')}</ul>
-        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
+        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}${early ? '　正式開放前，只有前 ' + mistEarly.limit + ' 位旅客能先玩' : ''}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
       </div>
     </button>`;
   }).join('') + (mistTop.length ? mistBoard() : '');
@@ -3900,7 +3907,7 @@ $('#install-btn').addEventListener('click', doInstall);
 $('#install-link').addEventListener('click', doInstall);
 
 readInvite();
-await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMistTop().catch(() => {})]); // 消息要等密室資料，才知道哪些可以點
+await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMistTop().catch(() => {}), loadEarly()]); // 消息要等密室資料，才知道哪些可以點
 reshuffle();
 renderAll();
 if (RECOVERY && user) showNewPw();   // 保險：萬一沒收到 PASSWORD_RECOVERY 事件
