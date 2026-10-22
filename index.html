@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>夜語工作室｜線上密室逃脫・大型開放RPG網頁遊戲</title>
-  <meta name="description" content="夜語工作室 線上密室逃脫與大型開放RPG網頁遊戲。建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
+  <title>夜語工作室｜線上密室逃脫・大型網頁解謎遊戲</title>
+  <meta name="description" content="夜語工作室 線上密室逃脫與大型網頁解謎遊戲。建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
   <!-- 分享到脆／IG／LINE 時的預覽圖 -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="夜語工作室">
-  <meta property="og:title" content="夜語工作室｜線上密室逃脫・大型開放RPG網頁遊戲">
+  <meta property="og:title" content="夜語工作室｜線上密室逃脫・大型網頁解謎遊戲">
   <meta property="og:description" content="建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
   <meta property="og:url" content="https://lobby.noron.workers.dev/">
   <meta property="og:image" content="https://lobby.noron.workers.dev/covers/og.jpg">
@@ -302,7 +302,7 @@ body:not(.home) { padding-top: 68px; }
 .pick.p1 h4 { font-size: clamp(24px, 2.6vw, 30px); text-shadow: 0 3px 14px rgba(0,0,0,.7); }
 .pick.p1 .desc { -webkit-line-clamp: 3; }
 .month-note { text-align: center; color: var(--muted); font-size: 13px; margin: 18px 0 0; }
-/* 大型開放 RPG：橫幅大卡（方形封面＋介紹），不顯示難度、時長 */
+/* 大型網頁解謎遊戲：橫幅大卡（方形封面＋介紹），不顯示難度、時長 */
 /* 怎麼玩：兩種玩法的小標 */
 .how-track { display: flex; align-items: center; gap: 10px; justify-content: center; margin: 8px 0 4px; font: 700 22px var(--serif); color: var(--gold); letter-spacing: .08em; }
 .how-track span { font-size: 22px; }
@@ -341,6 +341,39 @@ body:not(.home) { padding-top: 68px; }
   background: rgba(8,10,20,.45); color: var(--gold); font: 700 14px var(--sans); cursor: pointer; }
 .hero-install:hover { border-style: solid; background: rgba(232,212,160,.1); }
 .hero-install[hidden] { display: none; }
+/* 換個造型：在「挑選密室」「個人資料」下方中間，小一點 */
+.hero-actions .hero-style { flex-basis: 100%; max-width: max-content; margin: -2px auto 0; padding: 6px 18px; font-size: 13px; opacity: .85; }
+.hero-actions .hero-style:hover { opacity: 1; }
+/* 繼續遊戲：最近玩的那款 */
+.hero-continue { border-style: solid; background: linear-gradient(180deg, rgba(246,231,190,.18), rgba(232,212,160,.08)); }
+.hero-continue b { color: #FFE9B8; }
+/* 個人資料 */
+#profile-dlg { max-width: 560px; width: calc(100% - 32px); max-height: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 22px 20px 18px; }
+#profile-dlg::backdrop { background: rgba(4,6,14,.75); }
+.pf-head { display: flex; align-items: center; gap: 14px; }
+.pf-head h3 { margin: 0; font: 700 22px var(--serif); color: var(--gold); }
+.pf-head p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+.pf-x { margin-left: auto; align-self: flex-start; background: none; border: 0; color: var(--muted); font-size: 20px; cursor: pointer; }
+.pf-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 18px 0 6px; }
+.pf-stats div { background: var(--ink-2); border-radius: 12px; padding: 10px 6px; text-align: center; }
+.pf-stats b { display: block; font: 900 20px var(--serif); color: var(--gold); }
+.pf-stats span { font-size: 12px; color: var(--muted); }
+#profile-dlg h4 { margin: 18px 0 8px; font: 700 15px var(--serif); color: var(--parchment); letter-spacing: .08em; }
+.pf-games { display: grid; gap: 8px; }
+.pf-game { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; background: var(--ink-2); border-radius: 12px; padding: 8px 12px 8px 8px; }
+.pf-game img { width: 44px; height: 44px; border-radius: 8px; object-fit: cover; }
+.pf-game b { display: block; font-size: 14px; }
+.pf-game small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+.pf-game .pf-time { text-align: right; font: 700 16px var(--serif); color: var(--gold); }
+.pf-game .pf-time small { font: 500 12px var(--sans); color: #FFD9A0; }
+.pf-game .pf-time.no { color: var(--muted); font-size: 13px; }
+.pf-hist { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; }
+.pf-hist li { display: grid; grid-template-columns: 56px 1fr auto; gap: 8px; padding: 7px 10px; border-radius: 8px; background: rgba(255,255,255,.03); }
+.pf-hist .d { color: var(--muted); }
+.pf-hist .ok { color: #9FE0B0; } .pf-hist .bad { color: #E9A2A2; } .pf-hist .mid { color: var(--muted); }
+.pf-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.pf-empty { color: var(--muted); font-size: 14px; }
+@media (max-width: 520px) { .pf-stats { gap: 6px; } .pf-stats span { font-size: 11px; } }
 #install-help { max-width: 360px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 24px 22px 20px; }
 #install-help::backdrop { background: rgba(4,6,14,.7); }
 #install-help h3 { font: 700 20px var(--serif); margin: 0 0 6px; color: var(--gold); }
@@ -1023,10 +1056,11 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="hero-actions" id="hero-actions">
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
-      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-23T20:00" data-cd-short>10/23 20:00 開放</time> →</em></span></a>
+      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型網頁解謎遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-23T20:00" data-cd-short>10/23 20:00 開放</time> →</em></span></a>
       <button class="hero-next" id="hero-next" type="button" hidden></button>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <button class="hero-install" id="lobby-share-btn" type="button">🔗 把夜語工作室分享給朋友</button>
+      <button class="hero-install hero-continue" id="continue-btn" type="button" hidden></button>
       <span class="hero-hint" aria-hidden="true">✦ 點一下夜空、戳戳月亮，或接住一顆流星 ✦</span>
     </div>
     <div class="hero-glow" aria-hidden="true"></div>
@@ -1060,22 +1094,29 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   </section>
 
   <nav class="quick" id="quick" aria-label="快速前往">
-    <a href="#progress" data-q="progress" hidden>我的進度</a><a href="#rooms" data-q="rooms">密室</a><a href="#rpg" data-q="rpg">迷霧</a><a href="#monthly" data-q="explore">推薦</a><a href="#news" data-q="explore">消息</a><a href="#how" data-q="info">說明</a>
+    <a href="#monthly" data-q="monthly">推薦</a><a href="#rooms" data-q="rooms">密室</a><a href="#rpg" data-q="rpg">迷霧</a><a href="#progress" data-q="progress" hidden>我的進度</a><a href="#news" data-q="explore">消息</a><a href="#how" data-q="info">說明</a>
   </nav>
 
   <main>
-    <!-- 我的進度：登入後才顯示 -->
-    <section class="section prog-sec" id="progress" hidden>
-      <div class="container" id="prog-box"></div>
+    <!-- 本月推薦：放在最上面 -->
+    <section class="section" id="monthly">
+      <div class="container">
+        <div class="section-head">
+          <span class="eyebrow">MONTHLY PICKS</span>
+          <h2 id="monthly-title">每月推薦密室</h2>
+          <p>這個月最多人推門而入的三間密室</p>
+        </div>
+        <div class="monthly" id="monthly-list"><p class="empty">正在統計本月人氣…</p></div>
+        <p class="month-note">依本月挑戰的玩家人數排名，每月 1 日重新計算。</p>
+      </div>
     </section>
-
 
     <!-- 密室主題 -->
     <section class="section" id="rooms">
       <div class="container">
         <div class="section-head">
           <span class="eyebrow">ROOMS</span>
-          <h2>密室主題</h2>
+          <h2>密室逃脫・全部遊戲</h2>
           <p>夜語工作室原創線上密室，等你推門而入<br><small class="muted">預設隨機排序，每次打開順序都不一樣，每間密室都有一樣的機會被看見</small></p>
         </div>
         <div class="row-head">
@@ -1099,12 +1140,12 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       </div>
     </section>
 
-    <!-- 大型開放 RPG 網頁遊戲：不是密室，不計時、不分難度 -->
+    <!-- 大型網頁解謎遊戲：不是密室，不計時、不分難度 -->
     <section class="section rpg-sec" id="rpg">
       <div class="container">
         <div class="section-head">
-          <span class="eyebrow">OPEN WORLD RPG</span>
-          <h2>大型開放RPG網頁遊戲</h2>
+          <span class="eyebrow">PUZZLE ADVENTURE</span>
+          <h2>大型網頁解謎遊戲</h2>
           <p>沒有倒數計時，也沒有出口——整座城市都是你的地圖</p>
         </div>
         <div id="rpg-list"></div>
@@ -1120,20 +1161,14 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 
 
 
-    <!-- 探索：本月推薦、全新主題、最新消息放在同一區（排行榜在每款遊戲卡片的「排行榜・成就」裡），用分頁切換，不用一直往下滑 -->
+    <!-- 我的進度：登入後才顯示 -->
+    <section class="section prog-sec" id="progress" hidden>
+      <div class="container" id="prog-box"></div>
+    </section>
+
+    <!-- 探索：全新主題、最新消息放在同一區（排行榜在每款遊戲卡片的「排行榜・成就」裡），用分頁切換，不用一直往下滑 -->
     <section class="section alt hub" id="explore">
-      <div class="container"><div class="hub-tabs" role="tablist" aria-label="探索"><button type="button" role="tab" data-panel="monthly">本月推薦</button><button type="button" role="tab" data-panel="newest">全新主題</button><button type="button" role="tab" data-panel="news">最新消息</button></div></div>
-      <div class="hub-panel" id="monthly" role="tabpanel">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">MONTHLY PICKS</span>
-          <h2 id="monthly-title">每月推薦密室</h2>
-          <p>這個月最多人推門而入的三間密室</p>
-        </div>
-        <div class="monthly" id="monthly-list"><p class="empty">正在統計本月人氣…</p></div>
-        <p class="month-note">依本月挑戰的玩家人數排名，每月 1 日重新計算。</p>
-      </div>
-      </div>
+      <div class="container"><div class="hub-tabs" role="tablist" aria-label="探索"><button type="button" role="tab" data-panel="newest">全新主題</button><button type="button" role="tab" data-panel="news">最新消息</button></div></div>
       <div class="hub-panel" id="newest" role="tabpanel" hidden>
       <div class="container">
         <div class="section-head">
@@ -1193,7 +1228,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <span class="eyebrow">ABOUT US</span>
           <h2>歡迎來到夜語工作室</h2>
           <p>夜深人靜的時候，總有些聲音特別清楚：走廊盡頭的腳步聲、手機裡沒有署名的訊息、蟬鳴裡藏著的秘密。「夜語」，就是那些只在深夜才說得出口的故事。</p>
-          <p>這裡有線上密室逃脫，也有大型開放RPG網頁遊戲。每一間密室的故事、謎題和機關都是親手設計的；《迷霧》則把整個台北捷運搬進瀏覽器。不用下載，打開就能玩。</p>
+          <p>這裡有線上密室逃脫，也有大型網頁解謎遊戲。每一間密室的故事、謎題和機關都是親手設計的；《迷霧》則把整個台北捷運搬進瀏覽器。不用下載，打開就能玩。</p>
           <div class="maker-note">
             <p>夜語工作室其實是一個大學生的小小興趣 🌙</p>
             <p>遊戲大部分都是用免費的工具一點一點做出來的，難免會有不完美的地方。如果你遇到任何 bug、覺得哪道題目怪怪的，或是有什麼好點子、建議，都非常歡迎寫信告訴我，每一封都會認真看！</p>
@@ -1240,7 +1275,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <p>點擊場景找線索、組合道具、破解密碼，成功逃脫就會留下你的通關紀錄。</p>
           </div>
         </div>
-        <h3 class="how-track rpg-track"><span>🚇</span>大型開放RPG網頁遊戲《迷霧》</h3>
+        <h3 class="how-track rpg-track"><span>🚇</span>大型網頁解謎遊戲《迷霧》</h3>
         <p class="how-sub">沒有倒數計時、沒有出口——用你自己的步調，把整個台北捷運走一遍。</p>
         <div class="steps">
           <div class="step">
@@ -1308,7 +1343,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </details>
           <details>
             <summary>《迷霧》是什麼？跟密室有什麼不一樣？</summary>
-            <p>《迷霧》是大型開放RPG網頁遊戲，不是密室：沒有計時、不分難度，也不會進逃脫排行榜。你可以在台北捷運 118 站之間自由搭車、接任務、認識城市裡的人，想玩多久就玩多久。2026/10/23 晚上 8 點（台灣時間）開放。</p>
+            <p>《迷霧》是大型網頁解謎遊戲，不是密室：沒有計時、不分難度，也不會進逃脫排行榜。你可以在台北捷運 118 站之間自由搭車、接任務、認識城市裡的人，想玩多久就玩多久。2026/10/23 晚上 8 點（台灣時間）開放。</p>
           </details>
           <details>
             <summary>《迷霧》的進度會保存嗎？手機可以玩嗎？</summary>
@@ -1355,7 +1390,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           <h4>導覽</h4>
           <ul>
             <li><a href="#rooms">密室主題</a></li>
-            <li><a href="#rpg">開放RPG</a></li>
+            <li><a href="#rpg">網頁解謎</a></li>
             <li><a href="#monthly">每月推薦</a></li>
             <li><a href="#how">遊戲方式</a></li>
             <li><a href="#about">關於我們</a></li>
@@ -1388,6 +1423,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     <div class="gh-head"><span id="gh-cover"></span><div><h3 id="gh-title"></h3><p id="gh-sub"></p></div><form method="dialog"><button class="gh-x" aria-label="關閉">✕</button></form></div>
     <div class="gh-body" id="gh-body"></div>
   </dialog>
+  <dialog id="profile-dlg" aria-label="個人資料"></dialog>
   <dialog id="share-dlg" aria-labelledby="share-title">
     <h3 id="share-title">分享你的紀錄</h3>
     <div class="share-pic"><img id="share-img" alt="分享圖預覽"><span id="share-wait">正在做分享圖…</span></div>
@@ -1795,7 +1831,7 @@ function renderHeader() {
       <a class="logo" href="#top" aria-label="夜語工作室 首頁">${LOGO_SVG}<span>夜語工作室</span></a>
       <nav class="nav" id="nav">
         <a href="#rooms">密室主題</a>
-        <a href="#rpg">開放RPG</a>
+        <a href="#rpg">網頁解謎</a>
         ${isPlayer() ? '<a class="m-only" href="#progress">我的進度</a>' : ''}
         <a href="#monthly">每月推薦</a>
         <a href="#news">最新消息</a>
@@ -1867,6 +1903,7 @@ function renderHero() {
     $('#hero-actions').innerHTML = actions;
     $('#hero-me').innerHTML = me;
   };
+  $('#continue-btn').hidden = true;
   if (!user) {
     hero('夜深了，\n故事開始低語', '有些聲音，只在深夜才聽得見。建立你的角色，挑一間密室走進去，找出線索、解開機關，在天亮之前逃出來。',
       `<a class="btn btn-gold btn-lg" href="#signup">免費建立角色</a>
@@ -1881,9 +1918,11 @@ function renderHero() {
   } else {
     hero('今晚，\n想聽哪一個故事？', '挑一間密室，門一關上，計時就開始。',
       `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
-       <a class="btn btn-ghost btn-lg" href="#character">換個造型</a>`,
-      `<a class="hero-me" href="#character" style="text-decoration:none">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}</span>${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</a>`);
+       <button class="btn btn-ghost btn-lg" type="button" data-profile>個人資料</button>
+       <a class="btn btn-ghost btn-sm hero-style" href="#character">換個造型</a>`,
+      `<button class="hero-me" type="button" data-profile style="color:inherit;font:inherit;cursor:pointer">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}</span>${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</button>`);
     $('#cta-title').textContent = `${profile.username}，下一個故事在等你`;
+    renderContinue();
     $('#cta-actions').innerHTML = `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>`;
   }
 }
@@ -2080,7 +2119,7 @@ listEl.addEventListener('click', onRoomClick);
 $('#newest-box').addEventListener('click', onRoomClick);
 $('#monthly-list').addEventListener('click', onRoomClick);
 
-// ================= 大型開放 RPG（不是密室：不計時、不分難度、不進排行榜） =================
+// ================= 大型網頁解謎遊戲（不是密室：不計時、不分難度、不進排行榜） =================
 const RPGS = [{
   slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You',
   description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
@@ -2096,7 +2135,7 @@ function renderRpgs() {
       <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(g.cover_url)}" alt=""></div>
       <div class="rpg-cover"><img src="${escapeHTML(g.cover_url)}" alt="${escapeHTML(g.title)} 封面" loading="lazy"></div>
       <div class="rpg-body">
-        <span class="rpg-kicker">大型開放RPG網頁遊戲</span>
+        <span class="rpg-kicker">大型網頁解謎遊戲</span>
         <h3>${escapeHTML(g.title)}</h3>
         <p class="sub">${escapeHTML(g.subtitle)}</p>
         <p class="desc">${escapeHTML(g.description)}</p>
@@ -2782,6 +2821,81 @@ document.addEventListener('click', (e) => {
   const sh = e.target.closest('[data-share]'); if (sh) { e.stopPropagation(); openShare(sh.dataset.share); }
 });
 
+// ================= 繼續遊戲：最近玩的那款（遊玩紀錄、雲端存檔裡時間最新的） =================
+function lastPlayed() {
+  const at = {}, later = (k, t) => { if (t && (!at[k] || t > at[k])) at[k] = t; };
+  for (const r of myRecs) { const g = allGames.find(x => x.id === r.game_id); if (g) later(g.slug, r.updated_at ?? r.created_at); }
+  for (const [k, t] of Object.entries(saves)) later(k, t);
+  return Object.entries(at).sort((a, b) => b[1].localeCompare(a[1]))
+    .map(([k]) => games.find(g => g.slug === k) || RPGS.find(g => g.slug === k)).find(g => g && isOpen(g)) ?? null;
+}
+function renderContinue() {
+  const g = isPlayer() && lastPlayed(), b = $('#continue-btn');
+  b.hidden = !g; if (!g) return;
+  b.dataset.go = g.slug;
+  b.innerHTML = `▶ 繼續玩<b>《${escapeHTML(g.title)}》</b>`;
+}
+
+// ================= 個人資料：總覽、每款遊戲的最佳時間和排行榜名次、最近的遊玩紀錄 =================
+// 名次只看前 100 名；多人遊戲依人數分開排、分版本的遊戲依版本分開排，取名次最好的那個
+async function rankOf(g) {
+  const me = profile.username, vs = VARIANTS[g.slug]?.map(v => v[0]) ?? [null];
+  const asks = isTeamGame(g)
+    ? vs.flatMap(v => teamSizes(g).map(n => [`${n} 人${v ? '・' + VARIANTS[g.slug].find(x => x[0] === v)[1] : ''}`, supabase.rpc('get_team_leaderboard', { p_slug: g.slug, p_size: n, p_variant: v, p_limit: 100 }), r => (r.members ?? []).some(x => x.username === me)]))
+    : vs.map(v => [v ? VARIANTS[g.slug].find(x => x[0] === v)[1] : '', v ? supabase.rpc('get_leaderboard_v', { p_slug: g.slug, p_variant: v, p_limit: 100 }) : supabase.rpc('get_leaderboard', { p_slug: g.slug, p_limit: 100 }), r => r.username === me]);
+  let best = null;
+  for (const [label, req, isMe] of asks) {
+    try { const { data } = await req; const r = data?.find(isMe); if (r && (!best || r.rank < best.rank)) best = { rank: r.rank, label }; } catch (_) {}
+  }
+  return best;
+}
+const fmtDay = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
+async function openProfile() {
+  if (!isPlayer()) { location.hash = user ? 'character' : 'login'; return; }
+  const dlg = $('#profile-dlg'), got = achGot(), t = titleOf(got.length);
+  const played = allGames.filter(g => mine[g.id]).sort((a, b) => String(mine[b.id].last).localeCompare(String(mine[a.id].last)));
+  const list = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug));
+  const cleared = allGames.filter(g => mine[g.id]?.best != null).length;
+  const plays = Object.values(mine).reduce((n, m) => n + m.plays, 0), ends = Object.values(mine).reduce((n, m) => n + m.endings.size, 0);
+  const hist = [...myRecs].sort((a, b) => String(b.updated_at ?? b.created_at).localeCompare(String(a.updated_at ?? a.created_at))).slice(0, 10);
+  const status = (r) => r.status === 'cleared' ? `<span class="ok">逃出 ${r.clear_time_sec != null ? fmtTime(r.clear_time_sec) : ''}</span>` : r.status === 'failed' ? '<span class="bad">失敗</span>' : '<span class="mid">未完成</span>';
+  dlg.innerHTML = `
+    <div class="pf-head">${avatarHTML(profile, 60)}<div><h3>${escapeHTML(profile.username)}${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</h3><p>稱號「${escapeHTML(t.name)}」${t.next ? `・再 ${t.next[0] - got.length} 個成就升級` : ''}</p></div><button class="pf-x" type="button" data-pf-close aria-label="關閉">✕</button></div>
+    <div class="pf-stats">
+      <div><b>${cleared}/${list.length}</b><span>逃出的密室</span></div>
+      <div><b>${plays}</b><span>挑戰次數</span></div>
+      <div><b>${got.length}</b><span>成就</span></div>
+      <div><b>${ends}</b><span>收集結局</span></div>
+    </div>
+    <h4>我的密室紀錄</h4>
+    ${played.length ? `<div class="pf-games">${played.map(g => {
+      const m = mine[g.id], e = ENDING_COUNT[g.slug];
+      return `<div class="pf-game">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
+        <div><b>${escapeHTML(g.title)}</b><small>挑戰 ${m.plays} 次${m.clears ? `・逃出 ${m.clears} 次` : ''}${e ? `・結局 ${m.endings.size}/${e}` : ''}・最近 ${fmtDay(m.last)}</small></div>
+        <div class="pf-time ${m.best == null ? 'no' : ''}">${m.best != null ? `${fmtTime(m.best)}<small data-rank="${escapeHTML(g.slug)}">排名讀取中…</small>` : '尚未逃脫'}</div></div>`;
+    }).join('')}</div>` : '<p class="pf-empty">還沒有遊玩紀錄，挑一間密室走進去吧。</p>'}
+    ${hist.length ? `<h4>最近的遊玩紀錄</h4><ul class="pf-hist">${hist.map(r => {
+      const g = allGames.find(x => x.id === r.game_id);
+      return `<li><span class="d">${fmtDay(r.updated_at ?? r.created_at)}</span><span>${escapeHTML(g?.title ?? '')}${r.hints ? `<span class="d">・提示 ${r.hints}</span>` : ''}</span>${status(r)}</li>`;
+    }).join('')}</ul>` : ''}
+    <div class="pf-acts">
+      <a class="btn btn-ghost" href="#character" data-pf-close>換個造型</a>
+      <button class="btn btn-gold" type="button" data-share="__passport">分享我的護照</button>
+    </div>`;
+  if (!dlg.open) dlg.showModal();
+  for (const g of played.filter(g => mine[g.id].best != null)) {
+    rankOf(g).then(r => {
+      const el = dlg.querySelector(`[data-rank="${CSS.escape(g.slug)}"]`);
+      if (el) el.textContent = r ? `${r.label ? r.label + ' ' : ''}第 ${r.rank} 名` : '';
+    });
+  }
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-profile]')) return openProfile();
+  const dlg = $('#profile-dlg');
+  if (dlg.open && (e.target === dlg || e.target.closest('[data-pf-close]') || e.target.closest('#profile-dlg [data-share]'))) dlg.close();
+});
+
 // ================= 分享與邀請 =================
 // 遊戲結局畫面的「分享」→ 大廳 ?share=<slug>：直接打開那款遊戲的分享圖
 // 朋友點分享連結 g/<slug>/?from=…&t=…&join=… → 大廳 ?g=<slug>&…：跳出邀請；記在這台裝置一天，註冊、驗證信回來後還會再出現
@@ -2938,6 +3052,19 @@ function gameLink(slug, extra = {}) {
   return base + (q.toString() ? '?' + q : '');
 }
 const loadImg = (src) => new Promise((ok) => { const i = new Image(); i.crossOrigin = 'anonymous'; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src; });
+// 封面完整放進 (x, y, w, h)：背後鋪一層同一張圖的模糊放大版，再把整張封面置中（不裁掉臉和標題）
+function posterBox(ctx, img, x, y, w, h, pad = 36) {
+  const tiny = document.createElement('canvas'); tiny.width = 24; tiny.height = Math.max(1, Math.round(24 * h / w));
+  const tc = tiny.getContext('2d'); cover(tc, img, 0, 0, tiny.width, tiny.height);   // 縮到很小再放大＝模糊（Safari 的 canvas 沒有 filter）
+  ctx.save(); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high'; ctx.drawImage(tiny, x, y, w, h);
+  ctx.fillStyle = 'rgba(6,7,15,.45)'; ctx.fillRect(x, y, w, h);
+  const r = Math.min((w - pad * 2) / img.width, (h - pad * 2) / img.height), pw = img.width * r, ph = img.height * r, px = x + (w - pw) / 2, py = y + (h - ph) / 2;
+  ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 40; ctx.shadowOffsetY = 12;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(px, py, pw, ph, 18) : ctx.rect(px, py, pw, ph); ctx.fillStyle = '#000'; ctx.fill();
+  ctx.shadowColor = 'transparent'; ctx.clip(); ctx.drawImage(img, px, py, pw, ph);
+  ctx.restore();
+  return { px, py, pw, ph };
+}
 function cover(ctx, img, x, y, w, h) {
   const r = Math.max(w / img.width, h / img.height), sw = w / r, sh = h / r;
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
@@ -2998,24 +3125,24 @@ async function drawShare(kind, fresh = false) {
     const tags = [pb ? '🏆 個人新紀錄' : first ? '✨ 第一次逃出' : '', rec?.hints === 0 ? '零提示' : '', rec?.deaths === 0 ? '零死亡' : ''].filter(Boolean);
     const rank = won ? await myRank(g) : null;
     const img = g.cover_url ? await loadImg(g.cover_url) : null;
-    if (img) cover(x, img, 0, 0, W, 720);
-    const f = x.createLinearGradient(0, 540, 0, 722); f.addColorStop(0, 'rgba(11,13,29,0)'); f.addColorStop(1, '#0F1226'); x.fillStyle = f; x.fillRect(0, 540, W, 182);
-    if (won && tags.length) {   // 亮點徽章：放在封面上方
+    if (img) posterBox(x, img, 0, 0, W, 800, 28);
+    const f = x.createLinearGradient(0, 700, 0, 802); f.addColorStop(0, 'rgba(15,18,38,0)'); f.addColorStop(1, '#10132A'); x.fillStyle = f; x.fillRect(0, 700, W, 102);
+    if (won && tags.length) {   // 亮點徽章：壓在封面下緣
       const s = tags.join('・'); x.font = `700 34px ${SANS}`; const bw = x.measureText(s).width + 64;
-      x.fillStyle = 'rgba(6,7,15,.78)'; x.beginPath(); x.roundRect ? x.roundRect(W / 2 - bw / 2, 48, bw, 64, 32) : x.rect(W / 2 - bw / 2, 48, bw, 64); x.fill();
+      x.fillStyle = 'rgba(6,7,15,.85)'; x.beginPath(); x.roundRect ? x.roundRect(W / 2 - bw / 2, 762, bw, 60, 30) : x.rect(W / 2 - bw / 2, 762, bw, 60); x.fill();
       x.strokeStyle = 'rgba(232,212,160,.6)'; x.lineWidth = 2; x.stroke();
-      center(s, 92, `700 34px ${SANS}`, '#FFD9A0');
+      center(s, 804, `700 34px ${SANS}`, '#FFD9A0');
     }
-    center(won ? (pb ? '我刷新了自己的紀錄' : '我逃出來了') : '我走進了', 800, `700 44px ${SERIF}`, '#FFD9A0');
-    let fs = 96; x.font = `900 ${fs}px ${SERIF}`; while (x.measureText(`《${g.title}》`).width > W - 100 && fs > 48) x.font = `900 ${fs -= 6}px ${SERIF}`;
-    center(`《${g.title}》`, 910, x.font);
+    center(won ? (pb ? '我刷新了自己的紀錄' : '我逃出來了') : '我走進了', 880, `700 40px ${SERIF}`, '#FFD9A0');
+    let fs = 84; x.font = `900 ${fs}px ${SERIF}`; while (x.measureText(`《${g.title}》`).width > W - 100 && fs > 48) x.font = `900 ${fs -= 6}px ${SERIF}`;
+    center(`《${g.title}》`, 972, x.font);
     const ends = ENDING_COUNT[g.slug], list = ACH.filter(a => a.game === g.slug), k = list.filter(a => got.some(b => b.code === a.code)).length;
     stat([
       won ? [fmtTime(sec), run ? '這次通關時間' : '最佳通關時間'] : [`${m.plays}`, '挑戰次數'],
       rank ? [`第 ${rank} 名`, '排行榜'] : ends ? [`${m.endings.size}/${ends}`, '收集結局'] : [`${m.plays}`, '挑戰次數'],
       [`${k}/${list.length}`, '成就'],
-    ], 1040);
-    center(`${profile.username}・${t.name}`, 1180, `700 38px ${SERIF}`, '#ECEAF5');
+    ], 1072);
+    center(`${profile.username}・${t.name}`, 1190, `700 36px ${SERIF}`, '#ECEAF5');
     // 挑戰句：時間、新紀錄、名次、零提示等亮點放前面，連結點開就是這款遊戲（朋友看到的是我的最佳時間）
     url = gameLink(g.slug, { from: profile.username, t: won ? m.best : null });
     const brag = [rec?.hints === 0 ? '一個提示都沒用' : rec?.deaths === 0 ? '零死亡' : '', rank ? `排行榜第 ${rank} 名` : ''].filter(Boolean).join('，');
