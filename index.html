@@ -1128,7 +1128,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="hero-actions" id="hero-actions">
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
-      <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型網頁解謎遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-23T20:00" data-cd-short>10/23 20:00 開放</time> →</em></span></a>
+      <a class="hero-rpg" href="#rpg"><img src="covers/thumb/mist.jpg" data-full="covers/mist.jpg" alt=""><span><small>大型網頁解謎遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-23T20:00" data-cd-short>10/23 20:00 開放</time> →</em></span></a>
       <button class="hero-next" id="hero-next" type="button" hidden></button>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <button class="hero-install" id="lobby-share-btn" type="button">🔗 把夜語工作室分享給朋友</button>
@@ -1878,28 +1878,34 @@ async function loadAuth() {
   isAdmin = false;
   myMsgs = [];
   if (user) {
-    const { data: p, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-    if (error) console.error(error);
-    profile = p;
-    const { data: recs } = await supabase.from('play_records')
-      .select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending,variant').eq('user_id', user.id);
-    myRecs = recs ?? [];
-    // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
-    const { data: ms } = await supabase.from('game_saves').select('level,station,updated_at,visited:data->visited,items:data->items,name:data->name').eq('user_id', user.id).eq('game', 'mist').maybeSingle();
+    // 這些彼此無關，同時問（以前一個等一個，要等十幾趟來回，大廳開起來比較慢）
+    const uid = user.id;
+    const [P, R, MS, SV, ADM, ACH, MSG, INV] = await Promise.all([
+      supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+      supabase.from('play_records').select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending,variant').eq('user_id', uid),
+      // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
+      supabase.from('game_saves').select('level,station,updated_at,visited:data->visited,items:data->items,name:data->name').eq('user_id', uid).eq('game', 'mist').maybeSingle(),
+      supabase.from('game_saves').select('game,updated_at').eq('user_id', uid),
+      supabase.from('admins').select('user_id').eq('user_id', uid).maybeSingle(),
+      supabase.from('user_achievements').select('code').eq('user_id', uid),
+      supabase.from('player_messages').select('id,context,body,created_at,read_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(30),
+      supabase.rpc('my_invites'),
+    ]);
+    if (P.error) console.error(P.error);
+    profile = P.data;
+    myRecs = R.data ?? [];
+    const ms = MS.data;
     mist = ms ? { level: ms.level || 1, station: ms.station, at: ms.updated_at, stations: Object.keys(ms.visited || {}).length, treasures: Object.keys(ms.items || {}).length, name: ms.name } : null;
-    const { data: sv } = await supabase.from('game_saves').select('game,updated_at').eq('user_id', user.id);
-    for (const r of sv ?? []) saves[r.game] = r.updated_at;
+    for (const r of SV.data ?? []) saves[r.game] = r.updated_at;
     // 網路偶爾失敗時再試一次，免得管理員被當成一般玩家、進不了管理頁
-    let { data: adm, error: admErr } = await supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle();
-    if (admErr) ({ data: adm } = await supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle());
+    let adm = ADM.data;
+    if (ADM.error) ({ data: adm } = await supabase.from('admins').select('user_id').eq('user_id', uid).maybeSingle());
     isAdmin = !!adm;
-    const { data: ach } = await supabase.from('user_achievements').select('code').eq('user_id', user.id);
-    achCodes = new Set((ach ?? []).map(a => a.code));
-    const { data: msgs } = await supabase.from('player_messages').select('id,context,body,created_at,read_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
-    myMsgs = msgs ?? [];
+    achCodes = new Set((ACH.data ?? []).map(a => a.code));
+    myMsgs = MSG.data ?? [];
+    invited = profile ? INV.data ?? [] : [];
     if (profile) claimRef().catch(() => {});
-    if (profile) { const { data: inv } = await supabase.rpc('my_invites'); invited = inv ?? []; }
-    for (const r of recs ?? []) {
+    for (const r of myRecs) {
       const m = mine[r.game_id] ??= { plays: 0, clears: 0, best: null, bestRec: null, last: r.created_at, deaths: 0, hints: 0, endings: new Set() };
       if (r.ending && r.status === 'cleared') m.endings.add(r.ending);
       m.plays++;
@@ -2037,6 +2043,14 @@ function renderHero() {
   }
 }
 
+// 大廳卡片用縮小版封面（covers/thumb/，寬 480，原圖 1024×1536 太大，手機捲動會卡）；分享圖還是用原圖。
+// 換封面或新增封面時，也要做一張縮圖放進 covers/thumb/（同檔名）。還沒做縮圖就自動改用原圖；原圖也沒有就把破圖藏起來
+const thumb = (u) => /^covers\/[^/?]+\.jpe?g(\?|$)/.test(u || '') ? u.replace(/^covers\//, 'covers/thumb/') : u;
+document.addEventListener('error', (e) => {
+  const i = e.target; if (i.tagName !== 'IMG') return;
+  if (i.dataset.full && !i.dataset.tried) { i.dataset.tried = '1'; if (i.getAttribute('src') !== i.dataset.full) { i.src = i.dataset.full; return; } }
+  if (i.dataset.full) i.style.visibility = 'hidden';
+}, true);
 // 沒有封面圖時的預設門
 const HUES = [['#12132E', '#4B3F8F'], ['#0E1A2A', '#2F5A7C'], ['#10201E', '#3E6A5C'], ['#221A2E', '#6A4A7A']];
 const coverArt = (g, i) => {
@@ -2094,7 +2108,7 @@ function roomCard(g, rank = 0, note = '') {
   return `
     <button class="room ${open ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
       <div class="room-cover">
-        ${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, i)}
+        ${g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, i)}
         <span class="cv-title">${escapeHTML(g.title)}</span>
         <span class="room-no">No.${String(g.sort_order).padStart(2, '0')}</span>
         ${badge}
@@ -2249,8 +2263,8 @@ function renderRpgs() {
     const cta = early ? `🎟 搶先體驗（剩 ${early} / ${mistEarly.limit} 名）→` : soon ? `${openLabel(g)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
     return `
     <button class="rpg ${open || early ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
-      <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(g.cover_url)}" alt=""></div>
-      <div class="rpg-cover"><img src="${escapeHTML(g.cover_url)}" alt="${escapeHTML(g.title)} 封面" loading="lazy"></div>
+      <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt=""></div>
+      <div class="rpg-cover"><img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="${escapeHTML(g.title)} 封面" loading="lazy"></div>
       <div class="rpg-body">
         <span class="rpg-kicker">大型網頁解謎遊戲</span>
         <h3>${escapeHTML(g.title)}</h3>
@@ -2335,7 +2349,7 @@ async function loadNews() {
     const inner = `
       <div class="news-date"><b>${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}</b><span>${d.getFullYear()}</span></div>
       <div>${n.tag ? `<span class="news-tag t-${escapeHTML(n.tag)}">${escapeHTML(n.tag)}</span>` : ''}<h3>${escapeHTML(n.title)}</h3>${n.summary ? `<p>${escapeHTML(n.summary)}</p>` : ''}${go ? `<span class="news-go">${go}</span>` : ''}</div>
-      ${n.cover_url ? `<div class="news-thumb"><img src="${escapeHTML(n.cover_url)}" alt="" loading="lazy"></div>` : '<span></span>'}`;
+      ${n.cover_url ? `<div class="news-thumb"><img src="${escapeHTML(thumb(n.cover_url))}" data-full="${escapeHTML(n.cover_url)}" alt="" loading="lazy"></div>` : '<span></span>'}`;
     const hide = i >= SHOW ? ' hidden' : '';
     if (g) return `<button class="news-item" type="button" data-slug="${escapeHTML(slug)}"${hide}>${inner}</button>`;
     if (/^https?:\/\//.test(link) || link.startsWith('#')) return `<a class="news-item" href="${escapeHTML(link)}"${hide}>${inner}</a>`;
@@ -2673,7 +2687,7 @@ function openHub(slug, tab = 'rank') {
   const g = allGames.find(x => x.slug === slug);
   if (!g) return;
   hubSlug = slug; hubTab = tab;
-  $('#gh-cover').innerHTML = g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="">` : '<span class="gh-noimg"></span>';
+  $('#gh-cover').innerHTML = g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="">` : '<span class="gh-noimg"></span>';
   $('#gh-title').textContent = g.title;
   $('#gh-sub').textContent = `${players(g)}・${dur(g)}`;
   renderHub();
@@ -3074,7 +3088,7 @@ function renderProgress() {
     return `<span class="stamp ${ok ? 'got' : ''}" title="${escapeHTML(g.title)}${ok ? '：已逃脫' : '：尚未逃脫'}">${escapeHTML(stampName(g))}${ok && ends ? `<small>${m.endings.size}/${ends}</small>` : ''}</span>`;
   }).join('');
   const nextTxt = t.next ? `<p class="prog-next">再解鎖 ${t.next[0] - gotList.length} 個成就 → 「${t.next[1]}」<i><b style="width:${(gotList.length - t.from) / (t.next[0] - t.from) * 100}%"></b></i></p>` : '<p class="prog-next">你已經是夜語工作室的傳說了。</p>';
-  const mistCard = mist ? `<div class="prog-card"><img src="covers/mist.jpg" alt="" loading="lazy"><div><h4>迷霧</h4>
+  const mistCard = mist ? `<div class="prog-card"><img src="covers/thumb/mist.jpg" data-full="covers/mist.jpg" alt="" loading="lazy"><div><h4>迷霧</h4>
       <p class="prog-st"><b class="mid">🚇 旅程中</b>・Lv ${mist.level}${mist.station ? `・在${escapeHTML(mist.station)}` : ''}</p>
       <div class="prog-bar"><i style="width:${Math.min(100, mist.stations / 118 * 100)}%"></i></div><span class="prog-meta">去過 ${mist.stations} / 118 站・寶物 ${mist.treasures} / 6</span>
       <div class="prog-acts"><button class="btn btn-gold" type="button" data-go="mist">繼續旅程 →</button></div></div></div>` : '';
@@ -3087,7 +3101,7 @@ function renderProgress() {
         <span class="prog-title">✦ ${escapeHTML(myTitle().name)}</span>${isAdmin ? ' <span class="dev-badge">開發者</span> <a class="dev-link" href="#admin">🛠 管理頁</a>' : ''}${nextTxt}</div></div>
     </div>
     ${rows.length || mist ? `<div class="prog-list">${rows.map(r => `<div class="prog-card">
-      ${r.g.cover_url ? `<img src="${escapeHTML(r.g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
+      ${r.g.cover_url ? `<img src="${escapeHTML(thumb(r.g.cover_url))}" data-full="${escapeHTML(r.g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
       <div><h4>${escapeHTML(r.g.title)}</h4><p class="prog-st">${r.st}</p>
         <div class="prog-bar"><i style="width:${r.n ? r.k / r.n * 100 : 0}%"></i></div>
         <span class="prog-meta">成就 ${r.k} / ${r.n}${r.ends ? `・結局 ${r.e} / ${r.ends}` : ''}</span>
@@ -3165,7 +3179,7 @@ async function openProfile() {
     <h4>我的密室紀錄</h4>
     ${played.length ? `<div class="pf-games">${played.map(g => {
       const m = mine[g.id], e = ENDING_COUNT[g.slug];
-      return `<div class="pf-game">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
+      return `<div class="pf-game">${g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
         <div><b>${escapeHTML(g.title)}</b><small>挑戰 ${m.plays} 次${m.clears ? `・逃出 ${m.clears} 次` : ''}${e ? `・結局 ${m.endings.size}/${e}` : ''}・最近 ${fmtDay(m.last)}</small></div>
         <div class="pf-time ${m.best == null ? 'no' : ''}">${m.best != null ? `${fmtTime(m.best)}<small data-rank="${escapeHTML(g.slug)}">排名讀取中…</small>` : '尚未逃脫'}</div></div>`;
     }).join('')}</div>` : '<p class="pf-empty">還沒有遊玩紀錄，挑一間密室走進去吧。</p>'}
@@ -3265,7 +3279,7 @@ function showInvite() {
   dlg.innerHTML = `
     <div class="gate-inner">
       <button class="gate-x" data-close type="button" aria-label="關閉">×</button>
-      ${g.cover_url ? `<img class="invite-cover" src="${escapeHTML(g.cover_url)}" alt="">` : ''}
+      ${g.cover_url ? `<img class="invite-cover" src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="">` : ''}
       <h2>${invite.join ? '來組隊吧！' : '有人向你下戰帖'}</h2>
       <p>${who}${invite.join ? ' 開好房間了，邀請你一起玩' : ' 邀請你挑戰'}《${escapeHTML(g.title)}》。
         ${invite.t ? `<span class="invite-dare">對方用了 ${fmtTime(invite.t)} 逃出來，你能更快嗎？</span>` : ''}
@@ -3572,10 +3586,10 @@ function renderNewest() {
   const m = mine[g.id];
   const cta = !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '立即推門 →';
   const days = Math.max(1, Math.floor((Date.now() - new Date(released(g)).getTime()) / 864e5) + 1);
-  const cover = g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g));
+  const cover = g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g));
   $('#newest-box').innerHTML = `
     <button class="spot" data-slug="${escapeHTML(g.slug)}" type="button">
-      <div class="spot-bg" aria-hidden="true">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="">` : ''}</div>
+      <div class="spot-bg" aria-hidden="true">${g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="">` : ''}</div>
       <div class="spot-marquee" aria-hidden="true"></div>
       <div class="spot-poster"><div class="spot-cover">${cover}</div><span class="spot-ribbon">NEW</span></div>
       <div class="spot-body">
@@ -3620,7 +3634,7 @@ function pickCard(g, rank, note) {
   const cta = !isPlayer() ? '註冊後即可遊玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   return `
     <button class="pick p${rank}" data-slug="${escapeHTML(g.slug)}" type="button" aria-label="本月第 ${rank} 名：${escapeHTML(g.title)}">
-      <div class="pick-cover">${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g))}<span class="pick-rank">${rank}</span></div>
+      <div class="pick-cover">${g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, games.indexOf(g))}<span class="pick-rank">${rank}</span></div>
       <div class="pick-body">
         <span class="pick-kicker">${note}</span>
         <h4>${escapeHTML(g.title)}</h4>
@@ -3640,7 +3654,7 @@ function renderRetired() {
     return `
     <button class="room retired" data-slug="${escapeHTML(g.slug)}" type="button">
       <div class="room-cover">
-        ${g.cover_url ? `<img src="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, allGames.indexOf(g))}
+        ${g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, allGames.indexOf(g))}
         <span class="cv-title">${escapeHTML(g.title)}</span>
         ${m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>` : m ? '<span class="badge played">玩過</span>' : ''}
       </div>
