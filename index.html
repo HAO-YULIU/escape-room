@@ -573,6 +573,12 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .auth-wrap h1 { font-size: 30px; text-align: center; margin-bottom: 8px; }
 .auth-wrap .lead { text-align: center; color: var(--muted); margin: 0 0 24px; }
 .auth-note { font-size: 13px; color: var(--muted); text-align: center; margin: 16px 0 0; }
+.auth-forgot { text-align: center; margin: 12px 0 0; }
+.auth-forgot[hidden] { display: none; }
+.auth-forgot button { background: none; border: 0; padding: 4px; color: var(--gold); font: 500 14px var(--sans); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+#newpw-dlg { max-width: 380px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 22px 20px 18px; }
+#newpw-dlg::backdrop { background: rgba(4,6,14,.8); }
+#newpw-dlg h3 { margin: 0 0 6px; font: 700 20px var(--serif); color: var(--gold); }
 .tabs { display: grid; grid-template-columns: 1fr 1fr; margin-bottom: 24px; border-bottom: 1px solid rgba(239,230,210,.15); }
 .tabs button { background: none; border: none; color: var(--muted); font: 500 16px var(--sans); padding: 10px; cursor: pointer; border-bottom: 2px solid transparent; }
 .tabs button[aria-selected="true"] { color: var(--gold); border-color: var(--gold); }
@@ -1434,6 +1440,17 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     <div class="gh-body" id="gh-body"></div>
   </dialog>
   <dialog id="profile-dlg" aria-label="個人資料"></dialog>
+  <!-- 重設密碼：點了信裡的連結回到大廳後，在這裡設定新密碼 -->
+  <dialog id="newpw-dlg" aria-labelledby="newpw-title">
+    <form id="newpw-form" novalidate>
+      <h3 id="newpw-title">設定新密碼</h3>
+      <p class="muted small" style="margin:0 0 14px">至少 6 個字元，要同時有大寫英文、小寫英文和數字（例如 Room2024）。</p>
+      <div class="field"><label for="newpw">新密碼</label><input id="newpw" type="password" autocomplete="new-password" minlength="6" required></div>
+      <div class="field"><label for="newpw2">再輸入一次</label><input id="newpw2" type="password" autocomplete="new-password" minlength="6" required></div>
+      <p class="form-msg" id="newpw-msg" aria-live="polite"></p>
+      <button class="btn btn-gold" style="width:100%" id="newpw-submit" type="submit">更新密碼</button>
+    </form>
+  </dialog>
   <dialog id="share-dlg" aria-labelledby="share-title">
     <h3 id="share-title">分享你的紀錄</h3>
     <div class="share-pic"><img id="share-img" alt="分享圖預覽"><span id="share-wait">正在做分享圖…</span></div>
@@ -1479,6 +1496,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <p class="form-msg" id="auth-msg" aria-live="polite"></p>
             <button class="btn btn-gold" style="width:100%" id="auth-submit" type="submit">登入</button>
           </form>
+          <p class="auth-forgot" id="forgot-row"><button type="button" id="forgot-btn">忘記密碼？</button></p>
           <p class="auth-note">註冊完成後，會帶你去建立角色。</p>
         </div>
       </div>
@@ -1706,7 +1724,9 @@ function renderAvatar(appearance = {}, { size = 200, background = true } = {}) {
 
 // ================= 共用工具 =================
 const $ = (s) => document.querySelector(s);
+const RECOVERY = /type=recovery/.test(location.hash);   // 重設密碼信的連結回來（網址 #access_token=…&type=recovery）
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+supabase.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') setTimeout(showNewPw, 0); });
 
 function escapeHTML(s = '') {
   return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -2251,6 +2271,7 @@ function setAuthMode(m) {
   $('#auth-title').textContent = m === 'login' ? '歡迎回來' : '取得你的鑰匙';
   $('#auth-lead').textContent = m === 'login' ? '登入後繼續你的逃脫。' : '免費註冊，接著建立你的角色就能進入密室。';
   $('#auth-submit').textContent = m === 'login' ? '登入' : '註冊';
+  $('#forgot-row').hidden = m !== 'login';
   $('#password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
   $('#password-label').textContent = m === 'login' ? '密碼' : '密碼（至少 6 個字元，要同時有大寫英文、小寫英文和數字）';
   authMsg('');
@@ -2298,6 +2319,40 @@ $('#auth-form').addEventListener('submit', async (e) => {
   await loadAuth();
   renderAll();
   location.hash = profile ? 'rooms' : 'character';
+});
+
+// ================= 忘記密碼 =================
+// 1. 登入頁按「忘記密碼？」→ 寄重設密碼信（連結回到大廳）
+// 2. 點信裡的連結回來 → 已經自動登入，跳出「設定新密碼」
+$('#forgot-btn').addEventListener('click', async () => {
+  const email = $('#email').value.trim();
+  if (!email) { authMsg('先在上面輸入你註冊時用的電子郵件，再按一次「忘記密碼？」。'); $('#email').focus(); return; }
+  $('#forgot-btn').disabled = true;
+  authMsg('寄送中…', 'ok');
+  const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  $('#forgot-btn').disabled = false;
+  if (error) return authMsg(authError(error));
+  authMsg(`如果 ${email} 有註冊過，重設密碼的信已經寄出了。請到信箱（也看看垃圾郵件）點信裡的連結，回到這裡設定新密碼。`, 'ok');
+});
+function showNewPw() {
+  const dlg = $('#newpw-dlg'); if (dlg.open) return;
+  $('#newpw').value = $('#newpw2').value = ''; $('#newpw-msg').textContent = '';
+  dlg.showModal(); $('#newpw').focus();
+}
+$('#newpw-dlg').addEventListener('cancel', (e) => e.preventDefault());   // 要設好新密碼才關（按 Esc 不會關掉）
+$('#newpw-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw = $('#newpw').value, msg = (t, type = 'error') => { $('#newpw-msg').textContent = t; $('#newpw-msg').dataset.type = type; };
+  if (pwProblem(pw)) return msg(PW_RULE);
+  if (pw !== $('#newpw2').value) return msg('兩次輸入的密碼不一樣，請再確認一次。');
+  $('#newpw-submit').disabled = true; msg('更新中…', 'ok');
+  const { error } = await supabase.auth.updateUser({ password: pw });
+  $('#newpw-submit').disabled = false;
+  if (error) return msg(error.message.includes('different from the old') ? '新密碼不能跟舊密碼一樣。' : authError(error));
+  $('#newpw-dlg').close();
+  toast('密碼已經更新，下次請用新密碼登入 ✨', 'ok');
+  await loadAuth(); renderAll();
+  location.hash = profile ? 'top' : 'character';
 });
 
 // ================= 角色編輯 =================
@@ -3627,6 +3682,7 @@ readInvite();
 await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMistTop().catch(() => {})]); // 消息要等密室資料，才知道哪些可以點
 reshuffle();
 renderAll();
+if (RECOVERY && user) showNewPw();   // 保險：萬一沒收到 PASSWORD_RECOVERY 事件
 initFx();
 initQuick();
 checkNewAch();
