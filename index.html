@@ -2569,7 +2569,8 @@ $('#save').onclick = async () => {
     if (pendingFile) {
       const ext = pendingFile.type === 'image/webp' ? 'webp' : 'jpg';
       const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type });
+      // 檔名每次都不一樣（avatar-時間），所以可以讓瀏覽器快取一年，不用每小時重新下載（省 Supabase 流量）
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, pendingFile, { upsert: true, contentType: pendingFile.type, cacheControl: '31536000' });
       if (upErr) throw upErr;
       finalUrl = supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
     }
