@@ -2904,7 +2904,7 @@ setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
 const LOBBY_URL = 'https://hao-yuliu.github.io/escape-room/';
 // 每款遊戲的分享連結：g/<slug>/ 是有那款封面預覽圖的小頁面（社群貼文會顯示），打開後帶著參數回到大廳
 // from：誰邀請的、t：他的最佳秒數、join：多人遊戲的房號。新遊戲上線時要複製一份 g/<slug>/index.html
-const SHARE_PAGES = ['qianchan-school', 'school2', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1'];
+const SHARE_PAGES = ['qianchan-school', 'school2', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1', 'heart'];
 function gameLink(slug, extra = {}) {
   const q = new URLSearchParams(Object.entries(extra).filter(([, v]) => v != null && v !== ''));
   const base = SHARE_PAGES.includes(slug) ? `${LOBBY_URL}g/${slug}/` : LOBBY_URL;
