@@ -372,7 +372,17 @@ body:not(.home) { padding-top: 68px; }
 .pf-hist .d { color: var(--muted); }
 .pf-hist .ok { color: #9FE0B0; } .pf-hist .bad { color: #E9A2A2; } .pf-hist .mid { color: var(--muted); }
 .pf-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
-.pf-empty { color: var(--muted); font-size: 14px; }
+.pf-empty { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.pf-sub { font: 500 12px var(--sans); color: var(--muted); letter-spacing: 0; margin-left: 6px; }
+.pf-ach { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.pf-ach .ach { padding: 6px 8px; align-items: center; }
+.pf-ach .ach > span { font-size: 0; }   /* 個人資料只列名稱和哪款遊戲，說明放在 title（滑過／長按看得到） */
+.pf-ach .ach em { display: block; font-style: normal; font-size: 11px; color: var(--gold); opacity: .8; margin-top: 1px; }
+.pf-friends { display: flex; flex-wrap: wrap; gap: 12px; }
+.pf-friend { position: relative; display: grid; justify-items: center; gap: 4px; width: 64px; text-align: center; }
+.pf-friend b { font: 500 12px var(--sans); color: var(--parchment); width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pf-friend i { position: absolute; top: -4px; right: 6px; font-style: normal; font-size: 13px; }
+.pf-invite { width: 100%; margin-top: 10px; }
 @media (max-width: 520px) { .pf-stats { gap: 6px; } .pf-stats span { font-size: 11px; } }
 #install-help { max-width: 360px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 24px 22px 20px; }
 #install-help::backdrop { background: rgba(4,6,14,.7); }
@@ -1789,6 +1799,7 @@ async function loadAuth() {
     achCodes = new Set((ach ?? []).map(a => a.code));
     const { data: msgs } = await supabase.from('player_messages').select('id,context,body,created_at,read_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
     myMsgs = msgs ?? [];
+    if (profile) claimRef().catch(() => {});
     for (const r of recs ?? []) {
       const m = mine[r.game_id] ??= { plays: 0, clears: 0, best: null, bestRec: null, last: r.created_at, deaths: 0, hints: 0, endings: new Set() };
       if (r.ending && r.status === 'cleared') m.endings.add(r.ending);
@@ -2274,7 +2285,7 @@ $('#auth-form').addEventListener('submit', async (e) => {
   authMsg('處理中…', 'ok');
   const { data, error } = authMode === 'login'
     ? await supabase.auth.signInWithPassword({ email, password })
-    : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname } });
+    : await supabase.auth.signUp({ email, password, options: { emailRedirectTo: location.origin + location.pathname, data: refFrom() ? { ref: refFrom() } : {} } });
   $('#auth-submit').disabled = false;
   if (error) return authMsg(authError(error));
 
@@ -2878,11 +2889,27 @@ async function openProfile() {
       const g = allGames.find(x => x.id === r.game_id);
       return `<li><span class="d">${fmtDay(r.updated_at ?? r.created_at)}</span><span>${escapeHTML(g?.title ?? '')}${r.hints ? `<span class="d">・提示 ${r.hints}</span>` : ''}</span>${status(r)}</li>`;
     }).join('')}</ul>` : ''}
+    <h4>🎖 我的成就 <small class="pf-sub">${got.length} / ${ACH.length}</small></h4>
+    <div class="ach-bar"><i style="width:${ACH.length ? got.length / ACH.length * 100 : 0}%"></i></div>
+    ${got.length ? `<div class="ach-grid pf-ach">${got.map(a => {
+      const g = a.game && allGames.find(x => x.slug === a.game);
+      return achItem(a, true).replace('</span></div>', `${g ? `<em>${escapeHTML(stampName(g))}</em>` : ''}</span></div>`);
+    }).join('')}</div>` : '<p class="pf-empty">還沒有解鎖成就。逃出密室、找到隱藏結局都能拿到成就。</p>'}
+    <h4>👥 邀請的朋友 <small class="pf-sub" id="pf-inv-n">讀取中…</small></h4>
+    <div id="pf-inv"></div>
     <div class="pf-acts">
       <a class="btn btn-ghost" href="#character" data-pf-close>換個造型</a>
       <button class="btn btn-gold" type="button" data-share="__passport">分享我的護照</button>
     </div>`;
   if (!dlg.open) dlg.showModal();
+  supabase.rpc('my_invites').then(({ data, error }) => {
+    const box = dlg.querySelector('#pf-inv'), n = dlg.querySelector('#pf-inv-n'); if (!box) return;
+    if (error) { n.textContent = ''; box.innerHTML = '<p class="pf-empty">讀取失敗，請稍後再試。</p>'; return; }
+    const list = data ?? [], on = list.filter(f => f.played).length;
+    n.textContent = list.length ? `${list.length} 位・${on} 位已經開始玩` : '0 位';
+    box.innerHTML = (list.length ? `<div class="pf-friends">${list.map(f => `<span class="pf-friend" title="${f.played ? '已經開始玩' : '還沒開始玩'}">${avatarHTML(f, 40)}<b>${escapeHTML(f.username)}</b>${f.played ? '<i>🎮</i>' : ''}</span>`).join('')}</div>` : '')
+      + `<p class="pf-empty">朋友用你的分享連結進來、註冊並建好角色，就會算在這裡。</p><button class="btn btn-ghost pf-invite" type="button" data-pf-close data-lobby-share>🔗 邀請朋友來玩</button>`;
+  });
   for (const g of played.filter(g => mine[g.id].best != null)) {
     rankOf(g).then(r => {
       const el = dlg.querySelector(`[data-rank="${CSS.escape(g.slug)}"]`);
@@ -2892,6 +2919,7 @@ async function openProfile() {
 }
 document.addEventListener('click', (e) => {
   if (e.target.closest('[data-profile]')) return openProfile();
+  if (e.target.closest('[data-lobby-share]')) { $('#profile-dlg').close(); return shareLobby(); }
   const dlg = $('#profile-dlg');
   if (dlg.open && (e.target === dlg || e.target.closest('[data-pf-close]') || e.target.closest('#profile-dlg [data-share]'))) dlg.close();
 });
@@ -2910,11 +2938,27 @@ function readInvite() {
   } else {
     try { const s = JSON.parse(localStorage.getItem(INVITE_KEY)); if (s?.slug && Date.now() - s.at < 864e5) invite = s; } catch (_) {}
   }
+  const from = (q.get('from') || '').trim().slice(0, 20);
+  if (from) try { localStorage.setItem(REF_KEY, JSON.stringify({ from, at: Date.now() })); } catch (_) {}
   shareAsk = q.get('share');
   if (slug || shareAsk || q.has('from')) {
     for (const k of ['g', 'from', 't', 'join', 'share']) q.delete(k);
     history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
   }
+}
+// 邀請人數：朋友點我的分享連結（?from=我的名字）進來、註冊並建好角色，就算我邀請的（資料庫 invites，每位新玩家只算一次）
+const REF_KEY = 'yeyu-ref';
+function refFrom() {
+  try { const r = JSON.parse(localStorage.getItem(REF_KEY)); return r?.from && Date.now() - r.at < 7 * 864e5 ? r.from : null; } catch (_) { return null; }
+}
+async function claimRef() {
+  if (!isPlayer() || Date.now() - new Date(user.created_at) > 7 * 864e5) return;   // 只有新帳號才算被邀請
+  const from = refFrom();
+  if (!from && !user.user_metadata?.ref) return;
+  const done = 'yeyu-ref-done:' + user.id;
+  try { if (localStorage.getItem(done)) return; } catch (_) {}
+  const { error } = await supabase.rpc('claim_invite', { p_from: from });
+  if (!error) try { localStorage.setItem(done, '1'); localStorage.removeItem(REF_KEY); } catch (_) {}
 }
 function clearInvite() { invite = null; try { localStorage.removeItem(INVITE_KEY); } catch (_) {} }
 function showInvite() {
