@@ -136,6 +136,12 @@ body:not(.home) { padding-top: 68px; }
   background: linear-gradient(180deg, #FFFFFF, #E8D4A0); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .hero p { color: #C9C7DE; font-size: clamp(16px, 2vw, 19px); margin: 20px auto 34px; max-width: 34em; }
 .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.hero-me-row { display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 22px; }
+.hero-me-row .hero-me { min-width: 0; }
+@media (max-width: 520px) { .hero-me-row .hero-me .dev-badge { display: none; } .hero-me-row .hero-me { padding-right: 14px; } .hero-admin { padding: 9px 12px; font-size: 13px; flex: none; } }
+.hero-me-row .hero-me { margin-bottom: 0; }
+.hero-admin { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; border-radius: 999px; font: 700 14px var(--sans); color: #12142A; background: linear-gradient(180deg, #CFE8FF, #8FB8E8); text-decoration: none; box-shadow: 0 4px 16px rgba(143,184,232,.25); }
+.hero-admin:hover { filter: brightness(1.08); }
 .hero-me { display: inline-flex; align-items: center; gap: 12px; margin-bottom: 22px; padding: 6px 18px 6px 6px; border-radius: 999px; background: rgba(8,10,20,.45); border: 1px solid var(--line); backdrop-filter: blur(6px); }
 
 /* 夜裡的低語：飄浮的字 */
@@ -2024,7 +2030,7 @@ function renderHero() {
       `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
        <button class="btn btn-ghost btn-lg" type="button" data-profile>個人資料</button>
        <button class="btn btn-ghost btn-sm hero-style" type="button" data-ach>🎖 成就</button>`,
-      `<button class="hero-me" type="button" data-profile style="color:inherit;font:inherit;cursor:pointer">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}<small class="hero-ttl">${escapeHTML(myTitle().name)}</small></span>${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</button>`);
+      `<div class="hero-me-row"><button class="hero-me" type="button" data-profile style="color:inherit;font:inherit;cursor:pointer">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}<small class="hero-ttl">${escapeHTML(myTitle().name)}</small></span>${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</button>${isAdmin ? '<a class="hero-admin" href="#admin" title="管理頁（只有開發者看得到）">🛠 管理</a>' : ''}</div>`);
     $('#cta-title').textContent = `${profile.username}，下一個故事在等你`;
     renderContinue();
     $('#cta-actions').innerHTML = `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>`;
