@@ -351,6 +351,9 @@ body:not(.home) { padding-top: 68px; }
 .hero-actions .hero-style { flex-basis: 100%; max-width: max-content; margin: -2px auto 0; padding: 6px 18px; font-size: 13px; opacity: .85; }
 .hero-actions .hero-style:hover { opacity: 1; }
 /* 繼續遊戲：最近玩的那款 */
+.hero-donate { text-decoration: none; border-color: rgba(255,190,110,.55); color: #FFD9A0; }
+.pf-donate { margin: 18px 0 0; padding: 10px 12px; border-radius: 10px; background: rgba(255,190,110,.08); font-size: 13px; color: var(--muted); text-align: center; }
+.pf-donate a { color: #FFD9A0; }
 .hero-continue { border-style: solid; background: linear-gradient(180deg, rgba(246,231,190,.18), rgba(232,212,160,.08)); }
 .hero-continue b { color: #FFE9B8; }
 /* 個人資料 */
@@ -1139,6 +1142,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <button class="hero-install" id="lobby-share-btn" type="button">🔗 把夜語工作室分享給朋友</button>
       <button class="hero-install hero-continue" id="continue-btn" type="button" hidden></button>
+      <a class="hero-install hero-donate" href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">☕ 抖內支持夜語工作室</a>
       <span class="hero-hint" aria-hidden="true">✦ 點一下夜空、戳戳月亮，或接住一顆流星 ✦</span>
     </div>
     <div class="hero-glow" aria-hidden="true"></div>
@@ -1463,6 +1467,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
           </a>
           <p style="margin:0;max-width:22em">原創線上密室逃脫。深夜裡的每一聲低語，都是一個等你解開的故事。</p>
           <p style="margin:10px 0 0">✉️ 聯絡我們：<a href="mailto:iho87061@gmail.com">iho87061@gmail.com</a></p>
+          <p style="margin:10px 0 0">☕ 所有遊戲都免費。喜歡的話，<a href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">請我們喝杯咖啡</a>，幫忙支付伺服器的費用。</p>
         </div>
         <div>
           <h4>導覽</h4>
@@ -1485,6 +1490,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <li><a href="#character">我的角色</a></li>
             <li><a href="#" id="install-link" hidden>加到手機主畫面</a></li>
             <li><a href="#" id="lobby-share-link">分享大廳給朋友</a></li>
+            <li><a href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">☕ 抖內支持</a></li>
           </ul>
         </div>
       </div>
@@ -3199,6 +3205,7 @@ async function openProfile() {
     <button class="linkbtn" type="button" data-ach="ach">查看全部成就（包含還沒解鎖的）→</button>
     <h4>👥 邀請的朋友 <small class="pf-sub" id="pf-inv-n">讀取中…</small></h4>
     <div id="pf-inv"></div>
+    <p class="pf-donate">🌙 所有遊戲都免費。喜歡這些故事的話，可以 <a href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">請我們喝杯咖啡 ☕</a></p>
     <div class="pf-acts">
       <a class="btn btn-ghost" href="#character" data-pf-close>換個造型</a>
       <button class="btn btn-gold" type="button" data-share="__passport">分享我的護照</button>
