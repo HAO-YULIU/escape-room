@@ -607,7 +607,17 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .auth-note { font-size: 13px; color: var(--muted); text-align: center; margin: 16px 0 0; }
 .auth-forgot { text-align: center; margin: 12px 0 0; }
 .auth-forgot[hidden] { display: none; }
-.auth-forgot button { background: none; border: 0; padding: 4px; color: var(--gold); font: 500 14px var(--sans); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.auth-forgot a { display: inline-block; padding: 6px 4px; color: var(--gold); font: 500 15px var(--sans); text-decoration: underline; text-underline-offset: 3px; }
+.tabs[hidden], #password-field[hidden], #auth-form[hidden] { display: none; }
+.forgot-done { text-align: center; }
+.forgot-done[hidden] { display: none; }
+.fd-icon { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+.forgot-done h3 { margin: 0 0 6px; font: 700 20px var(--serif); color: var(--gold); }
+.forgot-done > p { margin: 0 0 16px; color: var(--muted); font-size: 14px; word-break: break-all; }
+.forgot-done > p b { color: var(--parchment); }
+.fd-steps { text-align: left; margin: 0 0 14px; padding: 14px 16px 14px 34px; background: var(--ink-2); border-radius: 12px; font-size: 14px; line-height: 1.7; display: grid; gap: 6px; }
+.fd-steps b, .fd-tips b { color: var(--gold); font-weight: 700; }
+.fd-tips { text-align: left; margin: 0 0 16px; padding-left: 20px; font-size: 13px; color: var(--muted); line-height: 1.7; }
 #newpw-dlg { max-width: 380px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 22px 20px 18px; }
 #newpw-dlg::backdrop { background: rgba(4,6,14,.8); }
 #newpw-dlg h3 { margin: 0 0 6px; font: 700 20px var(--serif); color: var(--gold); }
@@ -1522,15 +1532,34 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
               <label for="email">電子郵件</label>
               <input id="email" type="email" autocomplete="email" required>
             </div>
-            <div class="field">
+            <div class="field" id="password-field">
               <label for="password" id="password-label">密碼</label>
               <input id="password" type="password" autocomplete="current-password" minlength="6" required>
             </div>
             <p class="form-msg" id="auth-msg" aria-live="polite"></p>
             <button class="btn btn-gold" style="width:100%" id="auth-submit" type="submit">登入</button>
           </form>
-          <p class="auth-forgot" id="forgot-row"><button type="button" id="forgot-btn">忘記密碼？</button></p>
-          <p class="auth-note">註冊完成後，會帶你去建立角色。</p>
+          <!-- 忘記密碼：信寄出後的說明 -->
+          <div class="forgot-done" id="forgot-done" hidden>
+            <div class="fd-icon" aria-hidden="true">✉️</div>
+            <h3>重設密碼的信已經寄出</h3>
+            <p>寄到 <b id="fd-email"></b></p>
+            <ol class="fd-steps">
+              <li>打開信箱，找一封<b>重設密碼（Reset Password）</b>的信，通常幾分鐘內會到。</li>
+              <li>點信裡的<b>連結</b>，會回到夜語工作室，而且已經幫你登入。</li>
+              <li>畫面會跳出<b>「設定新密碼」</b>，輸入兩次新密碼，按「更新密碼」就完成了。</li>
+            </ol>
+            <ul class="fd-tips">
+              <li>沒收到？看看<b>垃圾郵件</b>、<b>促銷內容</b>分類。</li>
+              <li>信裡的連結 <b>1 小時內</b>有效，而且只能用一次。</li>
+              <li>確認信箱沒打錯；沒註冊過的信箱不會收到信。</li>
+            </ul>
+            <button class="btn btn-ghost" style="width:100%" id="fd-resend" type="button">再寄一次</button>
+            <a class="btn btn-gold" style="width:100%;margin-top:10px" href="#login" id="fd-back">回到登入</a>
+          </div>
+          <p class="auth-forgot" id="forgot-row"><a href="#forgot" id="forgot-btn">忘記密碼？</a></p>
+          <p class="auth-forgot" id="forgot-back" hidden><a href="#login">← 想起來了，回到登入</a></p>
+          <p class="auth-note" id="auth-note">註冊完成後，會帶你去建立角色。</p>
         </div>
       </div>
     </main>
@@ -1758,6 +1787,7 @@ function renderAvatar(appearance = {}, { size = 200, background = true } = {}) {
 // ================= 共用工具 =================
 const $ = (s) => document.querySelector(s);
 const RECOVERY = /type=recovery/.test(location.hash);   // 重設密碼信的連結回來（網址 #access_token=…&type=recovery）
+let linkErr = /error_code=otp_expired|error=access_denied/.test(location.hash);   // 信裡的連結過期或已經用過
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 supabase.auth.onAuthStateChange((ev) => { if (ev === 'PASSWORD_RECOVERY') setTimeout(showNewPw, 0); });
 
@@ -2299,15 +2329,23 @@ let authMode = 'login';
 const authMsg = (text, type = 'error') => { $('#auth-msg').textContent = text; $('#auth-msg').dataset.type = type; };
 function setAuthMode(m) {
   authMode = m;
+  const forgot = m === 'forgot';
   $('#tab-login').setAttribute('aria-selected', m === 'login');
   $('#tab-signup').setAttribute('aria-selected', m === 'signup');
-  $('#auth-title').textContent = m === 'login' ? '歡迎回來' : '取得你的鑰匙';
-  $('#auth-lead').textContent = m === 'login' ? '登入後繼續你的逃脫。' : '免費註冊，接著建立你的角色就能進入密室。';
-  $('#auth-submit').textContent = m === 'login' ? '登入' : '註冊';
+  $('.auth-wrap .tabs').hidden = forgot;
+  $('#password-field').hidden = forgot;
+  $('#auth-form').hidden = false; $('#forgot-done').hidden = true;
+  $('#auth-title').textContent = forgot ? '忘記密碼' : m === 'login' ? '歡迎回來' : '取得你的鑰匙';
+  $('#auth-lead').textContent = forgot ? '輸入你註冊時用的電子郵件，我們會寄一封重設密碼的信給你。' : m === 'login' ? '登入後繼續你的逃脫。' : '免費註冊，接著建立你的角色就能進入密室。';
+  $('#auth-submit').textContent = forgot ? '寄送重設密碼信' : m === 'login' ? '登入' : '註冊';
   $('#forgot-row').hidden = m !== 'login';
+  $('#forgot-back').hidden = !forgot;
+  $('#auth-note').textContent = forgot ? '收到信後點裡面的連結，回到這裡就能設定新密碼。' : '註冊完成後，會帶你去建立角色。';
   $('#password').autocomplete = m === 'login' ? 'current-password' : 'new-password';
   $('#password-label').textContent = m === 'login' ? '密碼' : '密碼（至少 6 個字元，要同時有大寫英文、小寫英文和數字）';
   authMsg('');
+  if (forgot && linkErr) { authMsg('信裡的連結已經過期或用過了（連結 1 小時內有效、只能用一次），請在下面重新寄一封。'); }
+  if (forgot) setTimeout(() => $('#email').focus(), 0);
 }
 $('#tab-login').onclick = () => { location.hash = 'login'; };
 $('#tab-signup').onclick = () => { location.hash = 'signup'; };
@@ -2332,6 +2370,7 @@ const authError = (e) => {
 
 $('#auth-form').addEventListener('submit', async (e) => {
   e.preventDefault();
+  if (authMode === 'forgot') return sendReset();
   const email = $('#email').value.trim();
   const password = $('#password').value;
   if (!email || password.length < 6) return authMsg('請輸入電子郵件，以及至少 6 個字元的密碼。');
@@ -2357,16 +2396,30 @@ $('#auth-form').addEventListener('submit', async (e) => {
 // ================= 忘記密碼 =================
 // 1. 登入頁按「忘記密碼？」→ 寄重設密碼信（連結回到大廳）
 // 2. 點信裡的連結回來 → 已經自動登入，跳出「設定新密碼」
-$('#forgot-btn').addEventListener('click', async () => {
+// 登入頁的「忘記密碼？」→ #forgot：只留電子郵件欄位，寄出後換成步驟說明（可以 60 秒後再寄一次）
+let resendTimer = 0;
+async function sendReset(again = false) {
   const email = $('#email').value.trim();
-  if (!email) { authMsg('先在上面輸入你註冊時用的電子郵件，再按一次「忘記密碼？」。'); $('#email').focus(); return; }
-  $('#forgot-btn').disabled = true;
-  authMsg('寄送中…', 'ok');
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { authMsg('請輸入註冊時用的電子郵件。'); $('#email').focus(); return; }
+  linkErr = false;
+  const btn = again ? $('#fd-resend') : $('#auth-submit');
+  btn.disabled = true;
+  if (!again) authMsg('寄送中…', 'ok');
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
-  $('#forgot-btn').disabled = false;
-  if (error) return authMsg(authError(error));
-  authMsg(`如果 ${email} 有註冊過，重設密碼的信已經寄出了。請到信箱（也看看垃圾郵件）點信裡的連結，回到這裡設定新密碼。`, 'ok');
-});
+  btn.disabled = false;
+  if (error) { if (again) return toast(authError(error)); return authMsg(authError(error)); }
+  authMsg('');
+  $('#fd-email').textContent = email;
+  $('#auth-form').hidden = true; $('#forgot-back').hidden = true; $('#auth-note').textContent = '';
+  $('#auth-lead').textContent = '照下面的步驟就能設定新密碼。';
+  $('#forgot-done').hidden = false;
+  if (again) toast('已經再寄一次了 ✉️', 'ok');
+  // 再寄一次：60 秒後才能按（避免一直重寄被擋）
+  let left = 60; const rb = $('#fd-resend'); clearInterval(resendTimer);
+  const tick = () => { rb.disabled = left > 0; rb.textContent = left > 0 ? `再寄一次（${left} 秒後可以按）` : '再寄一次'; left--; if (left < -1) clearInterval(resendTimer); };
+  tick(); resendTimer = setInterval(tick, 1000);
+}
+$('#fd-resend').addEventListener('click', () => sendReset(true));
 function showNewPw() {
   const dlg = $('#newpw-dlg'); if (dlg.open) return;
   $('#newpw').value = $('#newpw2').value = ''; $('#newpw-msg').textContent = '';
@@ -2506,7 +2559,7 @@ $('#save').onclick = async () => {
 // #login / #signup / #character 是獨立畫面，其他（#rooms、#faq…）都是大廳裡的區塊
 function route() {
   const h = decodeURIComponent(location.hash.slice(1));
-  let view = h === 'login' || h === 'signup' ? 'login' : h === 'character' ? 'character' : h === 'admin' ? 'admin' : 'home';
+  let view = h === 'login' || h === 'signup' || h === 'forgot' ? 'login' : h === 'character' ? 'character' : h === 'admin' ? 'admin' : 'home';
   if (view === 'admin' && !isAdmin) { location.hash = user ? 'top' : 'login'; return; }
 
   if (view === 'character' && !user) { location.hash = 'signup'; return; }
@@ -3812,6 +3865,8 @@ await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMist
 reshuffle();
 renderAll();
 if (RECOVERY && user) showNewPw();   // 保險：萬一沒收到 PASSWORD_RECOVERY 事件
+if (linkErr && !user) location.hash = 'forgot';   // 過期的連結：直接帶到忘記密碼，請玩家重寄
+else linkErr = false;
 initFx();
 initQuick();
 checkNewAch();
