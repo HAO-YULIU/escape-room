@@ -383,6 +383,38 @@ body:not(.home) { padding-top: 68px; }
 .pf-friend b { font: 500 12px var(--sans); color: var(--parchment); width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pf-friend i { position: absolute; top: -4px; right: 6px; font-style: normal; font-size: 13px; }
 .pf-invite { width: 100%; margin-top: 10px; }
+/* 稱號 */
+.ttl { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px; border-radius: 999px; font: 700 13px var(--serif); color: var(--gold); border: 1px solid rgba(232,212,160,.35); background: rgba(232,212,160,.06); white-space: nowrap; }
+.ttl i { font: 700 10px var(--sans); font-style: normal; padding: 1px 6px; border-radius: 999px; letter-spacing: .05em; }
+.ttl.rare { color: #BFD9FF; border-color: rgba(143,184,232,.5); background: rgba(143,184,232,.1); } .ttl.rare i { background: #8FB8E8; color: #0E1424; }
+.ttl.epic { color: #E4C8FF; border-color: rgba(190,140,255,.55); background: rgba(160,110,240,.12); } .ttl.epic i { background: #B48CF0; color: #160E24; }
+.ttl.legend { color: #FFD9A0; border-color: rgba(255,190,110,.7); background: linear-gradient(90deg, rgba(255,170,80,.16), rgba(255,220,150,.08)); box-shadow: 0 0 12px rgba(255,190,110,.18); } .ttl.legend i { background: linear-gradient(180deg, #FFE3A8, #E8A04A); color: #2A1404; }
+.hero-ttl { display: block; font-size: 12px; color: var(--gold); opacity: .85; margin-top: 1px; text-align: left; }
+.pf-next { display: block; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.pf-titles { display: flex; flex-wrap: wrap; gap: 6px; }
+.pf-tchip { display: inline-flex; align-items: center; gap: 4px; padding: 3px; border-radius: 999px; border: 2px solid transparent; background: none; cursor: pointer; }
+.pf-tchip small { font-size: 11px; color: var(--muted); padding-right: 6px; }
+.pf-tchip.on { border-color: var(--gold); }
+.linkbtn { background: none; border: 0; padding: 6px 0 0; color: var(--gold); font: 500 13px var(--sans); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+/* 成就與稱號視窗 */
+#ach-dlg { max-width: 640px; width: calc(100% - 32px); max-height: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 20px 18px 18px; }
+#ach-dlg::backdrop { background: rgba(4,6,14,.75); }
+.ad-head { display: flex; align-items: center; margin-bottom: 12px; }
+.ad-head h3 { margin: 0; font: 700 20px var(--serif); color: var(--gold); }
+.ad-sum { margin: 0 0 8px; font-size: 14px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.ad-sum b { color: var(--gold); font-size: 18px; }
+.ad-group { margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+.ad-group summary { cursor: pointer; font: 700 15px var(--serif); padding: 4px 0 8px; }
+.ad-group summary small { font: 500 12px var(--sans); color: var(--muted); margin-left: 8px; }
+#ach-dlg h4 { margin: 18px 0 2px; font: 700 15px var(--serif); } #ach-dlg h4 small { font: 500 12px var(--sans); color: var(--muted); margin-left: 6px; }
+#ach-dlg .muted.small { margin: 0 0 8px; font-size: 12px; }
+.ad-title { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px; background: var(--ink-2); margin-top: 6px; opacity: .55; }
+.ad-title.ok { opacity: 1; }
+.ad-title .ttl { justify-self: start; }
+.ad-desc { font-size: 12px; color: var(--muted); }
+.ad-on { font-size: 12px; color: var(--gold); font-weight: 700; }
+.ad-lock { font-size: 14px; }
+@media (max-width: 520px) { .ad-title { grid-template-columns: 1fr auto; } .ad-title .ad-desc { grid-column: 1 / -1; grid-row: 2; } }
 @media (max-width: 520px) { .pf-stats { gap: 6px; } .pf-stats span { font-size: 11px; } }
 #install-help { max-width: 360px; width: calc(100% - 32px); border: 1px solid var(--line); border-radius: 18px; background: var(--wall); color: var(--parchment); padding: 24px 22px 20px; }
 #install-help::backdrop { background: rgba(4,6,14,.7); }
@@ -1440,6 +1472,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
     <div class="gh-body" id="gh-body"></div>
   </dialog>
   <dialog id="profile-dlg" aria-label="個人資料"></dialog>
+  <dialog id="ach-dlg" aria-label="成就與稱號"></dialog>
   <!-- 重設密碼：點了信裡的連結回到大廳後，在這裡設定新密碼 -->
   <dialog id="newpw-dlg" aria-labelledby="newpw-title">
     <form id="newpw-form" novalidate>
@@ -1952,8 +1985,8 @@ function renderHero() {
     hero('今晚，\n想聽哪一個故事？', '挑一間密室，門一關上，計時就開始。',
       `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
        <button class="btn btn-ghost btn-lg" type="button" data-profile>個人資料</button>
-       <a class="btn btn-ghost btn-sm hero-style" href="#character">換個造型</a>`,
-      `<button class="hero-me" type="button" data-profile style="color:inherit;font:inherit;cursor:pointer">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}</span>${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</button>`);
+       <button class="btn btn-ghost btn-sm hero-style" type="button" data-ach>🎖 成就</button>`,
+      `<button class="hero-me" type="button" data-profile style="color:inherit;font:inherit;cursor:pointer">${avatarHTML(profile, 40)}<span>歡迎回來，${escapeHTML(profile.username)}<small class="hero-ttl">${escapeHTML(myTitle().name)}</small></span>${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</button>`);
     $('#cta-title').textContent = `${profile.username}，下一個故事在等你`;
     renderContinue();
     $('#cta-actions').innerHTML = `<a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>`;
@@ -2800,7 +2833,7 @@ function achContext() {
   for (const r of recs) (bySlug[r.slug] ??= []).push(r);
   for (const r of recs) if (r.status === 'cleared' && r.ending) (endings[r.slug] ??= new Set()).add(r.ending);
   return { recs, cleared, bySlug, endings, openSlugs: games.filter(isOpen).map(g => g.slug),
-    slugs: new Set(cleared.map(r => r.slug)), invited: invited.length,
+    slugs: new Set(cleared.map(r => r.slug)), invited: invited.length, invitedPlayed: invited.filter(f => f.played).length,
     endingTotal: Object.values(endings).reduce((n, x) => n + x.size, 0),
     tagsOf: s => allGames.find(g => g.slug === s)?.tags ?? [],
     day: r => new Date(r.updated_at || r.created_at).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }),
@@ -2829,6 +2862,90 @@ function titleOf(n) {
   let i = 0; while (i + 1 < TITLES.length && n >= TITLES[i + 1][0]) i++;
   return { name: TITLES[i][1], next: TITLES[i + 1] ?? null, from: TITLES[i][0] };
 }
+// ================= 稱號 =================
+// 等級稱號（TITLES）：依解鎖的成就數量自動升級。特殊稱號（SPECIAL_TITLES）：比成就難，大多要同時完成好幾個成就。
+// 玩家可以在個人資料換上任何已經拿到的稱號：存在 profiles.title_code（'lv:<門檻>' 或特殊稱號代號）；沒選就用目前的等級稱號
+const RARITY = { rare: '稀有', epic: '史詩', legend: '傳說' };
+const ENDING_ALLS = ['q1_all', 's2_all', 'bg_all', 'zr_all', 'qs_all', 'lv_all'];
+const SPECIAL_TITLES = [
+  { code: 't_speed', name: '速通狂人', rarity: 'rare', desc: '3 間不同的密室都在 60 分鐘內逃出', test: (c) => new Set(c.cleared.filter(r => r.clear_time_sec != null && r.clear_time_sec <= 3600).map(r => r.slug)).size >= 3 },
+  { code: 't_sleepless', name: '不眠者', rarity: 'rare', desc: '同時達成「夜貓子」「晨光逃脫」「一日三逃」', test: (c, has) => has('g_night', 'g_dawn', 'g_day3') },
+  { code: 't_veteran', name: '百戰夜客', rarity: 'rare', desc: '累計挑戰 50 次，並逃出 5 間不同的密室', test: (c) => c.recs.length >= 50 && c.slugs.size >= 5 },
+  { code: 't_guide', name: '夜語引路人', rarity: 'rare', desc: '邀請 3 位朋友，而且其中 2 位已經開始玩', test: (c) => c.invited >= 3 && c.invitedPlayed >= 2 },
+  { code: 't_pupu', name: '蜜月達人', rarity: 'rare', desc: '《「屎」瓦帝尼》：同時達成「準時登機」「財務自由」「一毛都不給郝翔」', test: (c, has) => has('pp_fast', 'pp_rich', 'pp_nohint') },
+  { code: 't_nolight', name: '無燈行者', rarity: 'epic', desc: '零提示逃出 5 間不同的密室', test: (c) => new Set(c.cleared.filter(r => !r.hints).map(r => r.slug)).size >= 5 },
+  { code: 't_flawless', name: '完美的夜', rarity: 'epic', desc: '同時達成「三連完美」和「閃電逃脫」', test: (c, has) => has('g_perfect3', 'g_fast60') },
+  { code: 't_endings', name: '結局蒐羅者', rarity: 'epic', desc: '收集 3 款密室的全部結局', test: (c, has) => ENDING_ALLS.filter(x => has(x)).length >= 3 },
+  { code: 't_qc', name: '千嬋的畢業生', rarity: 'epic', desc: '《千嬋高級中學》第一章、第二章的全部結局都收集到', test: (c, has) => has('q1_all', 's2_all') },
+  { code: 't_bang', name: '越南國寶', rarity: 'epic', desc: '《越南公主》：收集全部 11 個結局，並零提示通關', test: (c, has) => has('bg_all', 'bg_nohint') },
+  { code: 't_sea', name: '沈園神探', rarity: 'epic', desc: '《沈園殘燭》：單人、雙人都破案，第一次指認就成功，而且零提示', test: (c, has) => has('sy_all', 'sy_first', 'sy_nohint') },
+  { code: 't_hotel', name: '五星級傳說', rarity: 'epic', desc: '《五星級救援隊》：同時達成「五星級服務」「他們終於來了」「飯店的好鄰居」', test: (c, has) => has('h_perfect', 'h_secret', 'hotel1-side-all') },
+  { code: 't_master', name: '全館通行證', rarity: 'legend', desc: '逃出所有開放中的密室，並收集 25 個不同的結局', test: (c, has) => has('g_all', 'g_end25') },
+  { code: 't_arg', name: '第零號收件人', rarity: 'legend', desc: '《零號回信》：收集全部 8 個結局，並完成全部 57 個秘密任務', test: (c, has) => has('zr_all', 'zr_cbsecret') },
+  { code: 't_qs', name: '地獄交班者', rarity: 'legend', desc: '《千山夜錄》：零提示通關地獄版，並收集全部 8 個結局', test: (c, has) => has('qs_hell_nohint', 'qs_all') },
+  { code: 't_ambassador', name: '夜語代言人', rarity: 'legend', desc: '邀請 10 位朋友，而且其中 5 位已經開始玩', test: (c) => c.invited >= 10 && c.invitedPlayed >= 5 },
+  { code: 't_dev', name: '夜語工作室・開發者', rarity: 'legend', desc: '夜語工作室的工作人員', hidden: true, test: () => isAdmin },
+];
+const levelTitles = () => TITLES.map(([n, name]) => ({ code: `lv:${n}`, name, need: n, rarity: null, desc: n ? `解鎖 ${n} 個成就` : '一開始就有' }));
+// 所有稱號和有沒有拿到：[{ code, name, rarity, desc, ok }]
+function titleList() {
+  const got = achGot(), codes = new Set(got.map(a => a.code)), c = achContext(), has = (...xs) => xs.every(x => codes.has(x));
+  return [
+    ...levelTitles().map(t => ({ ...t, ok: got.length >= t.need })),
+    ...SPECIAL_TITLES.map(t => ({ ...t, ok: !!t.test(c, has) })).filter(t => t.ok || !t.hidden),
+  ];
+}
+// 目前顯示的稱號：玩家選的（還拿得到才算），不然就是等級稱號
+function myTitle(list = titleList()) {
+  return list.find(t => t.ok && t.code === profile?.title_code) ?? { ...list.filter(t => t.ok && t.code.startsWith('lv:')).pop(), auto: true };
+}
+async function equipTitle(code) {
+  const { error } = await supabase.from('profiles').update({ title_code: code }).eq('id', user.id);
+  if (error) return toast('稱號換不了，請稍後再試。');
+  profile.title_code = code;
+  const t = myTitle();
+  toast(code ? `已換上稱號「${t.name}」` : `改回自動：「${t.name}」`, 'ok');
+  renderHero();
+  if ($('#profile-dlg').open) openProfile();
+  if ($('#ach-dlg').open) openAch(achTab);
+}
+const titleChip = (t) => `<span class="ttl ${t.rarity ?? 'lv'}">${t.rarity ? `<i>${RARITY[t.rarity]}</i>` : ''}${escapeHTML(t.name)}</span>`;
+
+// ================= 成就與稱號（英雄區「成就」按鈕）：解鎖和還沒解鎖的都列出來 =================
+let achTab = 'ach';
+function openAch(tab = achTab) {
+  if (!isPlayer()) { location.hash = user ? 'character' : 'login'; return; }
+  achTab = tab;
+  const dlg = $('#ach-dlg'), got = new Set(achGot().map(a => a.code)), list = titleList(), cur = myTitle(list);
+  const groups = [{ key: null, name: '夜語工作室' }, ...allGames.filter(g => ACH.some(a => a.game === g.slug)).map(g => ({ key: g.slug, name: g.title, g }))]
+    .map(gr => ({ ...gr, items: ACH.filter(a => a.game === gr.key) }))
+    .filter(gr => gr.items.length && (!gr.g || isOpen(gr.g) || gr.items.some(a => got.has(a.code))));
+  const total = groups.reduce((n, gr) => n + gr.items.length, 0), k = groups.reduce((n, gr) => n + gr.items.filter(a => got.has(a.code)).length, 0);
+  const achBody = `<p class="ad-sum">已解鎖 <b>${k}</b> / ${total}</p><div class="ach-bar"><i style="width:${total ? k / total * 100 : 0}%"></i></div>
+    ${groups.map(gr => {
+      const n = gr.items.filter(a => got.has(a.code)).length;
+      return `<details class="ad-group" ${gr.key === null || n ? 'open' : ''}><summary>${escapeHTML(gr.name)}<small>${n} / ${gr.items.length}</small></summary>
+        <div class="ach-grid">${[...gr.items].sort((a, b) => got.has(b.code) - got.has(a.code)).map(a => achItem(a, got.has(a.code))).join('')}</div></details>`;
+    }).join('')}`;
+  const row = (t) => `<div class="ad-title ${t.ok ? 'ok' : ''}">${titleChip(t)}<span class="ad-desc">${escapeHTML(t.desc)}</span>
+    ${!t.ok ? '<span class="ad-lock">🔒</span>' : t.code === profile.title_code ? '<span class="ad-on">使用中</span>' : `<button class="btn btn-ghost btn-sm" type="button" data-equip="${t.code}">換上</button>`}</div>`;
+  const sp = list.filter(t => t.rarity), lv = list.filter(t => !t.rarity);
+  const titleBody = `<p class="ad-sum">目前的稱號：${titleChip(cur)}${cur.auto ? '<small>（自動：依成就數量）</small>' : ` <button class="linkbtn" type="button" data-equip="">改回自動</button>`}</p>
+    <h4>✦ 特殊稱號 <small>${sp.filter(t => t.ok).length} / ${sp.length}</small></h4><p class="muted small">比成就更難拿，大多要同時完成好幾個成就。</p>${sp.map(row).join('')}
+    <h4>等級稱號 <small>${lv.filter(t => t.ok).length} / ${lv.length}</small></h4><p class="muted small">解鎖越多成就，等級稱號會自動升級。</p>${lv.map(row).join('')}`;
+  dlg.innerHTML = `<div class="ad-head"><h3>成就與稱號</h3><button class="pf-x" type="button" data-ad-close aria-label="關閉">✕</button></div>
+    <div class="gh-tabs"><button class="chip" type="button" data-ad-tab="ach" aria-pressed="${tab === 'ach'}">🎖 成就 ${k}/${total}</button><button class="chip" type="button" data-ad-tab="title" aria-pressed="${tab === 'title'}">👑 稱號 ${list.filter(t => t.ok).length}/${list.length}</button></div>
+    <div class="ad-body">${tab === 'ach' ? achBody : titleBody}</div>`;
+  if (!dlg.open) dlg.showModal();
+}
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-ach]')) { e.preventDefault(); if ($('#profile-dlg').open) $('#profile-dlg').close(); return openAch(e.target.closest('[data-ach]').dataset.ach || 'ach'); }
+  const eq = e.target.closest('[data-equip]'); if (eq) return equipTitle(eq.dataset.equip || null);
+  const dlg = $('#ach-dlg'); if (!dlg.open) return;
+  const tb = e.target.closest('[data-ad-tab]'); if (tb) return openAch(tb.dataset.adTab);
+  if (e.target === dlg || e.target.closest('[data-ad-close]')) dlg.close();
+});
+
 // 每款密室在護照上的章：只取短名字
 const stampName = (g) => g.title.replace(/[「」]/g, '').replace(/^千嬋高級中學：/, '千嬋・').replace('第一章', '一').replace('第二章', '二');
 
@@ -2868,7 +2985,7 @@ function renderProgress() {
   box.innerHTML = `
     <div class="prog-top">
       <div class="prog-me">${avatarHTML(profile, 56)}<div><span class="eyebrow">CONTINUE</span><h2>${escapeHTML(profile.username)}，繼續你的故事</h2>
-        <span class="prog-title">✦ ${t.name}</span>${isAdmin ? ' <span class="dev-badge">開發者</span> <a class="dev-link" href="#admin">🛠 管理頁</a>' : ''}${nextTxt}</div></div>
+        <span class="prog-title">✦ ${escapeHTML(myTitle().name)}</span>${isAdmin ? ' <span class="dev-badge">開發者</span> <a class="dev-link" href="#admin">🛠 管理頁</a>' : ''}${nextTxt}</div></div>
     </div>
     ${rows.length || mist ? `<div class="prog-list">${rows.map(r => `<div class="prog-card">
       ${r.g.cover_url ? `<img src="${escapeHTML(r.g.cover_url)}" alt="" loading="lazy">` : '<span></span>'}
@@ -2923,7 +3040,7 @@ async function rankOf(g) {
 const fmtDay = (t) => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()}`; };
 async function openProfile() {
   if (!isPlayer()) { location.hash = user ? 'character' : 'login'; return; }
-  const dlg = $('#profile-dlg'), got = achGot(), t = titleOf(got.length);
+  const dlg = $('#profile-dlg'), got = achGot(), t = titleOf(got.length), tl = titleList(), cur = myTitle(tl);
   const played = allGames.filter(g => mine[g.id]).sort((a, b) => String(mine[b.id].last).localeCompare(String(mine[a.id].last)));
   const list = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug));
   const cleared = allGames.filter(g => mine[g.id]?.best != null).length;
@@ -2931,13 +3048,20 @@ async function openProfile() {
   const hist = [...myRecs].sort((a, b) => String(b.updated_at ?? b.created_at).localeCompare(String(a.updated_at ?? a.created_at))).slice(0, 10);
   const status = (r) => r.status === 'cleared' ? `<span class="ok">逃出 ${r.clear_time_sec != null ? fmtTime(r.clear_time_sec) : ''}</span>` : r.status === 'failed' ? '<span class="bad">失敗</span>' : '<span class="mid">未完成</span>';
   dlg.innerHTML = `
-    <div class="pf-head">${avatarHTML(profile, 60)}<div><h3>${escapeHTML(profile.username)}${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</h3><p>稱號「${escapeHTML(t.name)}」${t.next ? `・再 ${t.next[0] - got.length} 個成就升級` : ''}</p></div><button class="pf-x" type="button" data-pf-close aria-label="關閉">✕</button></div>
+    <div class="pf-head">${avatarHTML(profile, 60)}<div><h3>${escapeHTML(profile.username)}${isAdmin ? '<span class="dev-badge">開發者</span>' : ''}</h3><p>${titleChip(cur)}${t.next ? ` <span class="pf-next">等級：再 ${t.next[0] - got.length} 個成就升級</span>` : ''}</p></div><button class="pf-x" type="button" data-pf-close aria-label="關閉">✕</button></div>
     <div class="pf-stats">
       <div><b>${cleared}/${list.length}</b><span>逃出的密室</span></div>
       <div><b>${plays}</b><span>挑戰次數</span></div>
       <div><b>${got.length}</b><span>成就</span></div>
       <div><b>${ends}</b><span>收集結局</span></div>
     </div>
+    <h4>👑 我的稱號 <small class="pf-sub">點一下就能換上</small></h4>
+    <div class="pf-titles">
+      <button type="button" class="pf-tchip ${cur.auto ? 'on' : ''}" data-equip="">${titleChip({ name: t.name, rarity: null })}<small>自動</small></button>
+      ${tl.filter(x => x.ok && x.rarity).map(x => `<button type="button" class="pf-tchip ${x.code === profile.title_code ? 'on' : ''}" data-equip="${x.code}">${titleChip(x)}</button>`).join('')}
+      ${tl.filter(x => x.ok && !x.rarity && x.name !== t.name).reverse().map(x => `<button type="button" class="pf-tchip ${x.code === profile.title_code ? 'on' : ''}" data-equip="${x.code}">${titleChip(x)}</button>`).join('')}
+    </div>
+    <button class="linkbtn" type="button" data-ach="title">看看還有哪些稱號、怎麼拿 →</button>
     <h4>我的密室紀錄</h4>
     ${played.length ? `<div class="pf-games">${played.map(g => {
       const m = mine[g.id], e = ENDING_COUNT[g.slug];
@@ -2955,6 +3079,7 @@ async function openProfile() {
       const g = a.game && allGames.find(x => x.slug === a.game);
       return achItem(a, true).replace('</span></div>', `${g ? `<em>${escapeHTML(stampName(g))}</em>` : ''}</span></div>`);
     }).join('')}</div>` : '<p class="pf-empty">還沒有解鎖成就。逃出密室、找到隱藏結局都能拿到成就。</p>'}
+    <button class="linkbtn" type="button" data-ach="ach">查看全部成就（包含還沒解鎖的）→</button>
     <h4>👥 邀請的朋友 <small class="pf-sub" id="pf-inv-n">讀取中…</small></h4>
     <div id="pf-inv"></div>
     <div class="pf-acts">
@@ -3077,14 +3202,18 @@ function checkNewAch() {
   try { localStorage.setItem(KEY, JSON.stringify(got.map(a => a.code))); } catch (_) {}
   if (!Array.isArray(seen)) return;   // 這台裝置第一次看：先記下來，不一次跳出一大堆
   const fresh = got.filter(a => !seen.includes(a.code));
-  if (!fresh.length) return;
   const before = titleOf(got.length - fresh.length).name, now = titleOf(got.length).name;
+  const TK = 'yeyu_title_seen:' + user.id, sp = titleList().filter(t => t.rarity && t.ok);
+  let tSeen = null; try { tSeen = JSON.parse(localStorage.getItem(TK)); localStorage.setItem(TK, JSON.stringify(sp.map(t => t.code))); } catch (_) {}
+  const newT = Array.isArray(tSeen) ? sp.filter(t => !tSeen.includes(t.code)) : [];
+  if (!fresh.length && !newT.length) return;
   const el = document.createElement('div'); el.className = 'ach-pop'; el.setAttribute('role', 'status');
-  el.innerHTML = `<h4>🏆 解鎖新成就${fresh.length > 1 ? ` ×${fresh.length}` : ''}</h4>
+  el.innerHTML = `<h4>${fresh.length ? `🏆 解鎖新成就${fresh.length > 1 ? ` ×${fresh.length}` : ''}` : '👑 獲得新稱號'}</h4>
     <ul>${fresh.slice(0, 3).map(a => `<li><i>${a.icon}</i><span>${escapeHTML(a.title)}<small>${escapeHTML(a.desc)}</small></span></li>`).join('')}</ul>
     ${fresh.length > 3 ? `<p class="muted" style="margin:8px 0 0;font-size:13px">還有 ${fresh.length - 3} 個…</p>` : ''}
     ${before !== now ? `<p class="up">✦ 稱號升級：「${before}」→「${now}」</p>` : ''}
-    <div class="row"><a class="btn btn-gold" href="#progress">查看進度</a><button class="btn btn-ghost" type="button">知道了</button></div>`;
+    ${newT.map(t => `<p class="up">👑 獲得${RARITY[t.rarity]}稱號「${escapeHTML(t.name)}」！</p>`).join('')}
+    <div class="row">${newT.length ? '<button class="btn btn-gold" type="button" data-ach="title">換上稱號</button>' : '<a class="btn btn-gold" href="#progress">查看進度</a>'}<button class="btn btn-ghost" type="button">知道了</button></div>`;
   el.addEventListener('click', (e) => { if (e.target.closest('a, button')) el.remove(); });
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 12000);
@@ -3188,7 +3317,7 @@ async function drawShare(kind, fresh = false) {
   const x = cv.getContext('2d'), SERIF = '"Noto Serif TC", "Songti TC", serif', SANS = '"Noto Sans TC", "PingFang TC", sans-serif';
   try { await Promise.all([document.fonts.load(`900 80px "Noto Serif TC"`, '夜語'), document.fonts.load(`500 30px "Noto Sans TC"`, '夜語')]); } catch (_) {}
   const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#141831'); bg.addColorStop(1, '#06070F'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
-  const got = achGot(), t = titleOf(got.length), gold = '#E8D4A0';
+  const got = achGot(), t = myTitle(), gold = '#E8D4A0';
   const center = (txt, y, font, color = gold) => { x.font = font; x.fillStyle = color; x.textAlign = 'center'; x.fillText(txt, W / 2, y); };
   const stat = (items, y) => items.forEach(([v, k], i) => {
     const cx = W / (items.length * 2) * (i * 2 + 1);
