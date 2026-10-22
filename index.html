@@ -852,6 +852,23 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 #share-dlg .row .btn { padding: 9px 10px; font-size: 14px; }
 #share-dlg .row .wide { grid-column: 1 / -1; }
 #share-dlg .muted { font-size: 12px; margin: 10px 0 0; text-align: center; }
+#share-dlg .share-pic { position: relative; }
+#share-dlg.lobby img { aspect-ratio: 1200 / 630; object-fit: cover; }
+#share-wait { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted); font-size: 14px; }
+#share-dlg .share-pic.ready #share-wait { display: none; }
+#share-qr { width: 156px; margin: 14px auto 0; padding: 8px; border-radius: 10px; background: #fff; }
+#share-qr svg { display: block; width: 100%; height: auto; }
+#share-qr[hidden] { display: none; }
+.share-text { margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--ink-2); font-size: 13px; line-height: 1.6; color: var(--parchment); word-break: break-all; max-height: 7.5em; overflow: auto; }
+.share-text:empty { display: none; }
+#share-dlg .share-main { width: 100%; margin-top: 12px; }
+.share-apps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.share-apps button { padding: 9px 4px; border-radius: 999px; border: 0; font: 700 14px var(--sans); color: #fff; cursor: pointer; }
+.share-apps .app-line { background: #06C755; }
+.share-apps .app-threads { background: #101010; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
+.share-apps .app-fb { background: #1877F2; }
+.share-apps button:hover { filter: brightness(1.1); }
+#share-dlg .row [hidden] { display: none; }
 @media (max-width: 760px) {
   .prog-top { flex-direction: column; align-items: flex-start; }
   .prog-list { grid-template-columns: 1fr; }
@@ -1009,6 +1026,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <a class="hero-rpg" href="#rpg"><img src="covers/mist.jpg" alt=""><span><small>大型開放RPG網頁遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-23T20:00" data-cd-short>10/23 20:00 開放</time> →</em></span></a>
       <button class="hero-next" id="hero-next" type="button" hidden></button>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
+      <button class="hero-install" id="lobby-share-btn" type="button">🔗 把夜語工作室分享給朋友</button>
       <span class="hero-hint" aria-hidden="true">✦ 點一下夜空、戳戳月亮，或接住一顆流星 ✦</span>
     </div>
     <div class="hero-glow" aria-hidden="true"></div>
@@ -1353,6 +1371,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
             <li><a href="#login">登入</a></li>
             <li><a href="#character">我的角色</a></li>
             <li><a href="#" id="install-link" hidden>加到手機主畫面</a></li>
+            <li><a href="#" id="lobby-share-link">分享大廳給朋友</a></li>
           </ul>
         </div>
       </div>
@@ -1371,13 +1390,21 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
   </dialog>
   <dialog id="share-dlg" aria-labelledby="share-title">
     <h3 id="share-title">分享你的紀錄</h3>
-    <img id="share-img" alt="分享圖預覽">
-    <div class="row">
-      <button class="btn btn-gold wide" id="share-go" type="button" hidden>📤 分享</button>
-      <a class="btn btn-ghost" id="share-dl" download="夜語工作室.png">⬇ 下載圖片</a>
-      <button class="btn btn-ghost" id="share-copy" type="button">🔗 複製文字</button>
+    <div class="share-pic"><img id="share-img" alt="分享圖預覽"><span id="share-wait">正在做分享圖…</span></div>
+    <div id="share-qr" hidden></div>
+    <p class="share-text" id="share-text"></p>
+    <button class="btn btn-gold share-main" id="share-go" type="button" hidden>📤 分享</button>
+    <div class="share-apps" role="group" aria-label="分享到">
+      <button type="button" data-app="line" class="app-line">LINE</button>
+      <button type="button" data-app="threads" class="app-threads">Threads</button>
+      <button type="button" data-app="fb" class="app-fb">Facebook</button>
     </div>
-    <p class="muted">手機也可以長按圖片儲存</p>
+    <div class="row">
+      <button class="btn btn-ghost" id="share-copy" type="button">📋 複製文字</button>
+      <button class="btn btn-ghost" id="share-link" type="button">🔗 複製連結</button>
+      <a class="btn btn-ghost wide" id="share-dl" download="夜語工作室.png">⬇ 下載圖片</a>
+    </div>
+    <p class="muted" id="share-tip"></p>
     <form method="dialog"><button class="btn btn-ghost" style="width:100%;margin-top:12px">關閉</button></form>
   </dialog>
 
@@ -2818,7 +2845,7 @@ function afterRoute() {
   if (shareAsk) {
     const slug = shareAsk; shareAsk = null;
     if (!isPlayer()) { toast('登入後就能分享你的紀錄。'); location.hash = user ? 'character' : 'login'; return; }
-    if (allGames.some(g => g.slug === slug)) return openShare(slug);
+    if (allGames.some(g => g.slug === slug)) return openShare(slug, true);
   }
   if (invite && (!user || profile)) showInvite();
 }
@@ -2915,7 +2942,16 @@ function cover(ctx, img, x, y, w, h) {
   const r = Math.max(w / img.width, h / img.height), sw = w / r, sh = h / r;
   ctx.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, x, y, w, h);
 }
-async function drawShare(kind) {
+// 玩家在排行榜的名次（前 100 名內才算）；組隊、分版本的遊戲排行榜分開算，不顯示
+async function myRank(g) {
+  if (isTeamGame(g) || VARIANTS[g.slug]) return null;
+  try {
+    const { data } = await supabase.rpc('get_leaderboard', { p_slug: g.slug, p_limit: 100 });
+    return data?.find(r => r.username === profile.username)?.rank ?? null;
+  } catch (_) { return null; }
+}
+// fresh：剛從遊戲結局按「分享」過來 → 分享「這一局」的時間（不一定是最佳），並標出個人新紀錄、第一次逃出
+async function drawShare(kind, fresh = false) {
   const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
   const x = cv.getContext('2d'), SERIF = '"Noto Serif TC", "Songti TC", serif', SANS = '"Noto Sans TC", "PingFang TC", sans-serif';
   try { await Promise.all([document.fonts.load(`900 80px "Noto Serif TC"`, '夜語'), document.fonts.load(`500 30px "Noto Sans TC"`, '夜語')]); } catch (_) {}
@@ -2927,7 +2963,7 @@ async function drawShare(kind) {
     x.textAlign = 'center'; x.fillStyle = gold; x.font = `900 64px ${SERIF}`; x.fillText(v, cx, y);
     x.fillStyle = '#9D9CB8'; x.font = `500 28px ${SANS}`; x.fillText(k, cx, y + 48);
   });
-  let text;
+  let msg, url;
   if (kind === '__passport') {
     const logo = await loadImg('icons/icon-512.png');
     if (logo) { x.globalAlpha = .55; cover(x, logo, 0, 0, W, 640); x.globalAlpha = 1; }
@@ -2948,49 +2984,126 @@ async function drawShare(kind) {
     });
     const cleared = list.filter(g => mine[g.id]?.best != null).length;
     stat([[`${cleared}/${list.length}`, '逃出的密室'], [`${got.length}`, '解鎖成就'], [`${Object.values(mine).reduce((n, m) => n + m.endings.size, 0)}`, '收集結局']], 1090);
-    text = `我在夜語工作室已經逃出 ${cleared} 間密室，稱號「${t.name}」。你敢來挑戰嗎？ ${LOBBY_URL}?from=${encodeURIComponent(profile.username)}`;
+    msg = `我在夜語工作室已經逃出 ${cleared} 間密室，稱號「${t.name}」。你敢來挑戰嗎？`;
+    url = `${LOBBY_URL}?from=${encodeURIComponent(profile.username)}`;
   } else {
     const g = allGames.find(z => z.slug === kind), m = mine[g.id] ?? { best: null, plays: 0, endings: new Set() }, won = m.best != null;
+    // 這一局：這款遊戲最近一筆紀錄，而且是通關的
+    const recs = myRecs.filter(r => r.game_id === g.id && !SIDE_MODES.has(r.variant)), at = r => r.updated_at ?? r.created_at;
+    const last = recs.reduce((a, r) => !a || at(r) > at(a) ? r : a, null);
+    const run = fresh && last?.status === 'cleared' && last.clear_time_sec != null ? last : null;
+    const others = run ? recs.filter(r => r !== run && r.status === 'cleared' && r.clear_time_sec != null) : [];
+    const first = run && !others.length, pb = run && others.length && others.every(r => r.clear_time_sec > run.clear_time_sec);
+    const rec = run ?? m.bestRec, sec = run ? run.clear_time_sec : m.best;
+    const tags = [pb ? '🏆 個人新紀錄' : first ? '✨ 第一次逃出' : '', rec?.hints === 0 ? '零提示' : '', rec?.deaths === 0 ? '零死亡' : ''].filter(Boolean);
+    const rank = won ? await myRank(g) : null;
     const img = g.cover_url ? await loadImg(g.cover_url) : null;
     if (img) cover(x, img, 0, 0, W, 720);
     const f = x.createLinearGradient(0, 540, 0, 722); f.addColorStop(0, 'rgba(11,13,29,0)'); f.addColorStop(1, '#0F1226'); x.fillStyle = f; x.fillRect(0, 540, W, 182);
-    center(won ? '我逃出來了' : '我走進了', 800, `700 44px ${SERIF}`, '#FFD9A0');
+    if (won && tags.length) {   // 亮點徽章：放在封面上方
+      const s = tags.join('・'); x.font = `700 34px ${SANS}`; const bw = x.measureText(s).width + 64;
+      x.fillStyle = 'rgba(6,7,15,.78)'; x.beginPath(); x.roundRect ? x.roundRect(W / 2 - bw / 2, 48, bw, 64, 32) : x.rect(W / 2 - bw / 2, 48, bw, 64); x.fill();
+      x.strokeStyle = 'rgba(232,212,160,.6)'; x.lineWidth = 2; x.stroke();
+      center(s, 92, `700 34px ${SANS}`, '#FFD9A0');
+    }
+    center(won ? (pb ? '我刷新了自己的紀錄' : '我逃出來了') : '我走進了', 800, `700 44px ${SERIF}`, '#FFD9A0');
     let fs = 96; x.font = `900 ${fs}px ${SERIF}`; while (x.measureText(`《${g.title}》`).width > W - 100 && fs > 48) x.font = `900 ${fs -= 6}px ${SERIF}`;
     center(`《${g.title}》`, 910, x.font);
     const ends = ENDING_COUNT[g.slug], list = ACH.filter(a => a.game === g.slug), k = list.filter(a => got.some(b => b.code === a.code)).length;
-    stat([won ? [fmtTime(m.best), '最佳通關時間'] : [`${m.plays}`, '挑戰次數'], ends ? [`${m.endings.size}/${ends}`, '收集結局'] : [`${m.plays}`, '挑戰次數'], [`${k}/${list.length}`, '成就']], 1040);
+    stat([
+      won ? [fmtTime(sec), run ? '這次通關時間' : '最佳通關時間'] : [`${m.plays}`, '挑戰次數'],
+      rank ? [`第 ${rank} 名`, '排行榜'] : ends ? [`${m.endings.size}/${ends}`, '收集結局'] : [`${m.plays}`, '挑戰次數'],
+      [`${k}/${list.length}`, '成就'],
+    ], 1040);
     center(`${profile.username}・${t.name}`, 1180, `700 38px ${SERIF}`, '#ECEAF5');
-    // 挑戰句：時間、零提示等亮點放前面，連結點開就是這款遊戲
-    const link = gameLink(g.slug, { from: profile.username, t: won ? m.best : null });
-    const brag = !won ? '' : m.bestRec && !m.bestRec.hints ? '，而且一個提示都沒用' : m.bestRec && !m.bestRec.deaths ? '，零死亡' : '';
-    text = won
-      ? `我在《${g.title}》用了 ${fmtTime(m.best)} 逃出來${brag}！你敢來挑戰嗎？比比看誰比較快 👉 ${link}`
-      : `我正在挑戰《${g.title}》，${isTeamGame(g) ? '缺隊友，一起來玩' : '你也來試試看'}？👉 ${link}`;
+    // 挑戰句：時間、新紀錄、名次、零提示等亮點放前面，連結點開就是這款遊戲（朋友看到的是我的最佳時間）
+    url = gameLink(g.slug, { from: profile.username, t: won ? m.best : null });
+    const brag = [rec?.hints === 0 ? '一個提示都沒用' : rec?.deaths === 0 ? '零死亡' : '', rank ? `排行榜第 ${rank} 名` : ''].filter(Boolean).join('，');
+    msg = won
+      ? `我在《${g.title}》用了 ${fmtTime(sec)} 逃出來${pb ? '，刷新了自己的紀錄' : ''}${brag ? `（${brag}）` : ''}！你敢來挑戰嗎？比比看誰比較快`
+      : `我正在挑戰《${g.title}》，${isTeamGame(g) ? '缺隊友，一起來玩' : '你也來試試看'}？`;
   }
   x.fillStyle = 'rgba(232,212,160,.35)'; x.fillRect(W / 2 - 160, 1238, 320, 2);
   center('夜 語 工 作 室 ・ 線 上 密 室', 1290, `700 32px ${SERIF}`);
   center(LOBBY_URL.replace('https://', ''), 1330, `500 24px ${SANS}`, '#9D9CB8');
-  return { blob: await new Promise(ok => cv.toBlob(ok, 'image/png')), text };
+  return { blob: await new Promise(ok => cv.toBlob(ok, 'image/png')), msg, url };
 }
-let shareData = null;
-async function openShare(kind) {
-  if (!isPlayer()) return;
+
+// ================= 分享視窗：紀錄（分享圖）和大廳（連結＋QR Code）共用 =================
+// shareData：msg（不含連結的一句話）、url、file（分享圖，可能沒有）
+let shareData = null, shareSeq = 0;
+const shareText = () => `${shareData.msg} 👉 ${shareData.url}`;
+function shareDlgOpen({ title, lobby = false }) {
   const dlg = $('#share-dlg'), img = $('#share-img');
-  img.removeAttribute('src'); $('#share-go').hidden = true; dlg.showModal();
-  try {
-    const { blob, text } = await drawShare(kind);
-    const file = new File([blob], '夜語工作室.png', { type: 'image/png' }), url = URL.createObjectURL(blob);
-    shareData = { file, text };
-    img.src = url; $('#share-dl').href = url;
-    $('#share-go').hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
-  } catch (e) { console.error(e); dlg.close(); toast('分享圖做不出來，請稍後再試。'); }
+  shareData = null;
+  $('#share-title').textContent = title;
+  dlg.classList.toggle('lobby', lobby);
+  img.removeAttribute('src'); $('.share-pic').classList.remove('ready');
+  $('#share-text').textContent = ''; $('#share-qr').hidden = true; $('#share-qr').innerHTML = '';
+  $('#share-go').hidden = true; $('#share-dl').hidden = lobby;
+  $('#share-tip').textContent = lobby ? '朋友在旁邊的話，直接用手機相機掃 QR Code 就能打開。' : '想發 IG 限動：先下載圖片（手機也可以長按圖片儲存），再到 IG 選這張圖。';
+  if (!dlg.open) dlg.showModal();
+  return ++shareSeq;
 }
+function shareDlgFill(data, src) {
+  shareData = data;
+  const img = $('#share-img');
+  img.onload = () => $('.share-pic').classList.add('ready');
+  img.src = src;
+  $('#share-text').textContent = shareText();
+  $('#share-go').hidden = !navigator.share;
+}
+async function openShare(kind, fresh = false) {
+  if (!isPlayer()) return;
+  const g = allGames.find(z => z.slug === kind), won = g && mine[g.id]?.best != null;
+  const seq = shareDlgOpen({ title: kind === '__passport' ? '分享我的護照' : won && fresh ? `🎉 恭喜逃出《${g.title}》！` : won ? '分享你的紀錄' : '找朋友一起來玩' });
+  try {
+    const { blob, msg, url } = await drawShare(kind, fresh);
+    if (seq !== shareSeq) return;
+    const name = `夜語工作室-${g ? g.title : '護照'}.png`, file = new File([blob], name, { type: 'image/png' }), src = URL.createObjectURL(blob);
+    $('#share-dl').href = src; $('#share-dl').download = name;
+    shareDlgFill({ msg, url, file }, src);
+  } catch (e) { console.error(e); $('#share-dlg').close(); toast('分享圖做不出來，請稍後再試。'); }
+}
+// 分享大廳：誰都可以分享（不用登入）；登入的玩家連結會帶上自己的名字
+async function shareLobby(e) {
+  e?.preventDefault();
+  const n = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug)).length;
+  const url = LOBBY_URL + (isPlayer() ? `?from=${encodeURIComponent(profile.username)}` : '');
+  const seq = shareDlgOpen({ title: '把夜語工作室分享給朋友', lobby: true });
+  shareDlgFill({ msg: `夜語工作室：${n ? `${n} 間` : ''}原創線上密室逃脫，手機、電腦都能玩，還能揪朋友組隊。一起來解謎吧！`, url }, 'covers/og.jpg');
+  try {   // QR Code：載入失敗就不顯示
+    const qrcode = (await import('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm')).default;
+    if (seq !== shareSeq) return;
+    const q = qrcode(0, 'M'); q.addData(url); q.make();
+    $('#share-qr').innerHTML = q.createSvgTag({ cellSize: 4, margin: 0, scalable: true }); $('#share-qr').hidden = false;
+  } catch (_) {}
+}
+$('#lobby-share-btn').addEventListener('click', shareLobby);
+$('#lobby-share-link').addEventListener('click', shareLobby);
 $('#share-go').addEventListener('click', async () => {
-  try { await navigator.share({ files: [shareData.file], text: shareData.text }); } catch (_) {}
+  if (!shareData) return;
+  const { file, msg, url } = shareData;
+  try {
+    // 能分享圖片就連圖一起分享；不行（電腦、部分瀏覽器）就分享文字和連結
+    if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text: shareText() });
+    else await navigator.share({ title: '夜語工作室', text: msg, url });
+  } catch (e) { if (e?.name !== 'AbortError') toast('這台裝置沒辦法直接分享，改用下面的按鈕吧。'); }
 });
-$('#share-copy').addEventListener('click', async () => {
-  try { await navigator.clipboard.writeText(shareData.text); toast('已複製，貼到 IG、LINE 都可以 ✨', 'ok'); } catch (_) { toast(shareData.text); }
+const SHARE_APPS = {
+  line: () => `https://line.me/R/share?text=${encodeURIComponent(shareText())}`,
+  threads: () => `https://www.threads.net/intent/post?text=${encodeURIComponent(shareText())}`,
+  fb: () => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareData.url)}`,
+};
+$('.share-apps').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-app]');
+  if (b && shareData) window.open(SHARE_APPS[b.dataset.app](), '_blank', 'noopener');
 });
+async function copyShare(txt, ok) {
+  try { await navigator.clipboard.writeText(txt); toast(ok, 'ok'); } catch (_) { toast(txt); }
+}
+$('#share-copy').addEventListener('click', () => shareData && copyShare(shareText(), '已複製，貼到 IG、LINE 都可以 ✨'));
+$('#share-link').addEventListener('click', () => shareData && copyShare(shareData.url, '連結已複製 🔗'));
 
 function renderNewest() {
   const g = newestGame();
