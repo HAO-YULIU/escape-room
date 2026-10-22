@@ -848,6 +848,12 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .room.retired .room-cover::after { content: '已下架'; position: absolute; left: 50%; top: 42%; z-index: 2; transform: translate(-50%, -50%) rotate(-12deg);
   font: 900 22px var(--serif); letter-spacing: .3em; white-space: nowrap; padding: 4px 6px 4px 14px; color: #F0A090; border: 3px double #F0A090; border-radius: 6px; background: rgba(8,10,20,.45); }
 .room.retired .room-cta { color: var(--gold); }
+.room.retired-name { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; padding: 14px 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--ink-2); color: var(--parchment); font: inherit; text-align: left; cursor: pointer; }
+.room.retired-name b { font: 700 17px var(--serif); }
+.room.retired-name .badge { position: static; }
+.room.retired-name .room-cta { margin-left: auto; color: var(--gold); font-size: 14px; }
+.room.retired-name:hover { border-color: var(--gold); }
+#retired-list { grid-template-columns: 1fr; gap: 8px; }
 .retired-note { text-align: center; color: var(--muted); font-size: 14px; margin: 22px auto 0; max-width: 34em; }
 .retired-note a { color: var(--gold); }
 /* 關於我們：作者的話＋聯絡卡 */
@@ -3650,23 +3656,14 @@ function pickCard(g, rank, note) {
 // 已下架遊戲
 function renderRetired() {
   $('#retired').hidden = !retiredGames.length;
+  // 已下架的遊戲只留名字（不放封面、介紹、網址）；點了跳出寄信索取的說明
   $('#retired-list').innerHTML = retiredGames.map(g => {
     const m = mine[g.id];
     return `
-    <button class="room retired" data-slug="${escapeHTML(g.slug)}" type="button">
-      <div class="room-cover">
-        ${g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="" loading="lazy">` : coverArt(g, allGames.indexOf(g))}
-        <span class="cv-title">${escapeHTML(g.title)}</span>
-        ${m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>` : m ? '<span class="badge played">玩過</span>' : ''}
-      </div>
-      <div class="room-body">
-        <div class="tags">${(g.tags ?? []).filter(t => CATS.includes(t)).map(t => `<span>#${escapeHTML(t)}</span>`).join('')}</div>
-        <h4>${escapeHTML(g.title)}</h4>
-        ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
-        <p class="desc">${escapeHTML(g.description ?? '')}</p>
-        <div class="room-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span></div>
-        <div class="room-foot"><span></span><div class="room-cta">✉️ 寄信索取 →</div></div>
-      </div>
+    <button class="room retired-name" data-slug="${escapeHTML(g.slug)}" type="button">
+      <b>${escapeHTML(g.title)}</b>
+      ${m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>` : m ? '<span class="badge played">玩過</span>' : ''}
+      <span class="room-cta">✉️ 寄信索取 →</span>
     </button>`;
   }).join('');
 }
