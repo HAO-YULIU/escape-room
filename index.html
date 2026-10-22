@@ -3345,13 +3345,16 @@ function cdText(d, short) {
 const cdSpan = (d) => `<span class="cd" data-cd="${escapeHTML(d.slice(0, 16))}">${cdText(d)}</span>`;
 function renderHeroNext() {
   const el = $('#hero-next');
-  const g = games.filter(upcoming).sort((a, b) => a.release_date.localeCompare(b.release_date))[0];
+  // 密室和大型網頁解謎遊戲（迷霧）一起比，依開放的日期＋時間排，最早的那個
+  const g = [...games, ...RPGS].filter(upcoming).sort((a, b) => openStr(a).localeCompare(openStr(b)))[0];
   el.hidden = !g; if (!g) return;
   el.dataset.slug = g.slug;
   el.innerHTML = `<span>⏳ 下一扇門《<b>${escapeHTML(g.title)}</b>》開放倒數</span>${cdSpan(openStr(g))}`;
 }
 $('#hero-next').addEventListener('click', (e) => {
-  const card = document.querySelector(`.room[data-slug="${e.currentTarget.dataset.slug}"]`);
+  const slug = e.currentTarget.dataset.slug;
+  if (RPGS.some(g => g.slug === slug)) { location.hash = 'rpg'; return; }
+  const card = document.querySelector(`.room[data-slug="${slug}"]`);
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); else location.hash = 'rooms';
 });
 let cdDay = today(), cdSoon = -1;
