@@ -3924,7 +3924,7 @@ window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload();
 // 從密室網頁被擋回來時（?need=player&room=xxx），直接跳出註冊提示
 const params = new URLSearchParams(location.search);
 if (params.get('need') === 'player' && !isPlayer()) {
-  showGate(games.find(x => x.slug === params.get('room'))?.title ?? '');
+  showGate([...games, ...RPGS].find(x => x.slug === params.get('room'))?.title ?? '');
 }
 
   </script>
