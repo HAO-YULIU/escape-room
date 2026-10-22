@@ -1759,7 +1759,7 @@ let gameRows = [], allGames = [], retiredGames = [];
 const VARIANTS = { 'qianshan-night': [['normal', '普通版'], ['hell', '地獄版']] };
 // 不算「逃脫」的模式（不進排行榜、不算最佳時間與通關類成就；結局照樣收集）
 const SIDE_MODES = new Set(['muer']);
-let mine = {}, myRecs = [], achCodes = new Set();
+let mine = {}, myRecs = [], achCodes = new Set(), invited = [];   // invited：我邀請進來的朋友（my_invites）
 let myMsgs = [];   // 管理員傳給這位玩家的訊息（player_messages，只讀得到自己的）
 // 有雲端存檔的遊戲：{ slug: 最後存檔時間 }（遊戲玩到一半的依據）
 let saves = {};
@@ -1775,6 +1775,7 @@ async function loadAuth() {
   user = data.session?.user ?? null;
   profile = null;
   mine = {};
+  invited = [];
   mist = null;
   saves = {};
   isAdmin = false;
@@ -1800,6 +1801,7 @@ async function loadAuth() {
     const { data: msgs } = await supabase.from('player_messages').select('id,context,body,created_at,read_at').eq('user_id', user.id).order('created_at', { ascending: false }).limit(30);
     myMsgs = msgs ?? [];
     if (profile) claimRef().catch(() => {});
+    if (profile) { const { data: inv } = await supabase.rpc('my_invites'); invited = inv ?? []; }
     for (const r of recs ?? []) {
       const m = mine[r.game_id] ??= { plays: 0, clears: 0, best: null, bestRec: null, last: r.created_at, deaths: 0, hints: 0, endings: new Set() };
       if (r.ending && r.status === 'cleared') m.endings.add(r.ending);
@@ -2590,6 +2592,9 @@ const ACH = [
   { code: 'g_plays10', game: null, icon: '☕', title: '熟面孔', desc: '累計挑戰 10 次密室', test: c => c.recs.length >= 10 },
   { code: 'g_plays30', game: null, icon: '🛋', title: '把這裡當家', desc: '累計挑戰 30 次密室', test: c => c.recs.length >= 30 },
   { code: 'g_cats', game: null, icon: '🎨', title: '四種夜晚', desc: '恐怖、歡樂、情感、懸疑各逃出一間', test: c => CATS.every(t => [...c.slugs].some(s => c.tagsOf(s).includes(t))) },
+  { code: 'g_invite1', game: null, icon: '🤝', title: '帶路人', desc: '邀請 1 位朋友加入夜語工作室', test: c => c.invited >= 1 },
+  { code: 'g_invite3', game: null, icon: '🕯', title: '深夜揪團', desc: '邀請 3 位朋友加入夜語工作室', test: c => c.invited >= 3 },
+  { code: 'g_invite10', game: null, icon: '📣', title: '夜語推廣大使', desc: '邀請 10 位朋友加入夜語工作室', test: c => c.invited >= 10 },
   { code: 'g_fast60', game: null, icon: '⚡', title: '閃電逃脫', desc: '60 分鐘內逃出任何一間密室', test: c => c.cleared.some(r => r.clear_time_sec != null && r.clear_time_sec <= 3600) },
   { code: 'g_long', game: null, icon: '🕰', title: '長夜漫漫', desc: '花了 3 小時以上，還是逃出來了', test: c => c.cleared.some(r => r.clear_time_sec >= 10800) },
   { code: 'g_day3', game: null, icon: '📅', title: '一日三逃', desc: '同一天逃出 3 間不同的密室', test: c => { const d = {}; for (const r of c.cleared) (d[c.day(r)] ??= new Set()).add(r.slug); return Object.values(d).some(x => x.size >= 3); } },
@@ -2740,7 +2745,7 @@ function achContext() {
   for (const r of recs) (bySlug[r.slug] ??= []).push(r);
   for (const r of recs) if (r.status === 'cleared' && r.ending) (endings[r.slug] ??= new Set()).add(r.ending);
   return { recs, cleared, bySlug, endings, openSlugs: games.filter(isOpen).map(g => g.slug),
-    slugs: new Set(cleared.map(r => r.slug)),
+    slugs: new Set(cleared.map(r => r.slug)), invited: invited.length,
     endingTotal: Object.values(endings).reduce((n, x) => n + x.size, 0),
     tagsOf: s => allGames.find(g => g.slug === s)?.tags ?? [],
     day: r => new Date(r.updated_at || r.created_at).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }),
@@ -2906,6 +2911,7 @@ async function openProfile() {
     const box = dlg.querySelector('#pf-inv'), n = dlg.querySelector('#pf-inv-n'); if (!box) return;
     if (error) { n.textContent = ''; box.innerHTML = '<p class="pf-empty">讀取失敗，請稍後再試。</p>'; return; }
     const list = data ?? [], on = list.filter(f => f.played).length;
+    invited = list;
     n.textContent = list.length ? `${list.length} 位・${on} 位已經開始玩` : '0 位';
     box.innerHTML = (list.length ? `<div class="pf-friends">${list.map(f => `<span class="pf-friend" title="${f.played ? '已經開始玩' : '還沒開始玩'}">${avatarHTML(f, 40)}<b>${escapeHTML(f.username)}</b>${f.played ? '<i>🎮</i>' : ''}</span>`).join('')}</div>` : '')
       + `<p class="pf-empty">朋友用你的分享連結進來、註冊並建好角色，就會算在這裡。</p><button class="btn btn-ghost pf-invite" type="button" data-pf-close data-lobby-share>🔗 邀請朋友來玩</button>`;
