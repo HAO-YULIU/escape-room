@@ -2613,7 +2613,7 @@ let adminUI = null;
 async function openAdmin() {
   if (adminUI) return adminUI.refresh();
   try {
-    const m = await import('./admin.js?v=5');
+    const m = await import('./admin.js?v=6');
     adminUI = m.mountAdmin({
       supabase, root: $('#view-admin'), escapeHTML, avatarHTML, toast,
       onContentChange: async () => { await loadGames(); await loadNews(); renderAll(); },

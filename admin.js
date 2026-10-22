@@ -251,22 +251,24 @@ export function mountAdmin(ctx) {
     <div id="adm-body"><p class="adm-empty">讀取中…</p></div></div>`;
   const body = root.querySelector('#adm-body');
   root.querySelector('.adm-tabs').addEventListener('click', (e) => { const b = e.target.closest('[data-tab]'); if (b) show(b.dataset.tab); });
-  root.querySelector('#adm-reload').addEventListener('click', () => load());
+  root.querySelector('#adm-reload').addEventListener('click', () => load(true));
 
-  async function load() {
+  // full：整包重抓（第一次、按「重新整理」）；不然只抓上次之後有變化的部分再合併（即時動態每 20 秒一次，整包約 5 MB，會吃掉 Supabase 的流量額度）
+  async function load(full = false) {
     if (loading) return; loading = true;
     try {
+      const since = !full && D?.now ? new Date(new Date(D.now).getTime() - 60000).toISOString() : null;   // 多抓 1 分鐘，避免漏掉
       // 偶爾逾時或網路不穩：自動再試一次
       let res;
       for (let i = 0; i < 2; i++) {
-        res = await Promise.all([supabase.rpc('admin_dump'), supabase.from('games').select('*').order('sort_order')]);
+        res = await Promise.all([supabase.rpc('admin_dump', since ? { p_since: since } : {}), supabase.from('games').select('*').order('sort_order')]);
         if (!res[0].error && !res[1].error) break;
         if (i === 0) await new Promise((r) => setTimeout(r, 1500));
       }
       const [{ data, error }, g] = res;
       if (error) throw error;
       if (g.error) throw g.error;
-      D = data; games = g.data || [];
+      D = since ? merge(D, data) : data; games = g.data || [];
       prep();
       root.querySelector('#adm-upd').textContent = '更新於 ' + new Date().toLocaleTimeString('zh-TW', { ...TZ, hour12: false });
       render();
@@ -279,6 +281,16 @@ export function mountAdmin(ctx) {
         body.querySelector('[data-retry]').onclick = () => load();
       }
     } finally { loading = false; }
+  }
+
+  // 把「有變化的部分」合併進原本的資料（玩家依 id、紀錄依 id、存檔依玩家＋遊戲取代；回報沿用原本的）
+  function merge(old, add) {
+    const upd = (arr, key, more) => { const m = new Map(arr.map(x => [key(x), x])); for (const x of more) m.set(key(x), x); return [...m.values()]; };
+    return { ...add,
+      players: upd(old.players, x => x.id, add.players).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
+      records: upd(old.records, x => x.id, add.records),
+      saves: upd(old.saves, x => x.user_id + '|' + x.game, add.saves),
+      bugs: old.bugs };
   }
 
   // 整理資料：每位玩家、每款遊戲的狀態
@@ -522,5 +534,5 @@ export function mountAdmin(ctx) {
 
   show('overview');
   load();
-  return { refresh: load, stop: () => clearInterval(timer) };
+  return { refresh: () => load(true), stop: () => clearInterval(timer) };
 }
