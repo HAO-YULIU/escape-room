@@ -2113,7 +2113,7 @@ function roomCard(g, rank = 0, note = '') {
     : upcoming(g) ? `<span class="badge soon">⏳ ${cdSpan(openStr(g))}</span>`
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-  const cta = inMaint(g) ? '改版維修中' : upcoming(g) ? `${openLabel(g)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const cta = isAdmin && g.play_url && !open ? '🛠 開發者直接進入 →' : inMaint(g) ? '改版維修中' : upcoming(g) ? `${openLabel(g)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   // 挑戰人數只給開發者看（資料庫的 get_game_stats 也只回給管理員）
   const challenge = note ? `<p class="challengers">${note}</p>` : isAdmin && st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
@@ -2223,6 +2223,7 @@ function onRoomClick(e) {
 function openGame(slug, join = null) {
   const g = games.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug);
   if (!g) return;
+  if (isAdmin && g.play_url) return goPlay(join ? withJoin(g.play_url, join) : g.play_url);   // 開發者：不受開放時間、維修、搶先體驗名額限制
   if (inMaint(g)) return toast(`「${g.title}」正在改版維修中，全新版本敬請期待！`);
   if (upcoming(g) && earlyLeft(g)) return isPlayer() ? goPlay(g.play_url) : showGate(g.title);   // 搶先體驗：名額由遊戲那邊向伺服器領
   if (upcoming(g)) return toast(`「${g.title}」將在 ${openLabel(g)} 開放，敬請期待。`);
@@ -2271,7 +2272,7 @@ const RPGS = [{
 function renderRpgs() {
   $('#rpg-list').innerHTML = RPGS.map(g => {
     const open = isOpen(g), soon = upcoming(g), early = soon && earlyLeft(g);
-    const cta = early ? `🎟 搶先體驗（剩 ${early} / ${mistEarly.limit} 名）→` : soon ? `${openLabel(g)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
+    const cta = isAdmin && !open ? '🛠 開發者直接進入 →' : early ? `🎟 搶先體驗（剩 ${early} / ${mistEarly.limit} 名）→` : soon ? `${openLabel(g)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
     return `
     <button class="rpg ${open || early ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
       <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt=""></div>
