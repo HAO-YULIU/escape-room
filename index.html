@@ -2832,7 +2832,7 @@ const ACH = [
   { code: 's3_e7', game: 'school3', icon: '🏠', title: '她跟我回家了', desc: '???', secret: 1, test: c => c.end('school3', 'e7') },
   { code: 's3_all', game: 'school3', icon: '📚', title: '請不要忘記她', desc: '收集第三章的全部結局', test: c => (c.endings.school3?.size ?? 0) >= 7 },
   { code: 's3_nodeath', game: 'school3', icon: '🐰', title: '兔子吊飾還在', desc: '零死亡通關第三章', test: c => c.cl('school3').some(r => !r.deaths) },
-  { code: 's3_fast', game: 'school3', icon: '⏱', title: '末班車之前', desc: '360 分鐘內通關第三章', test: c => c.cl('school3').some(r => r.clear_time_sec <= 21600) },
+  { code: 's3_fast', game: 'school3', icon: '⏱', title: '末班車之前', desc: '240 分鐘內通關第三章', test: c => c.cl('school3').some(r => r.clear_time_sec <= 14400) },
   { code: 's3_face', game: 'school3', icon: '🎀', title: '她的樣子', desc: '把聖安的樣子拼回來' },
   { code: 's3_knock', game: 'school3', icon: '✊', title: '我還在', desc: '照著門後的敲門聲敲回去' },
   { code: 's3_ev', game: 'school3', icon: '🗂', title: '沒有被刪掉的紀錄', desc: '在一輪裡找齊全部 7 份證據' },
