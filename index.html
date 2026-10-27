@@ -1856,7 +1856,7 @@ const RETIRED = ['love'];
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
-const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00' };
+const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
@@ -2766,7 +2766,7 @@ function runMeta(r, slug) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -2823,6 +2823,21 @@ const ACH = [
   { code: 's2_arg', game: 'school2', icon: '🌐', title: '另一邊的網路', desc: '解開一條路線上所有的 ARG 謎題' },
   { code: 's2_love', game: 'school2', icon: '🎀', title: '她唯一的人', desc: '???', secret: 1 },
   { code: 's2_nohint', game: 'school2', icon: '🤐', title: '小羽，不用了', desc: '零提示通關第二章' },
+  { code: 's3_e1', game: 'school3', icon: '🚌', title: '不要再等了', desc: '真結局', test: c => c.end('school3', 'e1') },
+  { code: 's3_e2', game: 'school3', icon: '🌧', title: '我記得妳', desc: '普通結局', test: c => c.end('school3', 'e2') },
+  { code: 's3_e3', game: 'school3', icon: '🚪', title: '姊姊來接妳了', desc: '錯誤結局', test: c => c.end('school3', 'e3') },
+  { code: 's3_e4', game: 'school3', icon: '🕯', title: '留下來的人', desc: '犧牲結局', test: c => c.end('school3', 'e4') },
+  { code: 's3_e5', game: 'school3', icon: '🔦', title: '第二個人', desc: '死亡結局', test: c => c.end('school3', 'e5') },
+  { code: 's3_e6', game: 'school3', icon: '🤫', title: '所有人都忘了', desc: '隱藏結局', secret: 1, test: c => c.end('school3', 'e6') },
+  { code: 's3_e7', game: 'school3', icon: '🏠', title: '她跟我回家了', desc: '???', secret: 1, test: c => c.end('school3', 'e7') },
+  { code: 's3_all', game: 'school3', icon: '📚', title: '請不要忘記她', desc: '收集第三章的全部結局', test: c => (c.endings.school3?.size ?? 0) >= 7 },
+  { code: 's3_nodeath', game: 'school3', icon: '🐰', title: '兔子吊飾還在', desc: '零死亡通關第三章', test: c => c.cl('school3').some(r => !r.deaths) },
+  { code: 's3_fast', game: 'school3', icon: '⏱', title: '末班車之前', desc: '360 分鐘內通關第三章', test: c => c.cl('school3').some(r => r.clear_time_sec <= 21600) },
+  { code: 's3_face', game: 'school3', icon: '🎀', title: '她的樣子', desc: '把聖安的樣子拼回來' },
+  { code: 's3_knock', game: 'school3', icon: '✊', title: '我還在', desc: '照著門後的敲門聲敲回去' },
+  { code: 's3_ev', game: 'school3', icon: '🗂', title: '沒有被刪掉的紀錄', desc: '在一輪裡找齊全部 7 份證據' },
+  { code: 's3_name', game: 'school3', icon: '✉️', title: '安安', desc: '???', secret: 1 },
+  { code: 's3_nohint', game: 'school3', icon: '🤐', title: '小羽，不用了', desc: '零提示通關第三章' },
   { code: 'lv_e1', game: 'love', icon: '💍', title: '老闆娘與機關王', desc: 'END 01', test: c => c.end('love', 'e1') },
   { code: 'lv_e2', game: 'love', icon: '🤝', title: '比戀愛更難的是友情', desc: 'END 02', test: c => c.end('love', 'e2') },
   { code: 'lv_e3', game: 'love', icon: '💌', title: '最後一封情書', desc: 'END 03', test: c => c.end('love', 'e3') },
@@ -2968,7 +2983,7 @@ function titleOf(n) {
 // 玩家可以在個人資料換上任何已經拿到的稱號：存在 profiles.title_code（'lv:<門檻>' 或特殊稱號代號）；沒選就用目前的等級稱號
 const RARITY = { common: '一般', rare: '稀有', epic: '史詩', legend: '傳說' };
 const LV_RARITY = { 0: 'common', 3: 'common', 8: 'rare', 15: 'rare', 25: 'epic', 40: 'epic', 60: 'legend', 85: 'legend' };   // 等級稱號的稀有度（依門檻）
-const ENDING_ALLS = ['q1_all', 's2_all', 'bg_all', 'zr_all', 'qs_all', 'lv_all'];
+const ENDING_ALLS = ['q1_all', 's2_all', 's3_all', 'bg_all', 'zr_all', 'qs_all', 'lv_all'];
 const SPECIAL_TITLES = [
   { code: 't_speed', name: '速通狂人', rarity: 'rare', desc: '3 間不同的密室都在 60 分鐘內逃出', test: (c) => new Set(c.cleared.filter(r => r.clear_time_sec != null && r.clear_time_sec <= 3600).map(r => r.slug)).size >= 3 },
   { code: 't_sleepless', name: '不眠者', rarity: 'rare', desc: '同時達成「夜貓子」「晨光逃脫」「一日三逃」', test: (c, has) => has('g_night', 'g_dawn', 'g_day3') },
@@ -2994,6 +3009,8 @@ const SPECIAL_TITLES = [
   { code: 't_lightspeed', name: '光速逃脫者', rarity: 'epic', desc: '5 間不同的密室都在 60 分鐘內逃出', test: (c) => new Set(c.cleared.filter(r => r.clear_time_sec != null && r.clear_time_sec <= 3600).map(r => r.slug)).size >= 5 },
   { code: 't_marathon', name: '夜語馬拉松', rarity: 'epic', desc: '累計挑戰 100 次密室', test: (c) => c.recs.length >= 100 },
   { code: 't_qc_guard', name: '千嬋守護者', rarity: 'epic', desc: '《千嬋高級中學》第一章、第二章都零死亡通關', test: (c, has) => has('q1_nodeath', 's2_nodeath') },
+  { code: 't_qc3', name: '不要忘記我', rarity: 'legend', desc: '《千嬋高級中學》第一章到第三章的全部結局都收集到，而且第三章零提示通關', test: (c, has) => has('q1_all', 's2_all', 's3_all', 's3_nohint') },
+  { code: 't_qc3_guard', name: '末班車的乘客', rarity: 'epic', desc: '《千嬋高級中學》第一章到第三章都零死亡通關', test: (c, has) => has('q1_nodeath', 's2_nodeath', 's3_nodeath') },
   { code: 't_gambler', name: '越南賭神', rarity: 'epic', desc: '《越南公主》：彈珠王、象棋勝者、撲克牌冠軍、麻將之王全部拿到', test: (c, has) => has('bg_pb', 'bg_xq_w', 'bg_cd1', 'bg_mj1') },
   { code: 't_archivist', name: '封存站管理員', rarity: 'epic', desc: '《零號回信》：解開卷宗 100 題，並找到封存站的背面和訪客入口', test: (c, has) => has('zr_cb100', 'zr_source', 'zr_guest') },
   { code: 't_muer', name: '暮兒', rarity: 'epic', desc: '《千山夜錄》暮兒之夜：讀出最後一頁，並以暮兒的身分守住整夜', test: (c, has) => has('qs_m_page', 'qs_m_night') },
@@ -3406,7 +3423,7 @@ setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
 const LOBBY_URL = 'https://lobby.noron.workers.dev/';
 // 每款遊戲的分享連結：g/<slug>/ 是有那款封面預覽圖的小頁面（社群貼文會顯示），打開後帶著參數回到大廳
 // from：誰邀請的、t：他的最佳秒數、join：多人遊戲的房號。新遊戲上線時要複製一份 g/<slug>/index.html
-const SHARE_PAGES = ['qianchan-school', 'school2', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1', 'heart'];
+const SHARE_PAGES = ['qianchan-school', 'school2', 'school3', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1', 'heart'];
 function gameLink(slug, extra = {}) {
   const q = new URLSearchParams(Object.entries(extra).filter(([, v]) => v != null && v !== ''));
   const base = SHARE_PAGES.includes(slug) ? `${LOBBY_URL}g/${slug}/` : LOBBY_URL;

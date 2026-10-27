@@ -18,6 +18,12 @@ const S2_SCENES = {
   e1: '地下樓梯・往一樓', elib: '圖書館', elobby: '一樓大廳', efield: '操場', elast: '最後一條走廊', egate: '校門・倒數',
   d0: '三樓・舊校舍走廊', dmusic: '音樂教室', dfinal: '三年八班', p7out: '校門外', dawn: '校門口・清晨',
 };
+const S3_SCENES = {
+  side: '側門・清晨六點五十分', booth: '側門警衛亭', stopA: '公車亭・千嬋高中側門', shopA: '福記雜貨', streetA: '往海科館的路上', office: '總務處・下午四點五十分', archive: '地下檔案室',
+  lghall: '和平路 21 巷 7 號・4 樓', lgroom: '立綱的客廳', sea: '海科館附近', apt0: '海濱路 24 巷 8 號・一樓', stair3: '樓梯間', apt8: '八樓', yroom: '八樓・小房間', loop4: '舊校舍・走廊',
+  b13d: '走廊盡頭・鐵門', dark4: '黑暗中', club5: '校刊社教室', lg5: '立綱的客廳', tun0: 'B-10 配電室・維修口', tunK: '維修通道・敲門聲', tunW: '維修通道・積水', tunB: '維修通道・焦痕',
+  tun13: '維修通道最深處', og6: '舊校舍入口', door6: '地下通道・門前', door7: '地下通道・最後的門', box7: '維修通道・文件箱', final7: '最後的門'
+};
 const PUPU_SCENES = {
   seat: '第 17 排・A 座', aisle: '機艙走道', door: '廁所門前', airport: '史瓦帝尼機場', bus: '觀光巴士', mantenga: 'Mantenga 文化村',
   hlane: 'Hlane 國家公園', market: 'Malkerns 市集', lobby: '旅館大廳', hall: '走廊', room: '113 號房', r103: '103 號房', maze: '相連的房間',
@@ -32,6 +38,7 @@ const HOTEL_HEROES = { xueling: '雪鈴', yunfeng: '允楓', zixin: '子馨', gu
 const PARTS8 = ['第一部分', '第二部分', '第三部分', '第四部分', '第五部分', '第六部分', '第七部分', '第八部分'];
 const ENDING_NAMES = {
   'qianchan-school': { e1: '封存的黎明', e2: '空白名冊', e3: '鏡子後面的走廊', e4: '名字還在（隱藏）' },
+  school3: { e1: '不要再等了', e2: '我記得妳', e3: '姊姊來接妳了', e4: '留下來的人', e5: '第二個人', e6: '所有人都忘了（隱藏）', e7: '她跟我回家了' },
   school2: { e1: '沒有帶聖安', e2: 'TRUE END', e3: '她還在等我', e4: '她現在是我', e5: '逃跑失敗', e6: '邦瑜真正被放下', eh: '隱藏真結局' },
   bang: { pb: '彈珠王', xq_w: '象棋勝', xq_l: '象棋輸', xq_d: '象棋和', cd1: '撲克第一', cd2: '撲克第二', cd3: '撲克第三', mj1: '麻將第一', mj2: '麻將第二', mj3: '麻將第三', mj4: '麻將最後' },
   sea: { solo: '單人破案', duo: '雙人破案' },
@@ -64,6 +71,8 @@ const ENGINE = {
     part: (pi) => pi < 5 ? [['p' + (pi + 1) + '_'], [20, 24, 22, 24, 20][pi]] : [['e1_', 'e2_', 'e3_', 'e4_'], null] },
   school2: { save: 'qc2_v1_save', end: 'qc2_v1_endings', parts: PARTS8, scenes: S2_SCENES,
     part: (pi, S) => pi < 5 ? [['p' + (pi + 1) + '_'], [12, 13, 10, 10, 15][pi]] : pi === 5 ? (S.route === 'def' ? [['pd_', 'ad_'], 19] : [['pe_'], 18]) : [[], 0] },
+  // 第三章：每條路線的謎題不一樣，不顯示每部分的總題數
+  school3: { save: 'qc3_v1_save', end: 'qc3_v1_endings', parts: PARTS8.slice(0, 7), scenes: S3_SCENES, part: (pi) => [['p' + (pi + 1)], null] },
   pupu: { save: 'pupu_v2_save', parts: ['Ⅰ 雲上的秘密', 'Ⅱ 蜜月觀光團', 'Ⅲ 旅館的最後一關'], scenes: PUPU_SCENES,
     flags: [['wrapDone', 'rules', 'parfait', 'tiger', 'seenClouds'], ['feesPaid', 's1', 's2', 's3', 'cert', 'doorTalk', 'sneak', 'dark', 'grille', 'diary', 'stamp'], ['mapDone', 'wardrobe', 'storeSeen', 'stitchNote']] },
 };
