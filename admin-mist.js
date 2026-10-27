@@ -15,7 +15,7 @@ const treasN = (d) => d && d.items && typeof d.items === 'object' ? Object.keys(
 // 迷霧的節慶活動（遊戲裡的任務 id）
 const EVENTS = [['event_double10', '雙十節'], ['event_halloween', '萬聖節（含小活動）'], ['event_xmas', '聖誕節'], ['event_newyear', '跨年'], ['event_lunar', '春節'], ['event_midautumn', '中秋節'], ['event_valentine', '情人節']];
 // 回報問題的遊戲名稱（bug_reports.game）
-const GAME_NAMES = { mist: '迷霧', 'qianchan-school': '千嬋高級中學：第一章', school2: '千嬋高級中學：第二章', pupu: '「屎」瓦帝尼', love: '大直愛情摩天輪', bang: '越南公主', sea: '沈園殘燭', arg: '零號回信', 'qianshan-night': '千山夜錄', hotel1: '五星級救援隊' };
+const GAME_NAMES = { mist: '迷霧', 'qianchan-school': '千嬋高級中學：第一章', school2: '千嬋高級中學：第二章', school3: '千嬋高級中學：第三章', pupu: '「屎」瓦帝尼', love: '大直愛情摩天輪', bang: '越南公主', sea: '沈園殘燭', arg: '零號回信', 'qianshan-night': '千山夜錄', hotel1: '五星級救援隊' };
 const STATUS = [['open', '待處理', ''], ['doing', '處理中', 'warn'], ['done', '已解決', 'ok'], ['ignored', '不處理', 'bad']];
 
 export const CSS_MIST = `
