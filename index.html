@@ -2277,7 +2277,7 @@ function roomCard(g, rank = 0, note = '') {
       <div class="room-cover">
         ${bookCover(g, i)}
         <span class="cv-title">${escapeHTML(g.title)}</span>
-        <span class="room-no">No.${String(g.sort_order).padStart(2, '0')}</span>
+        ${RPGS.includes(g) ? '' : `<span class="room-no">No.${String(g.sort_order).padStart(2, '0')}</span>`}
         ${badge}
         ${rank ? `<span class="room-rank r${rank}" aria-label="本月第 ${rank} 名">${rank}</span>` : ''}
       </div>
@@ -2287,8 +2287,8 @@ function roomCard(g, rank = 0, note = '') {
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
-        <div class="room-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span></div>
-        ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 排行榜・成就</span>` : ''}${gshareBtn(g)}</div>` : ''}
+        <div class="room-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span>`}</div>
+        ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 ${RPGS.includes(g) ? '排行榜' : '排行榜・成就'}</span>` : ''}${gshareBtn(g)}</div>` : ''}
         <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
     </button>`;
@@ -2301,8 +2301,10 @@ const roomStep = () => matchMedia('(max-width: 760px)').matches ? 6 :   // 手�
 // 預設隨機排序：每次打開大廳順序都不一樣，每一款被排在前面的機會都一樣
 let currentTag = '', roomQuery = '', roomSort = 'random', roomShow = roomStep();
 let shuffleKey = {};
+// 書架上的全部遊戲：密室＋大型網頁解謎（迷霧）
+const shelfGames = () => [...games, ...RPGS];
 function reshuffle() {
-  const ids = games.map(g => g.id);
+  const ids = shelfGames().map(g => g.id);
   for (let i = ids.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [ids[i], ids[j]] = [ids[j], ids[i]]; }
   shuffleKey = Object.fromEntries(ids.map((id, i) => [id, i]));
 }
@@ -2322,7 +2324,7 @@ function renderRooms(tag = currentTag) {
   if (tag !== currentTag) roomShow = roomStep();
   currentTag = tag;
   const q = roomQuery.trim().toLowerCase();
-  let list = tag ? games.filter(g => (g.tags ?? []).includes(tag)) : games;
+  let list = tag ? shelfGames().filter(g => (g.tags ?? []).includes(tag)) : shelfGames();
   if (q) list = list.filter(g => [g.title, g.subtitle, ...(g.tags ?? [])].join(' ').toLowerCase().includes(q));
   list = sortRooms(list);
   roomShow = Math.max(roomStep(), Math.min(roomShow, list.length));
@@ -2419,9 +2421,9 @@ const earlyLeft = (g) => g.slug === 'mist' && !mistEarly.launched ? mistEarly.le
 async function loadEarly() {
   try { const { data } = await supabase.rpc('mist_early_slots'); if (data) mistEarly = data; } catch (_) {}
 }
-// ================= 大型網頁解謎遊戲（不是密室：不計時、不分難度、不進排行榜） =================
+// ================= 大型網頁解謎遊戲（不計時、不分難度）：也放進書架（類別：歡樂），排行榜是「去過最多車站」 =================
 const RPGS = [{
-  slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You',
+  id: 'mist', slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You', tags: ['歡樂'], min_players: 1, max_players: 1, duration_min: null,
   description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
   feats: ['台北捷運 118 站', '3D 開放世界', '主線・支線・秘密任務', '00:30 迷霧之城', '手機・電腦都能玩'],
   cover_url: 'covers/mist.jpg', play_url: 'https://mrt.noron.workers.dev/', release_date: '2026-10-23', status: 'available',
@@ -2440,20 +2442,14 @@ function renderRpgs() {
         <p class="sub">${escapeHTML(g.subtitle)}</p>
         <p class="desc">${escapeHTML(g.description)}</p>
         <ul class="rpg-feats">${g.feats.map(f => `<li>${escapeHTML(f)}</li>`).join('')}</ul>
-        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${gshareBtn(g)}${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}${early ? '　正式開放前，只有前 ' + mistEarly.limit + ' 位旅客能先玩' : ''}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
+        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 排行榜</span>` : ''}${gshareBtn(g)}${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}${early ? '　正式開放前，只有前 ' + mistEarly.limit + ' 位旅客能先玩' : ''}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
       </div>
     </button>`;
-  }).join('') + (mistTop.length ? mistBoard() : '');
+  }).join('');
 }
-// 迷霧：探索排行榜（去過最多車站的旅人；同站數比等級）＋自己的旅程
-function mistTrip() {
-  if (!mist) return '';
-  return `<div class="mist-me"><b>🚇 你的旅程</b><span>Lv ${mist.level}</span><span>去過 ${mist.stations} 站</span><span>寶物 ${mist.treasures} / 6</span>${mist.station ? `<span>目前在 ${escapeHTML(mist.station)}</span>` : ''}</div>`;
-}
-function mistBoard() {
-  const rows = mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
-  return `<div class="mist-board"><div class="mist-head"><h3>🗺️ 迷霧探索排行榜</h3><span class="muted">比誰去過最多車站（同站數比等級）</span></div>${mistTrip()}
-    <ol class="mist-list">${rows || '<li class="mist-empty">10/23 20:00 開放後，這裡會列出去過最多車站的旅人。用夜語帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
+// 迷霧：探索排行榜（去過最多車站的旅人；同站數比等級），顯示在「排行榜」視窗裡
+function mistRows() {
+  return mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('') || '<li class="mist-empty">還沒有旅人上榜。用夜語帳號登入迷霧，去過的車站會自動上榜。</li>';
 }
 $('#rpg-list').addEventListener('click', onRoomClick);
 
@@ -2854,19 +2850,20 @@ function achItem(a, ok) {
   return `<div class="ach ${ok ? 'ok' : ''}" title="${escapeHTML(hide ? note : a.desc)}"><i>${hide ? '🔒' : a.icon}</i><b>${hide ? '？？？' : escapeHTML(a.title)}</b><span>${hide ? note : escapeHTML(a.desc)}</span></div>`;
 }
 function openHub(slug, tab = 'rank') {
-  const g = allGames.find(x => x.slug === slug);
+  const g = gameBySlug(slug);
   if (!g) return;
   hubSlug = slug; hubTab = tab;
   $('#gh-cover').innerHTML = g.cover_url ? `<img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="">` : '<span class="gh-noimg"></span>';
   $('#gh-title').textContent = g.title;
-  $('#gh-sub').textContent = `${players(g)}・${dur(g)}`;
+  $('#gh-sub').textContent = RPGS.includes(g) ? '大型網頁解謎・不限時間' : `${players(g)}・${dur(g)}`;
   renderHub();
   const dlg = $('#game-hub');
   if (!dlg.open) dlg.showModal();
 }
 async function renderHub() {
-  const g = allGames.find(x => x.slug === hubSlug);
+  const g = gameBySlug(hubSlug);
   if (!g) return;
+  if (RPGS.includes(g)) return renderMistHub(g);
   const m = mine[g.id], ends = ENDING_COUNT[g.slug];
   const c = achContext(), got = a => achCodes.has(a.code) || (a.test && a.test(c));
   const ach = ACH.filter(a => a.game === g.slug), k = isPlayer() ? ach.filter(got).length : 0;
@@ -2891,6 +2888,17 @@ async function renderHub() {
     const seq = ++hubSeq, html = await rankRows(g.slug, variant, size);
     if (seq === hubSeq && $('#gh-rank')) $('#gh-rank').innerHTML = html;   // 切換很快時，只放最後一次的結果
   }
+}
+// 迷霧的排行榜：比誰去過最多車站（同站數比等級），上面是自己的旅程
+function renderMistHub(g) {
+  const me = !isPlayer() ? '註冊並建立角色後，用夜語帳號登入迷霧，旅程會自動登上排行榜。'
+    : mist ? `我的旅程：Lv ${mist.level}・去過 <b>${mist.stations}</b> 站・寶物 <b>${mist.treasures}</b> / 6${mist.station ? `・目前在 ${escapeHTML(mist.station)}` : ''}`
+    : '你還沒上車。去過的車站越多，排名越前面。';
+  const cta = isOpen(g) ? (!isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] ? '繼續旅程 →' : '進入遊戲 →') : '';
+  $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>
+    <p class="muted small">比誰去過最多車站，同站數比等級。</p><ol class="mist-list">${mistRows()}</ol>
+    ${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}
+    <button class="btn btn-ghost gh-play" type="button" data-gshare="${escapeHTML(g.slug)}">🔗 推薦這款遊戲給朋友</button>`;
 }
 $('#game-hub').addEventListener('click', (e) => {
   const dlg = e.currentTarget;
