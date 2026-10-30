@@ -11,16 +11,16 @@
   <meta property="og:title" content="夜語escape room｜線上密室逃脫・大型網頁解謎遊戲">
   <meta property="og:description" content="建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
   <meta property="og:url" content="https://lobby.noron.workers.dev/">
-  <meta property="og:image" content="https://lobby.noron.workers.dev/covers/og.jpg">
+  <meta property="og:image" content="https://lobby.noron.workers.dev/covers/og.jpg?v=2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:image" content="https://lobby.noron.workers.dev/covers/og.jpg">
+  <meta name="twitter:image" content="https://lobby.noron.workers.dev/covers/og.jpg?v=2">
   <!-- 加到主畫面（App 模式） -->
   <link rel="manifest" href="manifest.webmanifest">
   <meta name="theme-color" content="#140E09">
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png?v=2">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=2">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="夜語escape room">
@@ -177,6 +177,8 @@ body:not(.home) { padding-top: 68px; }
 .chip { font: 14px var(--sans); padding: 6px 16px; border-radius: 999px; border: 1px solid rgba(245,226,196,.2); background: transparent; color: var(--muted); cursor: pointer; }
 .chip:hover { color: var(--parchment); }
 .chip[aria-pressed="true"] { background: var(--crimson); color: var(--parchment); border-color: var(--crimson); }
+.chip-n { font-style: normal; font-size: 12px; margin-left: 6px; opacity: .7; font-variant-numeric: tabular-nums; }
+.chip-n:empty { display: none; }
 .arrow { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(245,226,196,.25); background: transparent; color: var(--parchment); cursor: pointer; font-size: 18px; }
 .arrow:hover { border-color: var(--gold); color: var(--gold); }
 .arrow:disabled { opacity: .3; cursor: default; border-color: rgba(245,226,196,.25); color: var(--parchment); }
@@ -2321,6 +2323,7 @@ function sortRooms(list) {
   return a;
 }
 function renderRooms(tag = currentTag) {
+  updateChipCounts();
   if (tag !== currentTag) roomShow = roomStep();
   currentTag = tag;
   const q = roomQuery.trim().toLowerCase();
@@ -2485,7 +2488,15 @@ async function loadGames() {
   applyGames();
   const tags = CATS;
   filtersEl.innerHTML = ['全部', ...tags].map((t, i) =>
-    `<button class="chip" type="button" data-tag="${i ? escapeHTML(t) : ''}" aria-pressed="${i === 0}">${escapeHTML(t)}</button>`).join('');
+    `<button class="chip" type="button" data-tag="${i ? escapeHTML(t) : ''}" aria-pressed="${i === 0}">${escapeHTML(t)}<em class="chip-n"></em></button>`).join('');
+}
+// 類別按鈕上的數量（書架上這一類有幾本）；登入後未公開的遊戲會多出來，所以每次畫書架都重算
+function updateChipCounts() {
+  const all = shelfGames();
+  filtersEl.querySelectorAll('.chip').forEach(b => {
+    const n = b.dataset.tag ? all.filter(g => (g.tags ?? []).includes(b.dataset.tag)).length : all.length;
+    b.querySelector('.chip-n').textContent = n;
+  });
 }
 
 // 星空：隨機產生星星
@@ -3808,7 +3819,7 @@ async function shareLobby(e) {
   const n = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug)).length;
   const url = LOBBY_URL + (isPlayer() ? `?from=${encodeURIComponent(profile.username)}` : '');
   const seq = shareDlgOpen({ title: '把夜語分享給朋友', lobby: true });
-  shareDlgFill({ msg: `夜語：${n ? `${n} 間` : ''}原創線上密室逃脫，手機、電腦都能玩，還能揪朋友組隊。一起來解謎吧！`, url }, 'covers/og.jpg');
+  shareDlgFill({ msg: `《夜語escape room》：${n ? `${n} 間` : ''}原創線上密室逃脫，手機、電腦都能玩，還能揪朋友組隊。一起來解謎吧！`, url }, 'covers/og.jpg');
   try {   // QR Code：載入失敗就不顯示
     const qrcode = (await import('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm')).default;
     if (seq !== shareSeq) return;
