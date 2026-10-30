@@ -940,6 +940,15 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .hero-next[hidden] { display: none; }
 .cd { font-variant-numeric: tabular-nums; font-weight: 700; color: #FFD9A0; letter-spacing: .03em; }
 /* 分享圖 */
+/* 卡片上的「分享」：誰都能把遊戲推薦給朋友（沒開放的也可以） */
+.room-acts { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.room-acts .room-hub { margin-top: 10px; }
+.gshare { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 5px 12px; border-radius: 999px; border: 1px dashed rgba(232,212,160,.35); color: var(--parchment); font-size: 12px; font-weight: 500; cursor: pointer; }
+.gshare:hover, .gshare:focus-visible { background: rgba(232,212,160,.12); color: var(--gold); outline: none; }
+.spot-body .gshare, .rpg-open .gshare { margin-top: 0; padding: 8px 16px; font-size: 14px; }
+.spot-body .gshare { align-self: flex-start; }
+.rpg-open .gshare { pointer-events: auto; }
+.invite-desc { display: block; margin-top: 10px; font-size: 14px; color: var(--muted); line-height: 1.7; }
 /* 每款遊戲自己的排行榜與成就（從遊戲卡片、繼續你的故事打開） */
 .room-hub { display: inline-flex; align-items: center; gap: 4px; margin-top: 10px; padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(232,212,160,.35); color: var(--gold); font-size: 12px; font-weight: 500; cursor: pointer; }
 .room-hub:hover, .room-hub:focus-visible { background: rgba(232,212,160,.12); outline: none; }
@@ -1137,7 +1146,7 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
       <div class="hero-actions" id="hero-actions">
         <a class="btn btn-gold btn-lg" href="#rooms">挑選密室</a>
       </div>
-      <a class="hero-rpg" href="#rpg"><img src="covers/thumb/mist.jpg" data-full="covers/mist.jpg" alt=""><span><small>大型網頁解謎遊戲・全新登場</small><b>迷霧</b><em><time data-cd="2026-10-23T20:00" data-cd-short>10/23 20:00 開放</time> →</em></span></a>
+      <a class="hero-rpg" href="#rpg"><img src="covers/thumb/mist.jpg" data-full="covers/mist.jpg" alt=""><span><small>大型網頁解謎遊戲・現正開放</small><b>迷霧</b><em>搭上末班車 →</em></span></a>
       <button class="hero-next" id="hero-next" type="button" hidden></button>
       <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面，下次一點就開</button>
       <button class="hero-install" id="lobby-share-btn" type="button">🔗 把夜語工作室分享給朋友</button>
@@ -1233,15 +1242,6 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
         <div id="rpg-list"></div>
       </div>
     </section>
-
-
-
-
-
-
-
-
-
 
     <!-- 我的進度：登入後才顯示 -->
     <section class="section prog-sec" id="progress" hidden>
@@ -1856,7 +1856,7 @@ const RETIRED = ['love'];
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
-const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00' };
+const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '12:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
@@ -2132,7 +2132,7 @@ function roomCard(g, rank = 0, note = '') {
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
         <div class="room-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span></div>
-        ${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 排行榜・成就</span>` : ''}
+        ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 排行榜・成就</span>` : ''}${gshareBtn(g)}</div>` : ''}
         <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
     </button>`;
@@ -2283,7 +2283,7 @@ function renderRpgs() {
         <p class="sub">${escapeHTML(g.subtitle)}</p>
         <p class="desc">${escapeHTML(g.description)}</p>
         <ul class="rpg-feats">${g.feats.map(f => `<li>${escapeHTML(f)}</li>`).join('')}</ul>
-        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}${early ? '　正式開放前，只有前 ' + mistEarly.limit + ' 位旅客能先玩' : ''}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
+        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${gshareBtn(g)}${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}${early ? '　正式開放前，只有前 ' + mistEarly.limit + ' 位旅客能先玩' : ''}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
       </div>
     </button>`;
   }).join('') + (mistTop.length ? mistBoard() : '');
@@ -2726,7 +2726,8 @@ async function renderHub() {
       ${team ? `<div class="rank-variants" role="group" aria-label="選擇人數">${sizes.map(n => `<button class="chip" type="button" data-ghs="${n}" aria-pressed="${n === size}">${n} 人</button>`).join('')}</div>` : ''}
       <p class="muted small">${team ? '依人數分開排名，同一組隊員只取最快的一次。' : '每位玩家只取最快的一次。'}</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
   const cta = !isOpen(g) ? '' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
-  const share = isPlayer() && m ? `<button class="btn btn-ghost gh-play" type="button" data-share="${escapeHTML(g.slug)}">📤 分享給朋友，看誰比較快</button>` : '';
+  const share = (isPlayer() && m ? `<button class="btn btn-ghost gh-play" type="button" data-share="${escapeHTML(g.slug)}">📤 分享我的紀錄，看誰比較快</button>` : '')
+    + `<button class="btn btn-ghost gh-play" type="button" data-gshare="${escapeHTML(g.slug)}">🔗 推薦這款遊戲給朋友</button>`;
   $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>${tabs}${body}${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}${share}`;
   if (hubTab === 'rank') {
     const seq = ++hubSeq, html = await rankRows(g.slug, variant, size);
@@ -3289,7 +3290,7 @@ async function claimRef() {
 }
 function clearInvite() { invite = null; try { localStorage.removeItem(INVITE_KEY); } catch (_) {} }
 function showInvite() {
-  const g = invite && allGames.find(x => x.slug === invite.slug);
+  const g = invite && (allGames.find(x => x.slug === invite.slug) || RPGS.find(x => x.slug === invite.slug));
   if (!g || inviteShown) return;
   inviteShown = true;
   let dlg = $('#invite');
@@ -3300,7 +3301,7 @@ function showInvite() {
       const go = e.target.closest('[data-invite-go]'), hub = e.target.closest('[data-invite-hub]');
       if (hub) { dlg.close(); return openHub(hub.dataset.inviteHub); }
       if (!go || !invite) return;
-      const it = invite, gg = allGames.find(x => x.slug === it.slug); dlg.close();
+      const it = invite, gg = allGames.find(x => x.slug === it.slug) || RPGS.find(x => x.slug === it.slug); dlg.close();
       if (!isPlayer()) return showGate(gg?.title ?? '');   // 邀請先留著，註冊、建好角色回到大廳會再問一次
       clearInvite(); openGame(it.slug, it.join);
     });
@@ -3311,15 +3312,16 @@ function showInvite() {
     <div class="gate-inner">
       <button class="gate-x" data-close type="button" aria-label="關閉">×</button>
       ${g.cover_url ? `<img class="invite-cover" src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="">` : ''}
-      <h2>${invite.join ? '來組隊吧！' : '有人向你下戰帖'}</h2>
-      <p>${who}${invite.join ? ' 開好房間了，邀請你一起玩' : ' 邀請你挑戰'}《${escapeHTML(g.title)}》。
+      <h2>${invite.join ? '來組隊吧！' : invite.t ? '有人向你下戰帖' : '朋友推薦你一款遊戲'}</h2>
+      <p>${who}${invite.join ? ' 開好房間了，邀請你一起玩' : invite.t ? ' 邀請你挑戰' : ' 推薦你玩'}《${escapeHTML(g.title)}》。
+        ${!invite.join && !invite.t && g.description ? `<span class="invite-desc">${escapeHTML(g.description)}</span>` : ''}
         ${invite.t ? `<span class="invite-dare">對方用了 ${fmtTime(invite.t)} 逃出來，你能更快嗎？</span>` : ''}
         ${invite.join ? `<span class="invite-code">房號 ${escapeHTML(invite.join)}</span>` : ''}
         ${!open ? `<span class="invite-dare">這款${upcoming(g) ? `將在 ${openLabel(g)} 開放` : '暫時沒有開放'}。</span>` : ''}</p>
       <div class="gate-actions">
         ${open ? `<button class="btn btn-gold" type="button" data-invite-go>${invite.join ? '加入房間 →' : '接受挑戰 →'}</button>` : ''}
-        ${open ? `<button class="btn btn-ghost" type="button" data-invite-hub="${escapeHTML(g.slug)}">先看排行榜</button>` : ''}
-        <button class="btn btn-ghost" type="button" data-close>之後再說</button>
+        ${open && !RPGS.includes(g) ? `<button class="btn btn-ghost" type="button" data-invite-hub="${escapeHTML(g.slug)}">先看排行榜</button>` : ''}
+        <button class="btn btn-ghost" type="button" data-close>${open ? '之後再說' : '知道了'}</button>
       </div>
       ${!isPlayer() ? '<p class="muted small" style="margin:14px 0 0">要先免費註冊、建立角色才能遊玩，完成後會回到這裡。</p>' : ''}
     </div>`;
@@ -3423,7 +3425,7 @@ setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
 const LOBBY_URL = 'https://lobby.noron.workers.dev/';
 // 每款遊戲的分享連結：g/<slug>/ 是有那款封面預覽圖的小頁面（社群貼文會顯示），打開後帶著參數回到大廳
 // from：誰邀請的、t：他的最佳秒數、join：多人遊戲的房號。新遊戲上線時要複製一份 g/<slug>/index.html
-const SHARE_PAGES = ['qianchan-school', 'school2', 'school3', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1', 'heart'];
+const SHARE_PAGES = ['qianchan-school', 'school2', 'school3', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1', 'heart', 'milner', 'mist'];
 function gameLink(slug, extra = {}) {
   const q = new URLSearchParams(Object.entries(extra).filter(([, v]) => v != null && v !== ''));
   const base = SHARE_PAGES.includes(slug) ? `${LOBBY_URL}g/${slug}/` : LOBBY_URL;
@@ -3570,6 +3572,70 @@ async function openShare(kind, fresh = false) {
     shareDlgFill({ msg, url, file }, src);
   } catch (e) { console.error(e); $('#share-dlg').close(); toast('分享圖做不出來，請稍後再試。'); }
 }
+// ================= 推薦一款遊戲給朋友 =================
+// 誰都可以分享（不用登入、不用玩過），還沒開放的遊戲也可以。分享圖和文字只用公開的封面、簡介、人數、時長、難度，不放紀錄、結局、成就，不會暴雷。
+const gameBySlug = (slug) => allGames.find(x => x.slug === slug) || RPGS.find(x => x.slug === slug);
+const gshareBtn = (g) => g.play_url ? `<span class="gshare" role="button" tabindex="0" data-gshare="${escapeHTML(g.slug)}" title="推薦給朋友" aria-label="把《${escapeHTML(g.title)}》推薦給朋友">🔗 分享</span>` : '';
+async function drawInvite(g, url) {
+  const W = 1080, H = 1350, cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+  const x = cv.getContext('2d'), SERIF = '"Noto Serif TC", "Songti TC", serif', SANS = '"Noto Sans TC", "PingFang TC", sans-serif', gold = '#E8D4A0';
+  try { await Promise.all([document.fonts.load(`900 80px "Noto Serif TC"`, '夜語'), document.fonts.load(`500 30px "Noto Sans TC"`, '夜語')]); } catch (_) {}
+  const bg = x.createLinearGradient(0, 0, 0, H); bg.addColorStop(0, '#141831'); bg.addColorStop(1, '#06070F'); x.fillStyle = bg; x.fillRect(0, 0, W, H);
+  const center = (txt, y, font, color = gold) => { x.font = font; x.fillStyle = color; x.textAlign = 'center'; x.fillText(txt, W / 2, y); };
+  const img = g.cover_url ? await loadImg(g.cover_url) : null;
+  if (img) posterBox(x, img, 0, 0, W, 780, 28);
+  const f = x.createLinearGradient(0, 680, 0, 782); f.addColorStop(0, 'rgba(15,18,38,0)'); f.addColorStop(1, '#10132A'); x.fillStyle = f; x.fillRect(0, 680, W, 102);
+  const soon = upcoming(g), rpg = RPGS.includes(g);
+  center(soon ? `⏳ ${openLabel(g)} 開放・敬請期待` : '朋友推薦你一起來玩', 852, `700 38px ${SERIF}`, '#FFD9A0');
+  let fs = 84; x.font = `900 ${fs}px ${SERIF}`; while (x.measureText(`《${g.title}》`).width > W - 100 && fs > 48) x.font = `900 ${fs -= 6}px ${SERIF}`;
+  center(`《${g.title}》`, 948, x.font);
+  if (g.subtitle) { let ss = 32; x.font = `500 ${ss}px ${SANS}`; while (x.measureText(g.subtitle).width > W - 120 && ss > 22) x.font = `500 ${ss -= 2}px ${SANS}`; center(g.subtitle, 1004, x.font, '#C9C6DD'); }
+  const facts = rpg ? [['不限時間', '時長'], ['手機・電腦', '都能玩'], ['開放世界', '大型網頁解謎']]
+    : [[players(g), '人數'], [dur(g), '時長'], [`${Number(g.difficulty) || 0} / 5`, '難度']];
+  facts.forEach(([v, k], i) => {
+    const cx = W / 6 * (i * 2 + 1);
+    x.textAlign = 'center'; x.fillStyle = gold; x.font = `900 50px ${SERIF}`; x.fillText(v, cx, 1100);
+    x.fillStyle = '#9D9CB8'; x.font = `500 26px ${SANS}`; x.fillText(k, cx, 1142);
+  });
+  if (isPlayer()) center(`${profile.username} 邀請你`, 1200, `700 32px ${SERIF}`, '#ECEAF5');
+  x.fillStyle = 'rgba(232,212,160,.35)'; x.fillRect(W / 2 - 160, 1238, 320, 2);
+  center('夜 語 工 作 室 ・ 線 上 密 室', 1290, `700 32px ${SERIF}`);
+  center(LOBBY_URL.replace('https://', ''), 1330, `500 24px ${SANS}`, '#9D9CB8');
+  try {   // 右下角放 QR Code，朋友掃了就能打開；載入失敗就不放
+    const qrcode = (await import('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm')).default;
+    const q = qrcode(0, 'M'); q.addData(url); q.make();
+    const n = q.getModuleCount(), S = 132, c = S / n, ox = W - S - 40, oy = H - S - 40;
+    x.fillStyle = '#fff'; x.fillRect(ox - 8, oy - 8, S + 16, S + 16); x.fillStyle = '#000';
+    for (let r = 0; r < n; r++) for (let k = 0; k < n; k++) if (q.isDark(r, k)) x.fillRect(ox + k * c, oy + r * c, Math.ceil(c), Math.ceil(c));
+  } catch (_) {}
+  return await new Promise(ok => cv.toBlob(ok, 'image/png'));
+}
+async function shareGame(slug) {
+  const g = gameBySlug(slug);
+  if (!g) return;
+  const url = gameLink(g.slug, { from: isPlayer() ? profile.username : null });
+  const facts = RPGS.includes(g) ? '大型網頁解謎，手機、電腦都能玩' : `${players(g)}・建議 ${dur(g)}・難度 ${Number(g.difficulty) || 0} 顆星`;
+  const msg = `${upcoming(g) ? `《${g.title}》${openLabel(g)} 開放！` : `推薦你玩《${g.title}》！`}${g.description ? g.description + '　' : ''}（${facts}）${upcoming(g) ? '先把連結存起來，開放後一起玩吧' : '一起來玩吧'}`;
+  const seq = shareDlgOpen({ title: upcoming(g) ? `分享即將開放的《${g.title}》` : `把《${g.title}》推薦給朋友` });
+  try {
+    const blob = await drawInvite(g, url);
+    if (seq !== shareSeq) return;
+    const name = `夜語工作室-${g.title}.png`, file = new File([blob], name, { type: 'image/png' }), src = URL.createObjectURL(blob);
+    $('#share-dl').href = src; $('#share-dl').download = name;
+    shareDlgFill({ msg, url, file }, src);
+  } catch (e) { console.error(e); if (seq === shareSeq) shareDlgFill({ msg, url }, g.cover_url); }
+}
+// 卡片本身是按鈕（點了會進遊戲），所以在最前面攔下來
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-gshare]'); if (!b) return;
+  e.preventDefault(); e.stopPropagation();
+  if ($('#game-hub').open) $('#game-hub').close();
+  shareGame(b.dataset.gshare);
+}, true);
+document.addEventListener('keydown', (e) => {
+  const b = e.target.closest?.('span[data-gshare]');
+  if (b && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); e.stopPropagation(); shareGame(b.dataset.gshare); }
+}, true);
 // 分享大廳：誰都可以分享（不用登入）；登入的玩家連結會帶上自己的名字
 async function shareLobby(e) {
   e?.preventDefault();
@@ -3634,7 +3700,7 @@ function renderNewest() {
           <div><span>時長</span>${dur(g)}</div>
           <div><span>難度</span>${locks(g.difficulty)}</div>
         </div>
-        <span class="btn btn-gold">${cta}</span>
+        <span class="btn btn-gold">${cta}</span>${gshareBtn(g)}
       </div>
       <div class="spot-ticket" aria-hidden="true">
         <small>ADMIT ONE</small>
