@@ -1338,7 +1338,7 @@ h1, h2, h3 { letter-spacing: .04em; }
   </section>
 
   <nav class="quick" id="quick" aria-label="快速前往">
-    <a href="#monthly" data-q="monthly">推薦</a><a href="#rooms" data-q="rooms">密室</a><a href="#rpg" data-q="rpg">迷霧</a><a href="#progress" data-q="progress" hidden>我的進度</a><a href="#news" data-q="explore">消息</a><a href="#how" data-q="info">說明</a>
+    <a href="#monthly" data-q="monthly">推薦</a><a href="#rooms" data-q="rooms">密室</a><a href="#progress" data-q="progress" hidden>我的進度</a><a href="#news" data-q="explore">消息</a><a href="#how" data-q="info">說明</a>
   </nav>
 
   <main>
@@ -1384,17 +1384,6 @@ h1, h2, h3 { letter-spacing: .04em; }
       </div>
     </section>
 
-    <!-- 大型網頁解謎遊戲：不是密室，不計時、不分難度 -->
-    <section class="section rpg-sec" id="rpg">
-      <div class="container">
-        <div class="section-head">
-          <span class="eyebrow">PUZZLE ADVENTURE</span>
-          <h2>大型網頁解謎遊戲</h2>
-          <p>沒有倒數計時，也沒有出口——整座城市都是你的地圖</p>
-        </div>
-        <div id="rpg-list"></div>
-      </div>
-    </section>
 
     <!-- 我的進度：登入後才顯示 -->
     <section class="section prog-sec" id="progress" hidden>
@@ -1625,7 +1614,6 @@ h1, h2, h3 { letter-spacing: .04em; }
           <h4>導覽</h4>
           <ul>
             <li><a href="#rooms">密室主題</a></li>
-            <li><a href="#rpg">網頁解謎</a></li>
             <li><a href="#monthly">本月暢銷榜</a></li>
             <li><a href="#how">遊戲方式</a></li>
             <li><a href="#about">關於我們</a></li>
@@ -2112,7 +2100,6 @@ function renderHeader() {
       <a class="logo" href="#top" aria-label="夜語escape room 首頁">${LOGO_SVG}<span class="logo-t">《夜語<em>escape room</em>》</span></a>
       <nav class="nav" id="nav">
         <a href="#rooms">密室主題</a>
-        <a href="#rpg">網頁解謎</a>
         ${isPlayer() ? '<a class="m-only" href="#progress">我的進度</a>' : ''}
         <a href="#monthly">暢銷榜</a>
         <a href="#news">最新消息</a>
@@ -2431,30 +2418,10 @@ const RPGS = [{
   feats: ['台北捷運 118 站', '3D 開放世界', '主線・支線・秘密任務', '00:30 迷霧之城', '手機・電腦都能玩'],
   cover_url: 'covers/mist.jpg', play_url: 'https://mrt.noron.workers.dev/', release_date: '2026-10-23', status: 'available',
 }];
-function renderRpgs() {
-  $('#rpg-list').innerHTML = RPGS.map(g => {
-    const open = isOpen(g), soon = upcoming(g), early = soon && earlyLeft(g);
-    const cta = isAdmin && !open ? '🛠 開發者直接進入 →' : early ? `🎟 搶先體驗（剩 ${early} / ${mistEarly.limit} 名）→` : soon ? `${openLabel(g)} 開放` : !isPlayer() ? '註冊後即可遊玩 →' : '進入遊戲 →';
-    return `
-    <button class="rpg ${open || early ? '' : 'locked'}" data-slug="${escapeHTML(g.slug)}" type="button">
-      <div class="rpg-bg" aria-hidden="true"><img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt=""></div>
-      <div class="rpg-cover"><img src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="${escapeHTML(g.title)} 封面" loading="lazy"></div>
-      <div class="rpg-body">
-        <span class="rpg-kicker">大型網頁解謎遊戲</span>
-        <h3>${escapeHTML(g.title)}</h3>
-        <p class="sub">${escapeHTML(g.subtitle)}</p>
-        <p class="desc">${escapeHTML(g.description)}</p>
-        <ul class="rpg-feats">${g.feats.map(f => `<li>${escapeHTML(f)}</li>`).join('')}</ul>
-        <div class="rpg-open"><span class="btn btn-gold">${cta}</span>${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 排行榜</span>` : ''}${gshareBtn(g)}${soon ? `<span class="rpg-date">⏳ 還有 ${cdSpan(openStr(g))}${early ? '　正式開放前，只有前 ' + mistEarly.limit + ' 位旅客能先玩' : ''}</span>` : g.release_date ? `<span class="rpg-date">📅 ${fmtDate(g.release_date)} 開放</span>` : ''}</div>
-      </div>
-    </button>`;
-  }).join('');
-}
 // 迷霧：探索排行榜（去過最多車站的旅人；同站數比等級），顯示在「排行榜」視窗裡
 function mistRows() {
   return mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('') || '<li class="mist-empty">還沒有旅人上榜。用夜語帳號登入迷霧，去過的車站會自動上榜。</li>';
 }
-$('#rpg-list').addEventListener('click', onRoomClick);
 
 // 類別篩選
 const filtersEl = $('#filters');
@@ -2785,7 +2752,9 @@ function route() {
   if (view === 'character') openCharacter();
   if (view === 'admin') openAdmin();
 
-  let target = view === 'home' && h ? document.getElementById(h) : null;
+  // #rpg（原本的迷霧區，舊消息、主畫面的入口還會連過來）：改成書架上的迷霧那本書
+  if (view === 'home' && h === 'rpg' && booted && !document.querySelector('#room-list .room[data-slug="mist"]')) { roomQuery = ''; $('#room-search').value = ''; setFilter('歡樂'); }
+  let target = view === 'home' && h ? (h === 'rpg' ? document.querySelector('#room-list .room[data-slug="mist"]') ?? document.getElementById('rooms') : document.getElementById(h)) : null;
   if (target) {
     const pnl = target.closest('.hub-panel');
     if (pnl) { const hub = showPanel(pnl.id, true); if (target === pnl) target = hub; }
@@ -3584,7 +3553,6 @@ function renderHeroNext() {
 }
 $('#hero-next').addEventListener('click', (e) => {
   const slug = e.currentTarget.dataset.slug;
-  if (RPGS.some(g => g.slug === slug)) { location.hash = 'rpg'; return; }
   const card = document.querySelector(`.room[data-slug="${slug}"]`);
   if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); else location.hash = 'rooms';
 });
@@ -3974,7 +3942,6 @@ function renderAll() {
   applyGames();
   renderHeader();
   renderHero();
-  renderRpgs();
   renderRooms();
   renderNewest();
   renderMonthly();
