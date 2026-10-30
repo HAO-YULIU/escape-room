@@ -1,4 +1,4 @@
-// 夜語工作室・管理頁：迷霧（大型開放 RPG）專用的分頁
+// 夜語・管理頁：迷霧（大型開放 RPG）專用的分頁
 // 迷霧玩家（存檔、存檔歷史與還原、修改存檔、停用帳號、排行榜隱藏）、回報處理（所有遊戲）、公告與活動、迷霧數據
 // 所有資料都靠資料庫權限保護（is_admin()）：不是管理員，讀不到也寫不了。
 
@@ -174,7 +174,7 @@ export function mountMist(ctx) {
       el.querySelector('[data-reply-open]')?.addEventListener('click', () => { box.hidden = !box.hidden; if (!box.hidden) box.querySelector('textarea').focus(); });
       el.querySelector('[data-reply-send]')?.addEventListener('click', async () => {
         const text = box.querySelector('[data-reply]').value.trim(); if (!text) return toast('請寫要傳的訊息', 'error');
-        const context = `回覆你在《${GAME_NAMES[rep.game] || rep.game || '夜語工作室'}》的回報：「${String(rep.message || '').slice(0, 80)}」`;
+        const context = `回覆你在《${GAME_NAMES[rep.game] || rep.game || '夜語'}》的回報：「${String(rep.message || '').slice(0, 80)}」`;
         const { error: e2 } = await supabase.from('player_messages').insert({ user_id: rep.user_id, report_id: rep.id, context: context.slice(0, 300), body: text.slice(0, 2000) });
         if (e2) return toast('傳送失敗：' + e2.message, 'error');
         if (box.querySelector('[data-done]').checked) await supabase.from('bug_reports').update({ status: 'done', handled_at: new Date().toISOString() }).eq('id', rep.id);

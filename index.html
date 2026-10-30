@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>夜語escape room｜線上密室逃脫・大型網頁解謎遊戲</title>
-  <meta name="description" content="夜語escape room：夜語工作室的線上密室逃脫與大型網頁解謎遊戲。建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
+  <meta name="description" content="夜語escape room：夜語的線上密室逃脫與大型網頁解謎遊戲。建立你的角色，挑一間密室在時間內逃出來，或走進《迷霧》，搭遍台北捷運 118 站。">
   <!-- 分享到脆／IG／LINE 時的預覽圖 -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="夜語escape room">
@@ -965,6 +965,9 @@ footer.simple { text-align: center; color: var(--muted); font-size: 13px; paddin
 .gh-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
 .gh-mine { background: var(--ink-2); border-radius: 10px; padding: 10px 14px; font-size: 13px; color: var(--muted); margin-bottom: 12px; }
 .gh-mine b { color: var(--parchment); }
+.gh-escaped { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin: 0 0 8px; padding: 10px 14px; border-radius: 10px; background: rgba(255,200,119,.08); border: 1px solid rgba(255,200,119,.2); font-size: 14px; }
+.gh-escaped b { font: 700 22px var(--serif); color: var(--gold); font-variant-numeric: tabular-nums; }
+.gh-escaped small { flex-basis: 100%; color: var(--muted); font-size: 12px; }
 .gh-body .rank-list { margin-top: 10px; }
 .gh-body .rank-variants { border-top: 0; padding-top: 0; }
 .gh-play { width: 100%; margin-top: 16px; }
@@ -1256,6 +1259,13 @@ h1, h2, h3 { letter-spacing: .04em; }
   .pick, .pick.p1 { grid-template-columns: 88px minmax(0, 1fr); padding: 12px; gap: 12px; }
   .pick.p2 .desc, .pick.p3 .desc { display: none; }
 }
+@media (max-width: 760px) {
+  .logo { font-size: 17px; gap: 6px; letter-spacing: .02em; min-width: 0; overflow: hidden; }
+  .logo svg { width: 24px; height: 24px; flex: none; }
+  .header-right { flex: none; }
+  .me { flex: none; }
+  .me .avatar-img, .me .avatar-svg { flex: none; max-width: none; }   /* img 的 max-width:100% 會把頭像擠扁 */
+}
 @media (max-width: 420px) {
   .logo { font-size: 15px; gap: 5px; letter-spacing: .02em; min-width: 0; }
   .logo svg { width: 22px; height: 22px; flex: none; }
@@ -1289,7 +1299,7 @@ h1, h2, h3 { letter-spacing: .04em; }
         <a class="hero-rpg" href="#rpg"><img src="covers/thumb/mist.jpg" data-full="covers/mist.jpg" alt=""><span><small>大型網頁解謎・現正開放</small><b>迷霧</b><em>搭上末班車 →</em></span></a>
         <button class="hero-install" id="install-btn" type="button" hidden>📲 加到手機主畫面</button>
         <button class="hero-install" id="lobby-share-btn" type="button">🔗 分享給朋友</button>
-        <a class="hero-install hero-donate" href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">🌙 支持夜語工作室</a>
+        <a class="hero-install hero-donate" href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">🌙 支持夜語</a>
       </div>
     </div>
     <div class="hero-window" aria-hidden="true">
@@ -1349,7 +1359,7 @@ h1, h2, h3 { letter-spacing: .04em; }
         <div class="section-head">
           <span class="eyebrow">BOOKSHELF</span>
           <h2>書架・全部密室</h2>
-          <p>每一本都是夜語工作室原創的線上密室，等你翻開<br><small class="muted">預設隨機排序，每次打開順序都不一樣，每間密室都有一樣的機會被看見</small></p>
+          <p>每一本都是夜語原創的線上密室，等你翻開<br><small class="muted">預設隨機排序，每次打開順序都不一樣，每間密室都有一樣的機會被看見</small></p>
         </div>
         <div class="row-head">
           <div class="filters" id="filters" role="group" aria-label="依類別篩選"></div>
@@ -1397,7 +1407,7 @@ h1, h2, h3 { letter-spacing: .04em; }
         <div class="section-head">
           <span class="eyebrow">NEW THEME</span>
           <h2>全新主題</h2>
-          <p>夜語工作室最新上線的密室</p>
+          <p>夜語最新上線的密室</p>
         </div>
         <div id="newest-box"></div>
       </div>
@@ -1407,7 +1417,7 @@ h1, h2, h3 { letter-spacing: .04em; }
         <div class="section-head">
           <span class="eyebrow">NEWS</span>
           <h2>最新消息</h2>
-          <p>夜語工作室的最新動態</p>
+          <p>夜語的最新動態</p>
         </div>
         <div class="news-list" id="news-list"><p class="empty">讀取中…</p></div>
       </div>
@@ -1416,7 +1426,7 @@ h1, h2, h3 { letter-spacing: .04em; }
 
     <!-- 認識夜語：關於我們、怎麼玩、密室類別、常見問題 -->
     <section class="section hub" id="info">
-      <div class="container"><div class="hub-tabs" role="tablist" aria-label="認識夜語工作室"><button type="button" role="tab" data-panel="about">關於我們</button><button type="button" role="tab" data-panel="how">怎麼玩</button><button type="button" role="tab" data-panel="cats">密室類別</button><button type="button" role="tab" data-panel="faq">常見問題</button></div></div>
+      <div class="container"><div class="hub-tabs" role="tablist" aria-label="認識夜語"><button type="button" role="tab" data-panel="about">關於我們</button><button type="button" role="tab" data-panel="how">怎麼玩</button><button type="button" role="tab" data-panel="cats">密室類別</button><button type="button" role="tab" data-panel="faq">常見問題</button></div></div>
       <div class="hub-panel" id="about" role="tabpanel">
       <div class="container about">
         <div class="about-door-wrap">
@@ -1449,11 +1459,11 @@ h1, h2, h3 { letter-spacing: .04em; }
         </div>
         <div>
           <span class="eyebrow">ABOUT US</span>
-          <h2>歡迎來到夜語工作室</h2>
+          <h2>歡迎來到夜語</h2>
           <p>夜深人靜的時候，總有些聲音特別清楚：走廊盡頭的腳步聲、手機裡沒有署名的訊息、蟬鳴裡藏著的秘密。「夜語」，就是那些只在深夜才說得出口的故事。</p>
           <p>這裡有線上密室逃脫，也有大型網頁解謎遊戲。每一間密室的故事、謎題和機關都是親手設計的；《迷霧》則把整個台北捷運搬進瀏覽器。不用下載，打開就能玩。</p>
           <div class="maker-note">
-            <p>夜語工作室其實是一個大學生的小小興趣 🌙</p>
+            <p>夜語其實是一個大學生的小小興趣 🌙</p>
             <p>遊戲大部分都是用免費的工具一點一點做出來的，難免會有不完美的地方。如果你遇到任何 bug、覺得哪道題目怪怪的，或是有什麼好點子、建議，都非常歡迎寫信告訴我，每一封都會認真看！</p>
           </div>
           <div class="contact-card" id="contact">
@@ -1630,11 +1640,11 @@ h1, h2, h3 { letter-spacing: .04em; }
             <li><a href="#character">我的角色</a></li>
             <li><a href="#" id="install-link" hidden>加到手機主畫面</a></li>
             <li><a href="#" id="lobby-share-link">分享大廳給朋友</a></li>
-            <li><a href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">🌙 支持夜語工作室</a></li>
+            <li><a href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">🌙 支持夜語</a></li>
           </ul>
         </div>
       </div>
-      <div class="copyright">© <span id="year"></span> 夜語escape room・夜語工作室 版權所有</div>
+      <div class="copyright">© <span id="year"></span> 夜語 版權所有</div>
     </div>
   </footer>
   <dialog id="install-help" aria-labelledby="install-title">
@@ -1674,7 +1684,7 @@ h1, h2, h3 { letter-spacing: .04em; }
     <div class="row">
       <button class="btn btn-ghost" id="share-copy" type="button">📋 複製文字</button>
       <button class="btn btn-ghost" id="share-link" type="button">🔗 複製連結</button>
-      <a class="btn btn-ghost wide" id="share-dl" download="夜語工作室.png">⬇ 下載圖片</a>
+      <a class="btn btn-ghost wide" id="share-dl" download="夜語.png">⬇ 下載圖片</a>
     </div>
     <p class="muted" id="share-tip"></p>
     <form method="dialog"><button class="btn btn-ghost" style="width:100%;margin-top:12px">關閉</button></form>
@@ -1712,7 +1722,7 @@ h1, h2, h3 { letter-spacing: .04em; }
             <p>寄到 <b id="fd-email"></b></p>
             <ol class="fd-steps">
               <li>打開信箱，找一封<b>重設密碼（Reset Password）</b>的信，通常幾分鐘內會到。</li>
-              <li>點信裡的<b>連結</b>，會回到夜語工作室，而且已經幫你登入。</li>
+              <li>點信裡的<b>連結</b>，會回到夜語，而且已經幫你登入。</li>
               <li>畫面會跳出<b>「設定新密碼」</b>，輸入兩次新密碼，按「更新密碼」就完成了。</li>
             </ol>
             <ul class="fd-tips">
@@ -1988,7 +1998,7 @@ const LOGO_SVG = `
   <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true"><path d="M20 3 A13 13 0 1 0 29 22 A10.5 10.5 0 1 1 20 3 Z" fill="currentColor"/><path d="M24 6 l1 2.4 2.4 1 -2.4 1 -1 2.4 -1 -2.4 -2.4 -1 2.4 -1 Z" fill="currentColor" opacity=".8"/></svg>`;
 
 // ================= 登入狀態 =================
-let user = null, profile = null, games = [], stats = {}, monthly = [];
+let user = null, profile = null, games = [], stats = {}, monthly = [], escapedBy = {};
 let isAdmin = false;   // 管理員：admins 表只讀得到自己那一列，所以讀得到＝是管理員
 let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）、探索排行榜
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
@@ -2077,8 +2087,9 @@ async function loadMistTop() {
   mistTop = data ?? [];
 }
 async function loadStats() {
-  const [{ data }, { data: top }] = await Promise.all([supabase.rpc('get_game_stats'), supabase.rpc('get_monthly_top', { lim: 3 })]);
+  const [{ data }, { data: top }, { data: esc }] = await Promise.all([supabase.rpc('get_game_stats'), supabase.rpc('get_monthly_top', { lim: 3 }), supabase.rpc('get_escaped_counts')]);
   stats = Object.fromEntries((data ?? []).map(s => [s.game_id, s]));
+  escapedBy = Object.fromEntries((esc ?? []).map(r => [r.game_id, r.escaped]));
   monthly = top ?? [];
 }
 
@@ -2442,7 +2453,7 @@ function mistTrip() {
 function mistBoard() {
   const rows = mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
   return `<div class="mist-board"><div class="mist-head"><h3>🗺️ 迷霧探索排行榜</h3><span class="muted">比誰去過最多車站（同站數比等級）</span></div>${mistTrip()}
-    <ol class="mist-list">${rows || '<li class="mist-empty">10/23 20:00 開放後，這裡會列出去過最多車站的旅人。用夜語工作室帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
+    <ol class="mist-list">${rows || '<li class="mist-empty">10/23 20:00 開放後，這裡會列出去過最多車站的旅人。用夜語帳號登入遊戲，進度就會自動上榜。</li>'}</ol></div>`;
 }
 $('#rpg-list').addEventListener('click', onRoomClick);
 
@@ -2870,6 +2881,7 @@ async function renderHub() {
     ? `<div class="ach-bar"><i style="width:${ach.length ? k / ach.length * 100 : 0}%"></i></div><div class="ach-grid">${ach.map(a => achItem(a, isPlayer() && got(a))).join('')}</div>`
     : `${vs ? `<div class="rank-variants" role="group" aria-label="選擇版本">${vs.map(([v, name]) => `<button class="chip" type="button" data-ghv="${v}" aria-pressed="${v === variant}">${escapeHTML(name)}</button>`).join('')}</div>` : ''}
       ${team ? `<div class="rank-variants" role="group" aria-label="選擇人數">${sizes.map(n => `<button class="chip" type="button" data-ghs="${n}" aria-pressed="${n === size}">${n} 人</button>`).join('')}</div>` : ''}
+      <p class="gh-escaped">🚪 已有 <b>${(escapedBy[g.id] ?? 0).toLocaleString()}</b> 位玩家成功逃脫${team ? '<small>多人一組時，每位隊員各算一人</small>' : ''}</p>
       <p class="muted small">${team ? '依人數分開排名，同一組隊員只取最快的一次。' : '每位玩家只取最快的一次。'}</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
   const cta = !isOpen(g) ? '' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   const share = (isPlayer() && m ? `<button class="btn btn-ghost gh-play" type="button" data-share="${escapeHTML(g.slug)}">📤 分享我的紀錄，看誰比較快</button>` : '')
@@ -2917,7 +2929,7 @@ const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, ba
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
-  { code: 'g_all', game: null, icon: '👑', title: '夜語工作室的常客', desc: '逃出所有開放中的密室', test: c => c.openSlugs.length > 0 && c.openSlugs.every(s => c.cleared.some(r => r.slug === s)) },
+  { code: 'g_all', game: null, icon: '👑', title: '夜語的常客', desc: '逃出所有開放中的密室', test: c => c.openSlugs.length > 0 && c.openSlugs.every(s => c.cleared.some(r => r.slug === s)) },
   { code: 'g_nodeath', game: null, icon: '🛡', title: '毫髮無傷', desc: '零死亡逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths) },
   { code: 'g_nohint', game: null, icon: '🧠', title: '靠自己', desc: '零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.hints) },
   { code: 'g_perfect', game: null, icon: '💎', title: '完美主義', desc: '零死亡、零提示逃出任何一間密室', test: c => c.cleared.some(r => !r.deaths && !r.hints) },
@@ -2928,9 +2940,9 @@ const ACH = [
   { code: 'g_plays10', game: null, icon: '☕', title: '熟面孔', desc: '累計挑戰 10 次密室', test: c => c.recs.length >= 10 },
   { code: 'g_plays30', game: null, icon: '🛋', title: '把這裡當家', desc: '累計挑戰 30 次密室', test: c => c.recs.length >= 30 },
   { code: 'g_cats', game: null, icon: '🎨', title: '四種夜晚', desc: '恐怖、歡樂、情感、懸疑各逃出一間', test: c => CATS.every(t => [...c.slugs].some(s => c.tagsOf(s).includes(t))) },
-  { code: 'g_invite1', game: null, icon: '🤝', title: '帶路人', desc: '邀請 1 位朋友加入夜語工作室', test: c => c.invited >= 1 },
-  { code: 'g_invite3', game: null, icon: '🕯', title: '深夜揪團', desc: '邀請 3 位朋友加入夜語工作室', test: c => c.invited >= 3 },
-  { code: 'g_invite10', game: null, icon: '📣', title: '夜語推廣大使', desc: '邀請 10 位朋友加入夜語工作室', test: c => c.invited >= 10 },
+  { code: 'g_invite1', game: null, icon: '🤝', title: '帶路人', desc: '邀請 1 位朋友加入夜語', test: c => c.invited >= 1 },
+  { code: 'g_invite3', game: null, icon: '🕯', title: '深夜揪團', desc: '邀請 3 位朋友加入夜語', test: c => c.invited >= 3 },
+  { code: 'g_invite10', game: null, icon: '📣', title: '夜語推廣大使', desc: '邀請 10 位朋友加入夜語', test: c => c.invited >= 10 },
   { code: 'g_fast60', game: null, icon: '⚡', title: '閃電逃脫', desc: '60 分鐘內逃出任何一間密室', test: c => c.cleared.some(r => r.clear_time_sec != null && r.clear_time_sec <= 3600) },
   { code: 'g_long', game: null, icon: '🕰', title: '長夜漫漫', desc: '花了 3 小時以上，還是逃出來了', test: c => c.cleared.some(r => r.clear_time_sec >= 10800) },
   { code: 'g_day3', game: null, icon: '📅', title: '一日三逃', desc: '同一天逃出 3 間不同的密室', test: c => { const d = {}; for (const r of c.cleared) (d[c.day(r)] ??= new Set()).add(r.slug); return Object.values(d).some(x => x.size >= 3); } },
@@ -3102,7 +3114,7 @@ function achContext() {
     day: r => new Date(r.updated_at || r.created_at).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }),
     cl: s => cleared.filter(r => r.slug === s), end: (s, e) => !!endings[s]?.has(e) };
 }
-// 「我的護照與成就」只列夜語工作室共通的成就；各遊戲自己的成就放在那款遊戲的「排行榜・成就」，這裡只放完成度按鈕
+// 「我的護照與成就」只列夜語共通的成就；各遊戲自己的成就放在那款遊戲的「排行榜・成就」，這裡只放完成度按鈕
 function renderAch() {
   const c = achContext();
   const got = a => achCodes.has(a.code) || (a.test && a.test(c));
@@ -3112,7 +3124,7 @@ function renderAch() {
     const list = ACH.filter(a => a.game === g.slug), gk = list.filter(got).length;
     return `<button type="button" class="ach-tab ${gk === list.length ? 'full' : ''}" data-hub="${escapeHTML(g.slug)}" data-hub-tab="ach">${escapeHTML(g.title)}<em>${gk}/${list.length}</em></button>`;
   }).join('');
-  return `<div class="ach-head"><h4>🏆 夜語工作室成就</h4><span class="muted">全部 ${n} / ${ACH.length}</span></div>
+  return `<div class="ach-head"><h4>🏆 夜語成就</h4><span class="muted">全部 ${n} / ${ACH.length}</span></div>
     <div class="ach-panel"><div class="ach-bar"><i style="width:${common.length ? k / common.length * 100 : 0}%"></i></div>
     <div class="ach-grid">${common.map(a => achItem(a, got(a))).join('')}</div></div>
     ${perGame ? `<p class="muted small ach-tip">各遊戲的成就：點遊戲名稱，打開那款遊戲的排行榜・成就。</p><div class="ach-tabs">${perGame}</div>` : ''}`;
@@ -3164,7 +3176,7 @@ const SPECIAL_TITLES = [
   { code: 't_flawless5', name: '無瑕傳說', rarity: 'legend', desc: '零死亡、零提示逃出 5 間不同的密室', test: (c) => new Set(c.cleared.filter(r => !r.deaths && !r.hints).map(r => r.slug)).size >= 5 },
   { code: 't_bookofends', name: '結局之書', rarity: 'legend', desc: '收集 5 款密室的全部結局', test: (c, has) => ENDING_ALLS.filter(x => has(x)).length >= 5 },
   { code: 't_collector', name: '稱號收藏家', rarity: 'legend', desc: '拿到 10 個特殊稱號', meta: true, test: (c) => c.spTitles >= 10 },
-  { code: 't_dev', name: '夜語工作室・開發者', rarity: 'legend', desc: '夜語工作室的工作人員', hidden: true, test: () => isAdmin },
+  { code: 't_dev', name: '夜語・開發者', rarity: 'legend', desc: '夜語的工作人員', hidden: true, test: () => isAdmin },
 ];
 const levelTitles = () => TITLES.map(([n, name]) => ({ code: `lv:${n}`, kind: 'lv', name, need: n, rarity: LV_RARITY[n] ?? 'common', desc: n ? `解鎖 ${n} 個成就` : '一開始就有' }));
 // 所有稱號和有沒有拿到：[{ code, kind, name, rarity, desc, ok }]
@@ -3197,9 +3209,9 @@ async function equipTitle(code) {
 const titleChip = (t) => `<span class="ttl ${t.rarity ?? 'common'}"><i>${RARITY[t.rarity ?? 'common']}</i>${escapeHTML(t.name)}</span>`;
 
 // ================= 成就與稱號（英雄區「成就」按鈕）：解鎖和還沒解鎖的都列出來 =================
-// 成就依「夜語工作室（通用）」和各款遊戲分組；下架或還沒開放、也沒解鎖過的遊戲不列
+// 成就依「夜語（通用）」和各款遊戲分組；下架或還沒開放、也沒解鎖過的遊戲不列
 function achGroups(got) {
-  return [{ key: null, name: '夜語工作室' }, ...allGames.filter(g => ACH.some(a => a.game === g.slug)).map(g => ({ key: g.slug, name: g.title, g }))]
+  return [{ key: null, name: '夜語' }, ...allGames.filter(g => ACH.some(a => a.game === g.slug)).map(g => ({ key: g.slug, name: g.title, g }))]
     .map(gr => ({ ...gr, items: ACH.filter(a => a.game === gr.key) }))
     .filter(gr => gr.items.length && (!gr.g || isOpen(gr.g) || gr.items.some(a => got.has(a.code))))
     .map(gr => ({ ...gr, n: gr.items.filter(a => got.has(a.code)).length }));
@@ -3264,7 +3276,7 @@ function renderProgress() {
     const m = mine[g.id], ok = m?.best != null, ends = ENDING_COUNT[g.slug];
     return `<span class="stamp ${ok ? 'got' : ''}" title="${escapeHTML(g.title)}${ok ? '：已逃脫' : '：尚未逃脫'}">${escapeHTML(stampName(g))}${ok && ends ? `<small>${m.endings.size}/${ends}</small>` : ''}</span>`;
   }).join('');
-  const nextTxt = t.next ? `<p class="prog-next">再解鎖 ${t.next[0] - gotList.length} 個成就 → 「${t.next[1]}」<i><b style="width:${(gotList.length - t.from) / (t.next[0] - t.from) * 100}%"></b></i></p>` : '<p class="prog-next">你已經是夜語工作室的傳說了。</p>';
+  const nextTxt = t.next ? `<p class="prog-next">再解鎖 ${t.next[0] - gotList.length} 個成就 → 「${t.next[1]}」<i><b style="width:${(gotList.length - t.from) / (t.next[0] - t.from) * 100}%"></b></i></p>` : '<p class="prog-next">你已經是夜語的傳說了。</p>';
   const mistCard = mist ? `<div class="prog-card"><img src="covers/thumb/mist.jpg" data-full="covers/mist.jpg" alt="" loading="lazy"><div><h4>迷霧</h4>
       <p class="prog-st"><b class="mid">🚇 旅程中</b>・Lv ${mist.level}${mist.station ? `・在${escapeHTML(mist.station)}` : ''}</p>
       <div class="prog-bar"><i style="width:${Math.min(100, mist.stations / 118 * 100)}%"></i></div><span class="prog-meta">去過 ${mist.stations} / 118 站・寶物 ${mist.treasures} / 6</span>
@@ -3369,7 +3381,7 @@ async function openProfile() {
     <button class="linkbtn" type="button" data-ach="ach">查看全部成就（包含還沒解鎖的）→</button>
     <h4>👥 邀請的朋友 <small class="pf-sub" id="pf-inv-n">讀取中…</small></h4>
     <div id="pf-inv"></div>
-    <p class="pf-donate">🌙 所有遊戲都免費。喜歡這些故事的話，歡迎 <a href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">支持夜語工作室</a></p>
+    <p class="pf-donate">🌙 所有遊戲都免費。喜歡這些故事的話，歡迎 <a href="https://portaly.cc/yuxuanw/support" target="_blank" rel="noopener">支持夜語</a></p>
     <div class="pf-acts">
       <a class="btn btn-ghost" href="#character" data-pf-close>換個造型</a>
       <button class="btn btn-gold" type="button" data-share="__passport">分享我的護照</button>
@@ -3508,8 +3520,8 @@ function checkNewAch() {
   setTimeout(() => el.remove(), 12000);
 }
 
-// ================= 夜語工作室的訊息：管理員回覆回報、個別通知 =================
-const msgHTML = (m) => `<div class="msg-item${m.read_at ? '' : ' new'}">${m.context ? `<small>${escapeHTML(m.context)}</small>` : ''}${escapeHTML(m.body)}<small>— 夜語工作室・${new Date(m.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}</small></div>`;
+// ================= 夜語的訊息：管理員回覆回報、個別通知 =================
+const msgHTML = (m) => `<div class="msg-item${m.read_at ? '' : ' new'}">${m.context ? `<small>${escapeHTML(m.context)}</small>` : ''}${escapeHTML(m.body)}<small>— 夜語・${new Date(m.created_at).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false })}</small></div>`;
 async function markMsgsRead() {
   if (!myMsgs.some(m => !m.read_at)) return;
   const { error } = await supabase.rpc('mark_my_messages_read');
@@ -3520,7 +3532,7 @@ function checkNewMsgs() {
   const fresh = myMsgs.filter(m => !m.read_at);
   if (!fresh.length) return;
   const el = document.createElement('div'); el.className = 'ach-pop msg-pop'; el.setAttribute('role', 'status');
-  el.innerHTML = `<h4>📬 夜語工作室傳了訊息給你${fresh.length > 1 ? ` ×${fresh.length}` : ''}</h4>
+  el.innerHTML = `<h4>📬 夜語傳了訊息給你${fresh.length > 1 ? ` ×${fresh.length}` : ''}</h4>
     ${fresh.slice(0, 2).map(msgHTML).join('')}
     ${fresh.length > 2 ? `<p class="muted" style="margin:8px 0 0;font-size:13px">還有 ${fresh.length - 2} 則，在「我的進度」裡看得到。</p>` : ''}
     <div class="row"><a class="btn btn-gold" href="#progress">查看全部</a><button class="btn btn-ghost" type="button">知道了</button></div>`;
@@ -3637,7 +3649,7 @@ async function drawShare(kind, fresh = false) {
     });
     const cleared = list.filter(g => mine[g.id]?.best != null).length;
     stat([[`${cleared}/${list.length}`, '逃出的密室'], [`${got.length}`, '解鎖成就'], [`${Object.values(mine).reduce((n, m) => n + m.endings.size, 0)}`, '收集結局']], 1090);
-    msg = `我在夜語工作室已經逃出 ${cleared} 間密室，稱號「${t.name}」。你敢來挑戰嗎？`;
+    msg = `我在夜語已經逃出 ${cleared} 間密室，稱號「${t.name}」。你敢來挑戰嗎？`;
     url = `${LOBBY_URL}?from=${encodeURIComponent(profile.username)}`;
   } else {
     const g = allGames.find(z => z.slug === kind), m = mine[g.id] ?? { best: null, plays: 0, endings: new Set() }, won = m.best != null;
@@ -3713,7 +3725,7 @@ async function openShare(kind, fresh = false) {
   try {
     const { blob, msg, url } = await drawShare(kind, fresh);
     if (seq !== shareSeq) return;
-    const name = `夜語工作室-${g ? g.title : '護照'}.png`, file = new File([blob], name, { type: 'image/png' }), src = URL.createObjectURL(blob);
+    const name = `夜語-${g ? g.title : '護照'}.png`, file = new File([blob], name, { type: 'image/png' }), src = URL.createObjectURL(blob);
     $('#share-dl').href = src; $('#share-dl').download = name;
     shareDlgFill({ msg, url, file }, src);
   } catch (e) { console.error(e); $('#share-dlg').close(); toast('分享圖做不出來，請稍後再試。'); }
@@ -3766,7 +3778,7 @@ async function shareGame(slug) {
   try {
     const blob = await drawInvite(g, url);
     if (seq !== shareSeq) return;
-    const name = `夜語工作室-${g.title}.png`, file = new File([blob], name, { type: 'image/png' }), src = URL.createObjectURL(blob);
+    const name = `夜語-${g.title}.png`, file = new File([blob], name, { type: 'image/png' }), src = URL.createObjectURL(blob);
     $('#share-dl').href = src; $('#share-dl').download = name;
     shareDlgFill({ msg, url, file }, src);
   } catch (e) { console.error(e); if (seq === shareSeq) shareDlgFill({ msg, url }, g.cover_url); }
@@ -3787,8 +3799,8 @@ async function shareLobby(e) {
   e?.preventDefault();
   const n = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug)).length;
   const url = LOBBY_URL + (isPlayer() ? `?from=${encodeURIComponent(profile.username)}` : '');
-  const seq = shareDlgOpen({ title: '把夜語工作室分享給朋友', lobby: true });
-  shareDlgFill({ msg: `夜語工作室：${n ? `${n} 間` : ''}原創線上密室逃脫，手機、電腦都能玩，還能揪朋友組隊。一起來解謎吧！`, url }, 'covers/og.jpg');
+  const seq = shareDlgOpen({ title: '把夜語分享給朋友', lobby: true });
+  shareDlgFill({ msg: `夜語：${n ? `${n} 間` : ''}原創線上密室逃脫，手機、電腦都能玩，還能揪朋友組隊。一起來解謎吧！`, url }, 'covers/og.jpg');
   try {   // QR Code：載入失敗就不顯示
     const qrcode = (await import('https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/+esm')).default;
     if (seq !== shareSeq) return;
@@ -3804,7 +3816,7 @@ $('#share-go').addEventListener('click', async () => {
   try {
     // 能分享圖片就連圖一起分享；不行（電腦、部分瀏覽器）就分享文字和連結
     if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], text: shareText() });
-    else await navigator.share({ title: '夜語工作室', text: msg, url });
+    else await navigator.share({ title: '夜語', text: msg, url });
   } catch (e) { if (e?.name !== 'AbortError') toast('這台裝置沒辦法直接分享，改用下面的按鈕吧。'); }
 });
 const SHARE_APPS = {
@@ -3869,7 +3881,7 @@ function renderMonthly() {
     if (!top.includes(g)) top.push(g);
   }
   $('#monthly-list').innerHTML = top.length
-    ? top.map((g, i) => pickCard(g, i + 1, !byId[g.id] ? '✨ 本月等你來挑戰' : isAdmin && byId[g.id].players != null ? `🔥 本月 ${byId[g.id].players} 人挑戰` : '🔥 本月熱門')).join('')   // 人數只給開發者看
+    ? top.map((g, i) => pickCard(g, i + 1, !byId[g.id] ? '✨ 本月等你來挑戰' : byId[g.id].players != null ? `🔥 本月 ${byId[g.id].players} 人挑戰` : '🔥 本月熱門')).join('')   // 只有這三款公開人數（get_monthly_top 最多回傳 3 款）
     : '<p class="empty">密室正在佈置中，敬請期待。</p>';
 }
 function pickCard(g, rank, note) {
@@ -4082,7 +4094,7 @@ function initFx() {
     let c = { d: today(), n: 0 }; try { const o = JSON.parse(localStorage.getItem(STAR_KEY)); if (o?.d === c.d) c = o; } catch (_) {}
     c.n++; try { localStorage.setItem(STAR_KEY, JSON.stringify(c)); } catch (_) {}
     const r = hero.getBoundingClientRect(); spark(e.clientX - r.left, e.clientY - r.top, 14); st.remove();
-    toast(c.n === 1 ? '🌠 接住一顆流星！快許個願。' : c.n === 7 ? '🌠 七顆流星……夜語工作室聽見你的願望了。今晚的密室，會對你溫柔一點。'
+    toast(c.n === 1 ? '🌠 接住一顆流星！快許個願。' : c.n === 7 ? '🌠 七顆流星……夜語聽見你的願望了。今晚的密室，會對你溫柔一點。'
       : c.n % 10 === 0 ? `🌠 今晚已經接住 ${c.n} 顆流星了，天空快被你接光了！` : `🌠 今晚第 ${c.n} 顆流星。`);
   }, true);
   // 城市的窗：點亮著的窗，燈會熄掉，窗邊好像站著誰
