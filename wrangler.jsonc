@@ -1,0 +1,7 @@
+// 大廳發佈在 Cloudflare Workers（lobby）：https://lobby.noron.workers.dev/
+// 把 repo 根目錄當成靜態檔案發佈；不發佈的檔案列在 .assetsignore
+{
+  "name": "lobby",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "." }
+}
