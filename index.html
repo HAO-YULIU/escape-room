@@ -1992,7 +1992,7 @@ let user = null, profile = null, games = [], stats = {}, monthly = [], escapedBy
 let isAdmin = false;   // 管理員：admins 表只讀得到自己那一列，所以讀得到＝是管理員
 let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）、探索排行榜
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
-const RETIRED = [];
+const RETIRED = ['love'];
 // 還沒公開的遊戲：只有開發者看得到（卡片標「未公開」），一般玩家在大廳、排行榜、推薦、成就都看不到；要公開時把代號拿掉
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
@@ -3906,14 +3906,14 @@ function pickCard(g, rank, note) {
 // 已下架遊戲
 function renderRetired() {
   $('#retired').hidden = !retiredGames.length;
-  // 已下架的遊戲只留名字（不放封面、介紹、網址）；點了跳出寄信索取的說明
+  // 已下架的遊戲只留名字（不放封面、介紹、網址）；點了跳出寄信索取的說明（開發者點了直接進入）
   $('#retired-list').innerHTML = retiredGames.map(g => {
     const m = mine[g.id];
     return `
     <button class="room retired-name" data-slug="${escapeHTML(g.slug)}" type="button">
       <b>${escapeHTML(g.title)}</b>
       ${m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>` : m ? '<span class="badge played">玩過</span>' : ''}
-      <span class="room-cta">✉️ 寄信索取 →</span>
+      <span class="room-cta">${isAdmin && g.play_url ? '🛠 開發者直接進入 →' : '✉️ 寄信索取 →'}</span>
     </button>`;
   }).join('');
 }
@@ -3922,6 +3922,7 @@ $('#retired-list').addEventListener('click', (e) => {
   if (!card) return;
   const g = retiredGames.find(x => x.slug === card.dataset.slug);
   if (!g) return;
+  if (isAdmin && g.play_url) return goPlay(g.play_url);
   const subject = encodeURIComponent(`想玩已下架的遊戲：${g.title}`);
   let dlg = $('#retired-dlg');
   if (!dlg) {
