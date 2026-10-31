@@ -2307,7 +2307,21 @@ function sortRooms(list) {
   else if (k === 'easy') a.sort((x, y) => soonLast(x, y) || (x.difficulty || 0) - (y.difficulty || 0));
   else if (k === 'short') a.sort((x, y) => soonLast(x, y) || (x.duration_min ?? Infinity) - (y.duration_min ?? Infinity));
   else a.sort((x, y) => (x.sort_order || 0) - (y.sort_order || 0));
-  return a;
+  return keepSeries(a);
+}
+// 系列作（例如千嬋高級中學三部曲）在書架上排在一起，照章節順序。
+// 整個系列放在第一本（第一章）原本的位置，隨機排序時系列跟其他密室被排在前面的機會一樣。
+const SERIES = [['qianchan-school', 'school2', 'school3']];
+function keepSeries(list) {
+  let out = list;
+  for (const slugs of SERIES) {
+    const members = slugs.map(s => out.find(g => g.slug === s)).filter(Boolean);
+    if (members.length < 2) continue;
+    const rest = out.filter(g => !members.includes(g));
+    const at = out.slice(0, out.indexOf(members[0])).filter(g => !members.includes(g)).length;
+    out = [...rest.slice(0, at), ...members, ...rest.slice(at)];
+  }
+  return out;
 }
 function renderRooms(tag = currentTag) {
   updateChipCounts();
