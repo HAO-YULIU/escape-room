@@ -2416,7 +2416,8 @@ const RPGS = [{
   id: 'mist', slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You', tags: ['歡樂'], min_players: 1, max_players: 1, duration_min: null,
   description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
   feats: ['台北捷運 118 站', '3D 開放世界', '主線・支線・秘密任務', '00:30 迷霧之城', '手機・電腦都能玩'],
-  cover_url: 'covers/mist.jpg', play_url: 'https://mrt.noron.workers.dev/', release_date: '2026-10-23', status: 'available',
+  // 封面：原圖是正方形（covers/mist.jpg），書架用中間裁成 2:3 的版本
+  cover_url: 'covers/mist-book.jpg', play_url: 'https://mrt.noron.workers.dev/', release_date: '2026-10-23', status: 'available',
 }];
 // 迷霧：探索排行榜（去過最多車站的旅人；同站數比等級），顯示在「排行榜」視窗裡
 function mistRows() {
@@ -3265,7 +3266,7 @@ function renderProgress() {
     return `<span class="stamp ${ok ? 'got' : ''}" title="${escapeHTML(g.title)}${ok ? '：已逃脫' : '：尚未逃脫'}">${escapeHTML(stampName(g))}${ok && ends ? `<small>${m.endings.size}/${ends}</small>` : ''}</span>`;
   }).join('');
   const nextTxt = t.next ? `<p class="prog-next">再解鎖 ${t.next[0] - gotList.length} 個成就 → 「${t.next[1]}」<i><b style="width:${(gotList.length - t.from) / (t.next[0] - t.from) * 100}%"></b></i></p>` : '<p class="prog-next">你已經是夜語的傳說了。</p>';
-  const mistCard = mist ? `<div class="prog-card"><img src="covers/thumb/mist.jpg" data-full="covers/mist.jpg" alt="" loading="lazy"><div><h4>迷霧</h4>
+  const mistCard = mist ? `<div class="prog-card"><img src="covers/thumb/mist-book.jpg" data-full="covers/mist-book.jpg" alt="" loading="lazy"><div><h4>迷霧</h4>
       <p class="prog-st"><b class="mid">🚇 旅程中</b>・Lv ${mist.level}${mist.station ? `・在${escapeHTML(mist.station)}` : ''}</p>
       <div class="prog-bar"><i style="width:${Math.min(100, mist.stations / 118 * 100)}%"></i></div><span class="prog-meta">去過 ${mist.stations} / 118 站・寶物 ${mist.treasures} / 6</span>
       <div class="prog-acts"><button class="btn btn-gold" type="button" data-go="mist">繼續旅程 →</button></div></div></div>` : '';
