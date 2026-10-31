@@ -510,6 +510,8 @@ body:not(.home) { padding-top: 68px; }
 .spot-ticket strong { font: 900 34px/1 var(--serif); color: var(--crimson); }
 .empty { text-align: center; color: var(--muted); padding: 50px 0; grid-column: 1 / -1; width: 100%; }
 
+.vdiff { display: inline-flex; align-items: center; gap: 3px; margin-left: 4px; white-space: nowrap; }
+.vdiff small { font-size: .8em; opacity: .8; }
 /* 關於我們 */
 .about { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
 .about-art { aspect-ratio: 1; max-width: 440px; width: 100%; margin-inline: auto; border-radius: 50% 50% var(--radius) var(--radius); overflow: hidden; border: 2px solid var(--gold-dark); box-shadow: 0 0 0 10px rgba(255,200,119,.05), 0 0 80px rgba(255,176,96,.25); }
@@ -1790,34 +1792,64 @@ const OPTIONS = {
     items: [
       { id: 'short', name: '短髮' }, { id: 'long', name: '長髮' }, { id: 'ponytail', name: '馬尾' },
       { id: 'spiky', name: '刺蝟頭' }, { id: 'bob', name: '鮑伯頭' }, { id: 'bald', name: '光頭' },
+      { id: 'curly', name: '捲髮' }, { id: 'bun', name: '包包頭' }, { id: 'twintails', name: '雙馬尾' }, { id: 'side', name: '旁分' },
     ],
   },
-  hairColor: { label: '髮色', type: 'color', items: ['#1E1A18', '#5A3A22', '#A8692F', '#D9B66B', '#B8B8B8', '#8E3B46'] },
+  hairColor: { label: '髮色', type: 'color', items: ['#1E1A18', '#5A3A22', '#A8692F', '#D9B66B', '#B8B8B8', '#8E3B46', '#EDE6D6', '#3A5A8C', '#D98AA8', '#4E7A5A', '#6B4A8E'] },
+  brows: {
+    label: '眉毛', type: 'choice',
+    items: [{ id: 'none', name: '無' }, { id: 'soft', name: '柔和' }, { id: 'thick', name: '粗眉' }, { id: 'angry', name: '生氣' }, { id: 'worried', name: '擔心' }],
+  },
   eyes: {
     label: '眼睛', type: 'choice',
-    items: [{ id: 'round', name: '圓眼' }, { id: 'happy', name: '笑眼' }, { id: 'sharp', name: '銳利' }, { id: 'sleepy', name: '睏睏' }],
+    items: [{ id: 'round', name: '圓眼' }, { id: 'happy', name: '笑眼' }, { id: 'sharp', name: '銳利' }, { id: 'sleepy', name: '睏睏' }, { id: 'wink', name: '眨眼' }, { id: 'big', name: '大眼' }],
+  },
+  eyeColor: { label: '眼睛顏色', type: 'color', items: ['#2A211C', '#5A3A22', '#2F4A8C', '#3E6B4A', '#8E3B46', '#6B4A8E'] },
+  mouth: {
+    label: '嘴巴', type: 'choice',
+    items: [{ id: 'smile', name: '微笑' }, { id: 'grin', name: '大笑' }, { id: 'flat', name: '面無表情' }, { id: 'open', name: '驚訝' }, { id: 'smirk', name: '壞笑' }, { id: 'cat', name: '貓嘴' }],
+  },
+  mark: {
+    label: '臉上', type: 'choice',
+    items: [{ id: 'none', name: '無' }, { id: 'freckles', name: '雀斑' }, { id: 'mole', name: '淚痣' }, { id: 'bandage', name: 'OK 繃' }, { id: 'blush', name: '大腮紅' }, { id: 'scar', name: '傷疤' }],
   },
   outfit: {
     label: '服裝', type: 'choice',
     items: [
       { id: 'coat', name: '偵探風衣' }, { id: 'hoodie', name: '連帽衫' }, { id: 'suit', name: '西裝' },
       { id: 'labcoat', name: '實驗袍' }, { id: 'vest', name: '探險背心' },
+      { id: 'uniform', name: '學生制服' }, { id: 'sweater', name: '高領毛衣' }, { id: 'cape', name: '魔法斗篷' },
     ],
   },
-  outfitColor: { label: '服裝顏色', type: 'color', items: ['#8A6A45', '#2F4A5C', '#5B6E4F', '#7A2E2E', '#3B3346', '#C9A255'] },
+  outfitColor: { label: '服裝顏色', type: 'color', items: ['#8A6A45', '#2F4A5C', '#5B6E4F', '#7A2E2E', '#3B3346', '#C9A255', '#1E1E24', '#E8E2D4', '#D98AA8', '#3A6E8C'] },
   accessory: {
     label: '配件', type: 'choice',
     items: [
       { id: 'none', name: '無' }, { id: 'glasses', name: '眼鏡' }, { id: 'monocle', name: '單片眼鏡' },
       { id: 'hat', name: '偵探帽' }, { id: 'headphones', name: '耳機' },
+      { id: 'catears', name: '貓耳' }, { id: 'mask', name: '口罩' }, { id: 'flower', name: '髮夾花' }, { id: 'crown', name: '小皇冠' }, { id: 'witch', name: '巫師帽' }, { id: 'eyepatch', name: '眼罩' },
     ],
   },
+  bg: { label: '背景顏色', type: 'color', items: ['#2F2216', '#1A2238', '#1E2A22', '#2E2440', '#3A1E22', '#101014', '#4A3A28', '#24363A'] },
 };
 
 const DEFAULT_APPEARANCE = {
   skin: '#EBC09A', hair: 'short', hairColor: '#1E1A18', eyes: 'round',
   outfit: 'coat', outfitColor: '#8A6A45', accessory: 'none',
+  // 11/1 新增的選項：預設值畫出來跟以前一模一樣（舊角色不會變）
+  brows: 'none', eyeColor: '#2A211C', mouth: 'smile', mark: 'none',
 };
+// 外觀是玩家自己存的資料，畫進 SVG 之前把顏色限制成 #RRGGBB，其他值不認得就用預設
+const HEX = /^#[0-9a-f]{6}$/i;
+function cleanAppearance(appearance) {
+  const a = { ...DEFAULT_APPEARANCE };
+  for (const [k, v] of Object.entries(appearance || {})) {
+    const opt = OPTIONS[k];
+    if (!opt) continue;
+    if (opt.type === 'color' ? HEX.test(v) : opt.items.some(i => i.id === v)) a[k] = v;
+  }
+  return a;
+}
 
 function randomAppearance() {
   const a = {};
@@ -1840,6 +1872,9 @@ function hairBack(style, c) {
   if (style === 'long') return `<path d="M52 100 Q50 48 100 46 Q150 48 148 100 L152 182 Q126 192 100 188 Q74 192 48 182 Z" fill="${c}"/>`;
   if (style === 'ponytail') return `<path d="M140 78 Q178 86 170 140 Q166 168 150 176 Q160 140 142 108 Z" fill="${c}"/>`;
   if (style === 'bob') return `<path d="M50 104 Q48 50 100 48 Q152 50 150 104 L152 140 Q140 150 128 146 L72 146 Q60 150 48 140 Z" fill="${c}"/>`;
+  if (style === 'curly') return `<g fill="${c}"><circle cx="58" cy="96" r="16"/><circle cx="142" cy="96" r="16"/><circle cx="54" cy="124" r="14"/><circle cx="146" cy="124" r="14"/><circle cx="60" cy="148" r="12"/><circle cx="140" cy="148" r="12"/></g>`;
+  if (style === 'bun') return `<circle cx="100" cy="36" r="22" fill="${c}"/>`;
+  if (style === 'twintails') return `<path d="M54 92 Q22 104 26 156 Q30 184 46 190 Q38 150 56 116 Z M146 92 Q178 104 174 156 Q170 184 154 190 Q162 150 144 116 Z" fill="${c}"/>`;
   return '';
 }
 
@@ -1854,14 +1889,26 @@ function hairFront(style, c) {
       return `<path d="M52 108 Q50 50 100 48 Q150 50 148 108 Q146 84 138 78 L62 78 Q54 84 52 108 Z" fill="${c}"/>`;
     case 'spiky':
       return `<path d="M54 102 L52 70 L66 78 L68 46 L84 64 L96 38 L106 62 L122 42 L128 66 L144 54 L142 80 L150 76 L146 102 Q130 80 100 78 Q70 80 54 102 Z" fill="${c}"/>`;
+    case 'curly':
+      return `<g fill="${c}"><circle cx="64" cy="76" r="17"/><circle cx="86" cy="60" r="18"/><circle cx="112" cy="58" r="18"/><circle cx="136" cy="74" r="17"/><circle cx="56" cy="98" r="12"/><circle cx="144" cy="98" r="12"/></g>`;
+    case 'bun':
+    case 'twintails':
+      return `<path d="M54 104 Q50 50 100 48 Q150 50 146 104 Q138 78 100 76 Q62 78 54 104 Z" fill="${c}"/>`;
+    case 'side':
+      return `<path d="M54 106 Q50 50 100 48 Q150 50 146 104 Q142 86 132 80 Q96 70 70 92 Q60 98 54 106 Z" fill="${c}"/>`;
     default:
       return '';
   }
 }
 
-function eyes(style) {
-  const ink = '#2A211C';
+function eyes(style, ink = '#2A211C') {
   switch (style) {
+    case 'wink':
+      return `<circle cx="84" cy="107" r="5.5" fill="${ink}"/><circle cx="86" cy="105" r="1.8" fill="#fff"/>
+              <path d="M108 110 Q116 102 124 110" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+    case 'big':
+      return `<circle cx="84" cy="107" r="8.5" fill="${ink}"/><circle cx="116" cy="107" r="8.5" fill="${ink}"/>
+              <circle cx="87" cy="104" r="3" fill="#fff"/><circle cx="119" cy="104" r="3" fill="#fff"/><circle cx="81" cy="110" r="1.4" fill="#fff"/><circle cx="113" cy="110" r="1.4" fill="#fff"/>`;
     case 'happy':
       return `<path d="M76 110 Q84 100 92 110 M108 110 Q116 100 124 110" stroke="${ink}" stroke-width="4" fill="none" stroke-linecap="round"/>`;
     case 'sharp':
@@ -1873,6 +1920,38 @@ function eyes(style) {
     default:
       return `<circle cx="84" cy="107" r="5.5" fill="${ink}"/><circle cx="116" cy="107" r="5.5" fill="${ink}"/>
               <circle cx="86" cy="105" r="1.8" fill="#fff"/><circle cx="118" cy="105" r="1.8" fill="#fff"/>`;
+  }
+}
+
+function brows(style, c) {
+  const st = `stroke="${c}" stroke-linecap="round" fill="none"`;
+  switch (style) {
+    case 'soft': return `<path d="M74 94 Q84 89 94 93 M106 93 Q116 89 126 94" ${st} stroke-width="3"/>`;
+    case 'thick': return `<path d="M73 94 Q84 87 95 92 M105 92 Q116 87 127 94" ${st} stroke-width="6"/>`;
+    case 'angry': return `<path d="M74 89 L95 97 M126 89 L105 97" ${st} stroke-width="4"/>`;
+    case 'worried': return `<path d="M74 97 L94 90 M126 97 L106 90" ${st} stroke-width="3.5"/>`;
+    default: return '';
+  }
+}
+function mouth(style) {
+  const st = 'stroke="#7A3B2E" stroke-width="3" fill="none" stroke-linecap="round"';
+  switch (style) {
+    case 'grin': return `<path d="M86 130 Q100 146 114 130 Z" fill="#7A3B2E"/><path d="M90 132 Q100 136 110 132" stroke="#fff" stroke-width="2.5" fill="none"/>`;
+    case 'flat': return `<path d="M91 134 L109 134" ${st}/>`;
+    case 'open': return `<ellipse cx="100" cy="135" rx="6" ry="8" fill="#7A3B2E"/>`;
+    case 'smirk': return `<path d="M90 135 Q102 136 112 128" ${st}/>`;
+    case 'cat': return `<path d="M88 131 Q94 138 100 132 Q106 138 112 131" ${st}/>`;
+    default: return `<path d="M90 132 Q100 140 110 132" ${st}/>`;
+  }
+}
+function faceMark(style) {
+  switch (style) {
+    case 'freckles': return `<g fill="#A8692F" opacity=".55">${[[70, 120], [76, 124], [72, 128], [130, 120], [124, 124], [128, 128]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6"/>`).join('')}</g>`;
+    case 'mole': return `<circle cx="124" cy="118" r="2" fill="#2A211C"/>`;
+    case 'bandage': return `<g transform="rotate(-20 126 124)"><rect x="114" y="119" width="24" height="10" rx="4" fill="#E8C9A0"/><rect x="122" y="119" width="8" height="10" fill="#D9B48A"/></g>`;
+    case 'blush': return `<ellipse cx="72" cy="124" rx="11" ry="6" fill="#E58C7A" opacity=".6"/><ellipse cx="128" cy="124" rx="11" ry="6" fill="#E58C7A" opacity=".6"/>`;
+    case 'scar': return `<path d="M64 98 L80 122 M66 108 L74 104 M71 116 L79 112" stroke="#9A4A3E" stroke-width="2.5" stroke-linecap="round"/>`;
+    default: return '';
   }
 }
 
@@ -1901,6 +1980,19 @@ function outfit(style, c) {
         <path d="M30 240 Q32 192 82 178 L94 240 Z M170 240 Q168 192 118 178 L106 240 Z" fill="${c}"/>
         <rect x="52" y="208" width="22" height="16" rx="2" fill="${dark}"/>
         <rect x="126" y="208" width="22" height="16" rx="2" fill="${dark}"/>`;
+    case 'uniform':
+      return `<path d="${body}" fill="${c}"/>
+        <path d="M80 176 L100 206 L120 176 Q100 172 80 176 Z" fill="#F4F2EC"/>
+        <path d="M80 176 L66 186 L100 214 L134 186 L120 176 L100 206 Z" fill="#F4F2EC"/>
+        <path d="M94 204 L106 204 L110 222 L100 216 L90 222 Z" fill="#7A2E2E"/>`;
+    case 'sweater':
+      return `<path d="${body}" fill="${c}"/>
+        <path d="M80 182 Q80 166 100 166 Q120 166 120 182 Q100 190 80 182 Z" fill="${dark}"/>
+        <path d="M40 214 L160 214 M34 228 L166 228" stroke="${light}" stroke-width="3" opacity=".5"/>`;
+    case 'cape':
+      return `<path d="M18 240 Q22 176 100 168 Q178 176 182 240 Z" fill="#1E1A24"/>
+        <path d="M44 240 Q48 190 100 180 Q152 190 156 240 Z" fill="${c}"/>
+        <path d="M76 176 L100 194 L124 176" stroke="#C9A255" stroke-width="3" fill="none"/><circle cx="100" cy="196" r="5" fill="#C9A255"/>`;
     default: // coat
       return `<path d="${body}" fill="${c}"/>
         <path d="M86 176 L100 214 L114 176 Q100 172 86 176 Z" fill="#E9DFC7"/>
@@ -1921,6 +2013,19 @@ function accessory(style) {
       return `<ellipse cx="100" cy="66" rx="66" ry="12" fill="#5A4632"/>
               <path d="M58 66 Q60 22 100 20 Q140 22 142 66 Z" fill="#6E5640"/>
               <path d="M60 56 L140 56 L141 64 L59 64 Z" fill="#2A211C"/>`;
+    case 'catears':
+      return `<path d="M56 74 L58 30 L88 54 Z M144 74 L142 30 L112 54 Z" fill="#2A211C"/><path d="M62 64 L63 42 L80 56 Z M138 64 L137 42 L120 56 Z" fill="#E58C9A"/>`;
+    case 'mask':
+      return `<path d="M68 118 Q100 112 132 118 L128 146 Q100 158 72 146 Z" fill="#F4F2EC" stroke="#D8D2C4" stroke-width="2"/>
+              <path d="M76 128 L124 128 M76 138 L124 138" stroke="#D8D2C4" stroke-width="1.5"/><path d="M68 120 L54 110 M132 120 L146 110" stroke="#D8D2C4" stroke-width="2"/>`;
+    case 'flower':
+      return `<g transform="translate(134 70)">${[0, 72, 144, 216, 288].map(d => `<ellipse cx="0" cy="-8" rx="5" ry="8" fill="#E58CA8" transform="rotate(${d})"/>`).join('')}<circle r="4" fill="#F3D27A"/></g>`;
+    case 'crown':
+      return `<path d="M72 54 L76 26 L90 42 L100 20 L110 42 L124 26 L128 54 Z" fill="#E8C35A" stroke="#B8902E" stroke-width="2"/><circle cx="100" cy="40" r="3.5" fill="#C0392B"/>`;
+    case 'witch':
+      return `<ellipse cx="100" cy="66" rx="70" ry="12" fill="#2A2232"/><path d="M60 64 Q78 40 96 6 Q110 30 140 64 Z" fill="#3B3346"/><path d="M64 58 L136 58 L138 64 L62 64 Z" fill="#8E3B46"/>`;
+    case 'eyepatch':
+      return `<path d="M54 92 L146 118" stroke="#1E1A18" stroke-width="3"/><ellipse cx="116" cy="108" rx="13" ry="11" fill="#1E1A18"/>`;
     case 'headphones':
       return `<path d="M52 108 Q50 40 100 38 Q150 40 148 108" stroke="#2A211C" stroke-width="7" fill="none"/>
               <rect x="40" y="96" width="18" height="30" rx="8" fill="#3B3346"/>
@@ -1931,10 +2036,10 @@ function accessory(style) {
 }
 
 function renderAvatar(appearance = {}, { size = 200, background = true } = {}) {
-  const a = { ...DEFAULT_APPEARANCE, ...appearance };
+  const a = cleanAppearance(appearance);
   const skinDark = shade(a.skin, -25);
   return `<svg viewBox="0 0 200 240" width="${size}" height="${size * 1.2}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="角色外觀">
-    ${background ? `<rect width="200" height="240" fill="var(--avatar-bg, #2A1A1D)"/>` : ''}
+    ${background ? `<rect width="200" height="240" fill="${a.bg || 'var(--avatar-bg, #2A1A1D)'}"/>` : ''}
     ${hairBack(a.hair, a.hairColor)}
     <rect x="88" y="140" width="24" height="40" fill="${skinDark}"/>
     ${outfit(a.outfit, a.outfitColor)}
@@ -1942,8 +2047,10 @@ function renderAvatar(appearance = {}, { size = 200, background = true } = {}) {
     <ellipse cx="100" cy="104" rx="45" ry="50" fill="${a.skin}"/>
     <ellipse cx="74" cy="124" rx="7" ry="4" fill="#E58C7A" opacity=".35"/>
     <ellipse cx="126" cy="124" rx="7" ry="4" fill="#E58C7A" opacity=".35"/>
-    ${eyes(a.eyes)}
-    <path d="M90 132 Q100 140 110 132" stroke="#7A3B2E" stroke-width="3" fill="none" stroke-linecap="round"/>
+    ${faceMark(a.mark)}
+    ${eyes(a.eyes, a.eyeColor)}
+    ${brows(a.brows, shade(a.hairColor, -20))}
+    ${mouth(a.mouth)}
     ${hairFront(a.hair, a.hairColor)}
     ${accessory(a.accessory)}
   </svg>`;
@@ -2233,6 +2340,10 @@ const coverArt = (g, i) => {
 const CATS = ['恐怖', '歡樂', '情感', '懸疑'];
 const dur = (g) => g.duration_min == null ? '不限時間' : `${g.duration_min} 分鐘`;
 const locks = (d) => { d = Number(d) || 0; return `<span class="locks" aria-label="難度 ${d} / 5">${[1,2,3,4,5].map(i => `<i class="${i <= d ? 'on' : i - 0.5 <= d ? 'half' : ''}"></i>`).join('')}</span>`; };
+// 分版本難度：卡片上兩種版本各一排鎖（資料庫的 difficulty 用普通版，排序照它）
+const VAR_DIFF = { 'qianshan-night': [['普通', 3.5], ['地獄', 5]] };
+const diffHTML = (g) => VAR_DIFF[g.slug] ? VAR_DIFF[g.slug].map(([n, d]) => `<span class="vdiff"><small>${n}</small>${locks(d)}</span>`).join('') : locks(g.difficulty);
+const diffText = (g, unit = '') => VAR_DIFF[g.slug] ? VAR_DIFF[g.slug].map(([n, d]) => `${n} ${d}${unit}`).join('・') : `${Number(g.difficulty) || 0}${unit}`;
 const players = (g) => g.min_players === g.max_players ? `${g.min_players} 人` : `${g.min_players}～${g.max_players} 人`;
 const fmtDate = (d) => d ? d.slice(0, 10).replaceAll('-', '/').replace(/\/0(\d)/g, '/$1') : '';
 const released = (g) => g.release_date ?? g.created_at;
@@ -2276,7 +2387,7 @@ function roomCard(g, rank = 0, note = '') {
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
-        <div class="room-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span>`}</div>
+        <div class="room-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${diffHTML(g)}</span>`}</div>
         ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 ${RPGS.includes(g) ? '排行榜' : '排行榜・成就'}</span>` : ''}${gshareBtn(g)}</div>` : ''}
         <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
@@ -2458,7 +2569,7 @@ function applyGames() {
   allGames = gameRows.filter(g => isAdmin || !isHidden(g));
   games = allGames.filter(g => !RETIRED.includes(g.slug));
   retiredGames = allGames.filter(g => RETIRED.includes(g.slug));
-  $('#stat-rooms').textContent = gameRows.filter(g => g.play_url && !isHidden(g)).length; // 只算真正做好的密室（含已下架），不算 Coming Soon 佔位、也不算未公開的
+  $('#stat-rooms').textContent = gameRows.filter(g => isOpen(g) && !isHidden(g) && !RETIRED.includes(g.slug)).length; // 只算現在玩得到的密室：不算已下架、還沒開放（時間到會自動加上）、未公開的
 }
 async function loadGames() {
   const { data, error } = await supabase.from('games').select('*').order('sort_order');
@@ -2929,7 +3040,9 @@ function runMeta(r, slug) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2, fanmian: 4 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2, fanmian: 4, heart: 3 };
+// 高難度：資料庫難度 4.5 以上的密室；千山夜錄只算地獄版（普通版 3.5）
+const isHardClear = (r) => r.slug === 'qianshan-night' ? r.variant === 'hell' : Number(allGames.find(g => g.slug === r.slug)?.difficulty) >= 4.5;
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -2958,6 +3071,11 @@ const ACH = [
   { code: 'g_comeback', game: null, icon: '🌱', title: '再推一次門', desc: '上次沒逃出來的密室，這次成功逃出', test: c => c.cleared.some(r => c.recs.some(x => x.slug === r.slug && x.status !== 'cleared' && x.created_at < r.created_at)) },
   { code: 'g_avatar', game: null, icon: '🖼', title: '有頭有臉', desc: '上傳自己的頭像', test: () => !!profile?.avatar_url },
   { code: 'g_minute', game: null, icon: '🎯', title: '分秒不差', desc: '逃脫時間剛好是整數分鐘', secret: 1, test: c => c.cleared.some(r => r.clear_time_sec > 0 && r.clear_time_sec % 60 === 0) },
+  // 第三批（11/1）
+  { code: 'g_clear8', game: null, icon: '🎖', title: '八方夜客', desc: '逃出 8 間不同的密室', test: c => c.slugs.size >= 8 },
+  { code: 'g_hard', game: null, icon: '🔥', title: '迎難而上', desc: '逃出一間難度 4.5 顆星以上的密室（千山夜錄算地獄版）', test: c => c.cleared.some(isHardClear) },
+  { code: 'g_hard3', game: null, icon: '🌋', title: '高難度常客', desc: '逃出 3 間不同、難度 4.5 顆星以上的密室', test: c => new Set(c.cleared.filter(isHardClear).map(r => r.slug)).size >= 3 },
+  { code: 'g_end40', game: null, icon: '📜', title: '夜語編年史', desc: '累計收集 40 個不同的結局', test: c => c.endingTotal >= 40 },
   { code: 'q1_clear', game: 'qianchan-school', icon: '🏫', title: '207號房', desc: '通關第一章', test: c => c.cl('qianchan-school').length > 0 },
   { code: 'q1_nodeath', game: 'qianchan-school', icon: '🗝', title: '七把鑰匙都在', desc: '零死亡通關第一章', test: c => c.cl('qianchan-school').some(r => !r.deaths) },
   { code: 'q1_fast', game: 'qianchan-school', icon: '⏱', title: '一百五十分鐘', desc: '150 分鐘內通關第一章', test: c => c.cl('qianchan-school').some(r => r.clear_time_sec <= 9000) },
@@ -2970,6 +3088,8 @@ const ACH = [
   { code: 'pp_fast', game: 'pupu', icon: '✈️', title: '準時登機', desc: '60 分鐘內完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => r.clear_time_sec <= 3600) },
   { code: 'pp_rich', game: 'pupu', icon: '💰', title: '財務自由', desc: '沒跟耕卉借錢就完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => !r.borrows) },
   { code: 'pp_nohint', game: 'pupu', icon: '🙅', title: '一毛都不給郝翔', desc: '沒買任何提示就完成「屎」瓦帝尼', test: c => c.cl('pupu').some(r => !r.hints) },
+  { code: 'pp_again', game: 'pupu', icon: '💍', title: '二度蜜月', desc: '完成「屎」瓦帝尼 2 次', test: c => c.cl('pupu').length >= 2 },
+  { code: 'pp_perfect', game: 'pupu', icon: '🌟', title: '完美蜜月', desc: '同一次遊玩：60 分鐘內、沒借錢、沒買提示', test: c => c.cl('pupu').some(r => r.clear_time_sec <= 3600 && !r.borrows && !r.hints) },
   { code: 's2_e1', game: 'school2', icon: '🌫', title: '妳會再來的', desc: '結局一：沒有帶聖安', test: c => c.end('school2', 'e1') },
   { code: 's2_e2', game: 'school2', icon: '🤝', title: '最後的同行者', desc: 'TRUE END', test: c => c.end('school2', 'e2') },
   { code: 's2_e3', game: 'school2', icon: '🚶', title: '我們晚點見', desc: '結局三', test: c => c.end('school2', 'e3') },
@@ -3115,6 +3235,16 @@ const ACH = [
   { code: 'fm_nodeath', game: 'fanmian', icon: '📷', title: '相機都還在', desc: '7 台相機沒有全壞過就通關', test: c => c.cl('fanmian').some(r => !r.deaths) },
   { code: 'fm_nohint', game: 'fanmian', icon: '🤐', title: '不用看背面', desc: '零提示通關', test: c => c.cl('fanmian').some(r => !r.hints) },
   { code: 'fm_perfect', game: 'fanmian', icon: '🎞', title: '一張都沒浪費', desc: '零提示、相機沒有全壞過，而且 240 分鐘內通關', test: c => c.cl('fanmian').some(r => !r.hints && !r.deaths && r.clear_time_sec != null && r.clear_time_sec <= 14400) },
+  // 別讓他知道（heart_<結局>、heart_g12k 由遊戲自己送進來）
+  { code: 'hd_clear', game: 'heart', icon: '🛁', title: '他洗完澡了', desc: '通關別讓他知道（任何一個結局）', test: c => c.cl('heart').length > 0 },
+  { code: 'heart_diva', game: 'heart', icon: '🏆', title: '影后', ending: 1, desc: '結局：全部恢復原狀，壽宴上演出最驚訝的表情', test: c => c.end('heart', 'diva') },
+  { code: 'heart_busted', game: 'heart', icon: '😳', title: '穿幫', ending: 1, desc: '結局：他頂著毛巾站在門口', test: c => c.end('heart', 'busted') },
+  { code: 'heart_coco', game: 'heart', icon: '💃', title: 'Coco 老師', ending: 1, desc: '結局：凌晨一點打給了 Coco 老師', test: c => c.end('heart', 'coco') },
+  { code: 'hd_all', game: 'heart', icon: '📱', title: '三種凌晨一點', desc: '收集別讓他知道的全部 3 個結局', test: c => (c.endings.heart?.size ?? 0) >= 3 },
+  { code: 'heart_g12k', game: 'heart', icon: '💳', title: 'NT$12,000', desc: '注意到帳單最下面那行小字', secret: 1 },
+  { code: 'hd_fast', game: 'heart', icon: '⏱', title: '洗完澡之前', desc: '120 分鐘內通關', test: c => c.cl('heart').some(r => r.clear_time_sec != null && r.clear_time_sec <= 7200) },
+  { code: 'hd_nohint', game: 'heart', icon: '🤐', title: '不用問閨蜜', desc: '零提示通關', test: c => c.cl('heart').some(r => !r.hints) },
+  { code: 'hd_clean', game: 'heart', icon: '🧼', title: '不留痕跡', desc: '答錯 5 次以內通關', test: c => c.cl('heart').some(r => (r.deaths ?? 0) <= 5) },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(allGames.map(g => [g.id, g.slug]));
@@ -3158,7 +3288,7 @@ function titleOf(n) {
 // 玩家可以在個人資料換上任何已經拿到的稱號：存在 profiles.title_code（'lv:<門檻>' 或特殊稱號代號）；沒選就用目前的等級稱號
 const RARITY = { common: '一般', rare: '稀有', epic: '史詩', legend: '傳說' };
 const LV_RARITY = { 0: 'common', 3: 'common', 8: 'rare', 15: 'rare', 25: 'epic', 40: 'epic', 60: 'legend', 85: 'legend' };   // 等級稱號的稀有度（依門檻）
-const ENDING_ALLS = ['q1_all', 's2_all', 's3_all', 'bg_all', 'zr_all', 'qs_all', 'lv_all'];
+const ENDING_ALLS = ['q1_all', 's2_all', 's3_all', 'bg_all', 'zr_all', 'qs_all', 'lv_all', 'sy_all', 'fm_all', 'hd_all'];
 const SPECIAL_TITLES = [
   { code: 't_speed', name: '速通狂人', rarity: 'rare', desc: '3 間不同的密室都在 60 分鐘內逃出', test: (c) => new Set(c.cleared.filter(r => r.clear_time_sec != null && r.clear_time_sec <= 3600).map(r => r.slug)).size >= 3 },
   { code: 't_sleepless', name: '不眠者', rarity: 'rare', desc: '同時達成「夜貓子」「晨光逃脫」「一日三逃」', test: (c, has) => has('g_night', 'g_dawn', 'g_day3') },
@@ -3176,6 +3306,12 @@ const SPECIAL_TITLES = [
   { code: 't_arg', name: '第零號收件人', rarity: 'legend', desc: '《零號回信》：收集全部 8 個結局，並完成全部 57 個秘密任務', test: (c, has) => has('zr_all', 'zr_cbsecret') },
   { code: 't_qs', name: '地獄交班者', rarity: 'legend', desc: '《千山夜錄》：零提示通關地獄版，並收集全部 8 個結局', test: (c, has) => has('qs_hell_nohint', 'qs_all') },
   { code: 't_ambassador', name: '夜語代言人', rarity: 'legend', desc: '邀請 10 位朋友，而且其中 5 位已經開始玩', test: (c) => c.invited >= 10 && c.invitedPlayed >= 5 },
+  // 第三批（11/1）
+  { code: 't_heart', name: '影后', rarity: 'epic', desc: '《別讓他知道》：收集全部 3 個結局、找到 NT$12,000，而且零提示通關', test: (c, has) => has('hd_all', 'heart_g12k', 'hd_nohint') },
+  { code: 't_fanmian', name: '鏡子的兩邊', rarity: 'epic', desc: '《反面》：收集全部 4 個結局，並達成「一張都沒浪費」', test: (c, has) => has('fm_all', 'fm_perfect') },
+  { code: 't_hard', name: '高難度專家', rarity: 'epic', desc: '同時達成「高難度常客」和「無燈行者」', test: (c, has) => has('g_hard3') && new Set(c.cleared.filter(r => !r.hints).map(r => r.slug)).size >= 5 },
+  { code: 't_eight', name: '夜語領航員', rarity: 'epic', desc: '同時達成「八方夜客」和「高難度常客」', test: (c, has) => has('g_clear8', 'g_hard3') },
+  { code: 't_chronicle', name: '夜語史官', rarity: 'legend', desc: '累計收集 40 個不同的結局，並收集 5 款密室的全部結局', test: (c, has) => has('g_end40') && ENDING_ALLS.filter(x => has(x)).length >= 5 },
   // 第二批
   { code: 't_nightowl', name: '夜行性生物', rarity: 'rare', desc: '在凌晨 0 點到 4 點之間，逃出 3 間不同的密室', test: (c) => new Set(c.cleared.filter(r => new Date(r.updated_at || r.created_at).getHours() < 4).map(r => r.slug)).size >= 3 },
   { code: 't_comeback', name: '逆轉之夜', rarity: 'rare', desc: '同時達成「再推一次門」和「鍥而不捨」', test: (c, has) => has('g_comeback', 'g_retry') },
@@ -3764,7 +3900,7 @@ async function drawInvite(g, url) {
   center(`《${g.title}》`, 948, x.font);
   if (g.subtitle) { let ss = 32; x.font = `500 ${ss}px ${SANS}`; while (x.measureText(g.subtitle).width > W - 120 && ss > 22) x.font = `500 ${ss -= 2}px ${SANS}`; center(g.subtitle, 1004, x.font, '#C9C6DD'); }
   const facts = rpg ? [['不限時間', '時長'], ['手機・電腦', '都能玩'], ['開放世界', '大型網頁解謎']]
-    : [[players(g), '人數'], [dur(g), '時長'], [`${Number(g.difficulty) || 0} / 5`, '難度']];
+    : [[players(g), '人數'], [dur(g), '時長'], [VAR_DIFF[g.slug] ? diffText(g) : `${Number(g.difficulty) || 0} / 5`, '難度']];
   facts.forEach(([v, k], i) => {
     const cx = W / 6 * (i * 2 + 1);
     x.textAlign = 'center'; x.fillStyle = gold; x.font = `900 50px ${SERIF}`; x.fillText(v, cx, 1100);
@@ -3787,7 +3923,7 @@ async function shareGame(slug) {
   const g = gameBySlug(slug);
   if (!g) return;
   const url = gameLink(g.slug, { from: isPlayer() ? profile.username : null });
-  const facts = RPGS.includes(g) ? '大型網頁解謎，手機、電腦都能玩' : `${players(g)}・建議 ${dur(g)}・難度 ${Number(g.difficulty) || 0} 顆星`;
+  const facts = RPGS.includes(g) ? '大型網頁解謎，手機、電腦都能玩' : `${players(g)}・建議 ${dur(g)}・難度 ${diffText(g, ' 顆星')}`;
   const msg = `${upcoming(g) ? `《${g.title}》${openLabel(g)} 開放！` : `推薦你玩《${g.title}》！`}${g.description ? g.description + '　' : ''}（${facts}）${upcoming(g) ? '先把連結存起來，開放後一起玩吧' : '一起來玩吧'}`;
   const seq = shareDlgOpen({ title: upcoming(g) ? `分享即將開放的《${g.title}》` : `把《${g.title}》推薦給朋友` });
   try {
@@ -3871,7 +4007,7 @@ function renderNewest() {
         <div class="spot-facts">
           <div><span>人數</span>${players(g)}</div>
           <div><span>時長</span>${dur(g)}</div>
-          <div><span>難度</span>${locks(g.difficulty)}</div>
+          <div><span>難度</span>${diffHTML(g)}</div>
         </div>
         <span class="btn btn-gold">${cta}</span>${gshareBtn(g)}
       </div>
@@ -3910,7 +4046,7 @@ function pickCard(g, rank, note) {
         <h4>${escapeHTML(g.title)}</h4>
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
-        <div class="pick-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${locks(g.difficulty)}</span></div>
+        <div class="pick-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${diffHTML(g)}</span></div>
         <span class="pick-cta">${m?.best != null ? `已逃脫 ${fmtTime(m.best)}・` : ''}${cta}</span>
       </div>
     </button>`;
