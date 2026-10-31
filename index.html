@@ -1992,7 +1992,7 @@ let user = null, profile = null, games = [], stats = {}, monthly = [], escapedBy
 let isAdmin = false;   // 管理員：admins 表只讀得到自己那一列，所以讀得到＝是管理員
 let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）、探索排行榜
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
-const RETIRED = ['love'];
+const RETIRED = [];
 // 還沒公開的遊戲：只有開發者看得到（卡片標「未公開」），一般玩家在大廳、排行榜、推薦、成就都看不到；要公開時把代號拿掉
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
