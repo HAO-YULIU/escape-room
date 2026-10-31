@@ -1997,7 +1997,7 @@ const RETIRED = ['love'];
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
-const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '12:00' };
+const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '20:00', fanmian: '00:30' };
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
@@ -2496,7 +2496,8 @@ function updateChipCounts() {
 // ================= 最新消息 =================
 async function loadNews() {
   const el = $('#news-list');
-  const { data, error } = await supabase.from('news').select('*').order('published_at', { ascending: false }).limit(30);
+  // published_at 在未來的消息先不顯示：可以預先寫好「幾點開放」的消息，時間到了重新整理就看得到
+  const { data, error } = await supabase.from('news').select('*').lte('published_at', new Date().toISOString()).order('published_at', { ascending: false }).limit(30);
   if (error || !data?.length) { el.innerHTML = `<p class="empty">${error ? '讀取消息失敗' : '目前還沒有消息。'}</p>`; return; }
   const SHOW = 6;
   // link：game:<slug> 開啟該密室（跟點密室卡片一樣，會帶登入）、#xxx 捲到大廳區塊、一般網址直接開
@@ -2928,7 +2929,7 @@ function runMeta(r, slug) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2, fanmian: 4 };
 const ACH = [
   { code: 'g_start', game: null, icon: '🚪', title: '初次夜訪', desc: '第一次挑戰任何一間密室', test: c => c.recs.length > 0 },
   { code: 'g_clear', game: null, icon: '🗝', title: '第一次逃脫', desc: '成功逃出任何一間密室', test: c => c.cleared.length > 0 },
@@ -3102,6 +3103,18 @@ const ACH = [
   { code: 'hotel1-nowrong', game: 'hotel1', icon: '🎯', title: '一次就答對', desc: '一次都沒答錯就通關' },
   { code: 'hotel1-six', game: 'hotel1', icon: '🚐', title: '六人滿編', desc: '六位救援隊員到齊，一起通關' },
   { code: 'hotel1-cover', game: 'hotel1', icon: '🔍', title: '眼尖的隊員', desc: '在遊戲封面找齊 6 樣藏起來的東西' },
+  // 反面：全部由遊玩紀錄算（時間含看提示、相機全壞扣掉的時間；deaths＝7 台相機全壞的次數）；四個結局遊戲也會寫入（fanmian_<結局>）
+  { code: 'fm_clear', game: 'fanmian', icon: '🕰', title: '時鐘又動了', desc: '通關反面（任何一個結局）', test: c => c.cl('fanmian').length > 0 },
+  { code: 'fanmian_front', game: 'fanmian', icon: '🖼️', title: '正面', ending: 1, desc: '結局：五個人的全家福', test: c => c.end('fanmian', 'front') },
+  { code: 'fanmian_back', game: 'fanmian', icon: '🪞', title: '反面', ending: 1, desc: '結局：有人留在鏡子裡', test: c => c.end('fanmian', 'back') },
+  { code: 'fanmian_shard', game: 'fanmian', icon: '💥', title: '碎片', ending: 1, desc: '結局：碎掉的鏡子，每一片都還照得到人', test: c => c.end('fanmian', 'shard') },
+  { code: 'fanmian_fifth', game: 'fanmian', icon: '👧', title: '第五個人', desc: '隱藏結局：照片裡多了一個小女孩', secret: 1, test: c => c.end('fanmian', 'fifth') },
+  { code: 'fm_all', game: 'fanmian', icon: '📚', title: '一整本相簿', desc: '收集反面的全部 4 個結局', test: c => (c.endings.fanmian?.size ?? 0) >= 4 },
+  { code: 'fm_in240', game: 'fanmian', icon: '⏱', title: '鐵門拉下之前', desc: '240 分鐘內通關（含扣掉的時間）', test: c => c.cl('fanmian').some(r => r.clear_time_sec != null && r.clear_time_sec <= 14400) },
+  { code: 'fm_fast', game: 'fanmian', icon: '⚡', title: '一次曝光', desc: '150 分鐘內通關（含扣掉的時間）', test: c => c.cl('fanmian').some(r => r.clear_time_sec != null && r.clear_time_sec <= 9000) },
+  { code: 'fm_nodeath', game: 'fanmian', icon: '📷', title: '相機都還在', desc: '7 台相機沒有全壞過就通關', test: c => c.cl('fanmian').some(r => !r.deaths) },
+  { code: 'fm_nohint', game: 'fanmian', icon: '🤐', title: '不用看背面', desc: '零提示通關', test: c => c.cl('fanmian').some(r => !r.hints) },
+  { code: 'fm_perfect', game: 'fanmian', icon: '🎞', title: '一張都沒浪費', desc: '零提示、相機沒有全壞過，而且 240 分鐘內通關', test: c => c.cl('fanmian').some(r => !r.hints && !r.deaths && r.clear_time_sec != null && r.clear_time_sec <= 14400) },
 ];
 function achContext() {
   const slugOf = Object.fromEntries(allGames.map(g => [g.id, g.slug]));
@@ -3585,7 +3598,7 @@ setInterval(() => { if (!document.hidden) tickCountdown(); }, 1000);
 const LOBBY_URL = 'https://lobby.noron.workers.dev/';
 // 每款遊戲的分享連結：g/<slug>/ 是有那款封面預覽圖的小頁面（社群貼文會顯示），打開後帶著參數回到大廳
 // from：誰邀請的、t：他的最佳秒數、join：多人遊戲的房號。新遊戲上線時要複製一份 g/<slug>/index.html
-const SHARE_PAGES = ['qianchan-school', 'school2', 'school3', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1', 'heart', 'milner', 'mist'];
+const SHARE_PAGES = ['qianchan-school', 'school2', 'school3', 'pupu', 'bang', 'sea', 'arg', 'qianshan-night', 'hotel1', 'heart', 'milner', 'fanmian', 'mist'];
 function gameLink(slug, extra = {}) {
   const q = new URLSearchParams(Object.entries(extra).filter(([, v]) => v != null && v !== ''));
   const base = SHARE_PAGES.includes(slug) ? `${LOBBY_URL}g/${slug}/` : LOBBY_URL;
