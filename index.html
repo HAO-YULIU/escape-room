@@ -2699,6 +2699,7 @@ $('#auth-form').addEventListener('submit', async (e) => {
   $('#password').value = '';
   await loadAuth();
   renderAll();
+  if (tryPass()) return;
   location.hash = profile ? 'rooms' : 'character';
 });
 
@@ -2856,6 +2857,7 @@ $('#save').onclick = async () => {
     if (pendingFile || (!finalUrl && profile?.avatar_url)) cleanOldAvatars(finalUrl);
     await loadAuth();
     renderAll();
+    if (tryPass()) return;
     toast('角色已儲存，挑一間密室吧！');
     location.hash = 'rooms';
   } catch (err) {
@@ -4070,6 +4072,28 @@ function renderRetired() {
     </button>`;
   }).join('');
 }
+// 寄信索取的通行連結：https://lobby.noron.workers.dev/?pass=love
+// 記住玩家要去哪款已下架遊戲（放 localStorage，註冊驗證信來回、建立角色之後都還在，一天內有效）；
+// 已經是玩家 → 直接帶著登入碼進遊戲；還不是 → 先跳出註冊／建立角色，完成後自動進去
+const PASS_KEY = 'nv-pass';
+(() => {
+  const q = new URLSearchParams(location.search), slug = q.get('pass');
+  if (!slug) return;
+  try { localStorage.setItem(PASS_KEY, JSON.stringify({ slug, at: Date.now() })); } catch (_) {}
+  q.delete('pass');
+  history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
+})();
+function tryPass(ask = false) {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(PASS_KEY)); } catch (_) {}
+  if (!p?.slug || Date.now() - p.at > 864e5) { try { localStorage.removeItem(PASS_KEY); } catch (_) {} return false; }
+  const g = retiredGames.find(x => x.slug === p.slug);
+  if (!g?.play_url) return false;
+  if (!isPlayer()) { if (ask && !user) showGate(g.title); return false; }   // 已登入沒角色：上面已經帶去建立角色，存完會自動進去
+  try { localStorage.removeItem(PASS_KEY); } catch (_) {}
+  goPlay(g.play_url);
+  return true;
+}
 $('#retired-list').addEventListener('click', (e) => {
   const card = e.target.closest('.room');
   if (!card) return;
@@ -4339,13 +4363,14 @@ if (user && !profile && !['login', 'signup', 'character'].includes(location.hash
 }
 booted = true;
 route();
+const passing = tryPass(true);   // 寄信索取的通行連結（?pass=…）
 
 // 從密室按「上一頁」回來時，重新讀取最新紀錄
 window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
 
 // 從密室網頁被擋回來時（?need=player&room=xxx），直接跳出註冊提示
 const params = new URLSearchParams(location.search);
-if (params.get('need') === 'player' && !isPlayer()) {
+if (!passing && params.get('need') === 'player' && !isPlayer() && !$('#gate')?.open) {
   showGate([...games, ...RPGS].find(x => x.slug === params.get('room'))?.title ?? '');
 }
 
