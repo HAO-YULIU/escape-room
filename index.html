@@ -2343,6 +2343,8 @@ const locks = (d) => { d = Number(d) || 0; return `<span class="locks" aria-labe
 // 分版本難度：卡片上兩種版本各一排鎖（資料庫的 difficulty 用普通版，排序照它）
 const VAR_DIFF = { 'qianshan-night': [['普通', 3.5], ['地獄', 5]] };
 const diffHTML = (g) => VAR_DIFF[g.slug] ? VAR_DIFF[g.slug].map(([n, d]) => `<span class="vdiff"><small>${n}</small>${locks(d)}</span>`).join('') : locks(g.difficulty);
+// 卡片的小標籤：分版本的遊戲每個版本一個標籤（手機上才不會擠成一行）
+const diffSpans = (g) => VAR_DIFF[g.slug] ? VAR_DIFF[g.slug].map(([n, d]) => `<span>${n}${locks(d)}</span>`).join('') : `<span>難度${locks(g.difficulty)}</span>`;
 const diffText = (g, unit = '') => VAR_DIFF[g.slug] ? VAR_DIFF[g.slug].map(([n, d]) => `${n} ${d}${unit}`).join('・') : `${Number(g.difficulty) || 0}${unit}`;
 const players = (g) => g.min_players === g.max_players ? `${g.min_players} 人` : `${g.min_players}～${g.max_players} 人`;
 const fmtDate = (d) => d ? d.slice(0, 10).replaceAll('-', '/').replace(/\/0(\d)/g, '/$1') : '';
@@ -2387,7 +2389,7 @@ function roomCard(g, rank = 0, note = '') {
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
-        <div class="room-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${diffHTML(g)}</span>`}</div>
+        <div class="room-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span>${diffSpans(g)}`}</div>
         ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 ${RPGS.includes(g) ? '排行榜' : '排行榜・成就'}</span>` : ''}${gshareBtn(g)}</div>` : ''}
         <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
@@ -4046,7 +4048,7 @@ function pickCard(g, rank, note) {
         <h4>${escapeHTML(g.title)}</h4>
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
-        <div class="pick-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span><span>難度${diffHTML(g)}</span></div>
+        <div class="pick-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span>${diffSpans(g)}</div>
         <span class="pick-cta">${m?.best != null ? `已逃脫 ${fmtTime(m.best)}・` : ''}${cta}</span>
       </div>
     </button>`;
