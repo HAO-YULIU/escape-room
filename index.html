@@ -2568,6 +2568,8 @@ document.querySelectorAll('.cat').forEach(c => c.addEventListener('click', () =>
 
 // 登入狀態（是不是開發者）改變後要重新分一次，未公開的遊戲才不會露出來
 function applyGames() {
+  // Coming Soon 佔位（還沒有遊戲網址的 coming_soon）不顯示（製作人 11/1）
+  gameRows = gameRows.filter(g => !(g.status === 'coming_soon' && !g.play_url));
   allGames = gameRows.filter(g => isAdmin || !isHidden(g));
   games = allGames.filter(g => !RETIRED.includes(g.slug));
   retiredGames = allGames.filter(g => RETIRED.includes(g.slug));
