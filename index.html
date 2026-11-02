@@ -2120,6 +2120,11 @@ let myMsgs = [];   // 管理員傳給這位玩家的訊息（player_messages，�
 // 有雲端存檔的遊戲：{ slug: 最後存檔時間 }（遊戲玩到一半的依據）
 let saves = {};
 const isPlayer = () => !!(user && profile);
+// 已下架遊戲的限時解鎖（寄信索取 → 通行連結 ?pass=<slug>）：到期時間記在帳號的 user_metadata.unlocks
+const UNLOCK_DAYS = 30;
+const unlockedUntil = (slug) => +(user?.user_metadata?.unlocks?.[slug]) || 0;
+const isUnlocked = (g) => RETIRED.includes(g.slug) && unlockedUntil(g.slug) > Date.now();
+const unlockDays = (g) => Math.max(1, Math.ceil((unlockedUntil(g.slug) - Date.now()) / 864e5));
 
 function fmtTime(s) {
   const h = s / 3600 | 0, m = (s % 3600) / 60 | 0, x = s % 60, p = (n) => String(n).padStart(2, '0');
@@ -2365,6 +2370,7 @@ function roomCard(g, rank = 0, note = '') {
   const m = mine[g.id], st = stats[g.id];
   const badge = isHidden(g) ? '<span class="badge maint">🔒 未公開</span>'
     : inMaint(g) ? '<span class="badge maint">🛠 維修中</span>'
+    : isUnlocked(g) ? `<span class="badge new">🎟 限時開放・剩 ${unlockDays(g)} 天</span>`
     : m?.best != null ? `<span class="badge cleared">已逃脫 ${fmtTime(m.best)}</span>`
     : saves[g.slug] ? '<span class="badge played">▶ 玩到一半</span>'
     : m ? '<span class="badge played">玩過</span>'
@@ -2390,7 +2396,7 @@ function roomCard(g, rank = 0, note = '') {
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
         <div class="room-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span>${diffSpans(g)}`}</div>
-        ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 ${RPGS.includes(g) ? '排行榜' : '排行榜・成就'}</span>` : ''}${gshareBtn(g)}</div>` : ''}
+        ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 ${RPGS.includes(g) ? '排行榜' : '排行榜・成就'}</span>` : ''}${isUnlocked(g) ? '' : gshareBtn(g)}</div>` : ''}
         <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
     </button>`;
@@ -2571,8 +2577,9 @@ function applyGames() {
   // Coming Soon 佔位（還沒有遊戲網址的 coming_soon）不顯示（製作人 11/1）
   gameRows = gameRows.filter(g => !(g.status === 'coming_soon' && !g.play_url));
   allGames = gameRows.filter(g => isAdmin || !isHidden(g));
-  games = allGames.filter(g => !RETIRED.includes(g.slug));
-  retiredGames = allGames.filter(g => RETIRED.includes(g.slug));
+  // 用通行連結解鎖的已下架遊戲：在這位玩家的大廳跟一般密室一樣出現（其他人看不到）
+  games = allGames.filter(g => !RETIRED.includes(g.slug) || isUnlocked(g));
+  retiredGames = allGames.filter(g => RETIRED.includes(g.slug) && !isUnlocked(g));
   $('#stat-rooms').textContent = gameRows.filter(g => isOpen(g) && !isHidden(g) && !RETIRED.includes(g.slug)).length; // 只算現在玩得到的密室：不算已下架、還沒開放（時間到會自動加上）、未公開的
 }
 async function loadGames() {
@@ -2699,7 +2706,7 @@ $('#auth-form').addEventListener('submit', async (e) => {
   $('#password').value = '';
   await loadAuth();
   renderAll();
-  if (tryPass()) return;
+  if (await tryPass()) return;
   location.hash = profile ? 'rooms' : 'character';
 });
 
@@ -2857,7 +2864,7 @@ $('#save').onclick = async () => {
     if (pendingFile || (!finalUrl && profile?.avatar_url)) cleanOldAvatars(finalUrl);
     await loadAuth();
     renderAll();
-    if (tryPass()) return;
+    if (await tryPass()) return;
     toast('角色已儲存，挑一間密室吧！');
     location.hash = 'rooms';
   } catch (err) {
@@ -3428,7 +3435,7 @@ function renderProgress() {
   sec.hidden = !isPlayer();
   if (!isPlayer()) return;
   const gotList = achGot(), got = new Set(gotList.map(a => a.code)), t = titleOf(gotList.length);
-  const open = allGames.filter(g => isOpen(g) || mine[g.id] || saves[g.slug]).filter(g => !RETIRED.includes(g.slug) || mine[g.id]);
+  const open = allGames.filter(g => isOpen(g) || mine[g.id] || saves[g.slug]).filter(g => !RETIRED.includes(g.slug) || isUnlocked(g) || mine[g.id]);
   const rows = open.filter(g => mine[g.id] || saves[g.slug]).map(g => progressOf(g, got)).sort((a, b) => String(b.last).localeCompare(String(a.last)));
   const stamps = allGames.filter(g => isOpen(g) && !RETIRED.includes(g.slug)).map(g => {
     const m = mine[g.id], ok = m?.best != null, ends = ENDING_COUNT[g.slug];
@@ -4073,9 +4080,54 @@ function renderRetired() {
   }).join('');
 }
 // 寄信索取的通行連結：https://lobby.noron.workers.dev/?pass=love
-// 記住玩家要去哪款已下架遊戲（放 localStorage，註冊驗證信來回、建立角色之後都還在，一天內有效）；
-// 已經是玩家 → 直接帶著登入碼進遊戲；還不是 → 先跳出註冊／建立角色，完成後自動進去
+// 記住玩家要解鎖哪款已下架遊戲（放 localStorage，註冊驗證信來回、建立角色之後都還在，一天內有效）；
+// 是玩家了 → 在帳號上記下解鎖到期時間（user_metadata.unlocks，換裝置也看得到），這款就像一般密室一樣出現在他的大廳 30 天；
+// 還不是玩家 → 先跳出註冊／建立角色，完成後自動解鎖。再點一次連結會重新算 30 天。
 const PASS_KEY = 'nv-pass';
+async function tryPass(ask = false) {
+  let p = null;
+  try { p = JSON.parse(localStorage.getItem(PASS_KEY)); } catch (_) {}
+  const drop = () => { try { localStorage.removeItem(PASS_KEY); } catch (_) {} };
+  if (!p?.slug || Date.now() - p.at > 864e5) { drop(); return false; }
+  const g = allGames.find(x => x.slug === p.slug && RETIRED.includes(x.slug));
+  if (!g?.play_url) { drop(); return false; }
+  if (!isPlayer()) { if (ask && !user) showGate(g.title); return false; }   // 已登入沒角色：上面已經帶去建立角色，存完會自動解鎖
+  const until = Date.now() + UNLOCK_DAYS * 864e5;
+  const { data, error } = await supabase.auth.updateUser({ data: { unlocks: { ...(user.user_metadata?.unlocks || {}), [g.slug]: until } } });
+  if (error || !data?.user) { toast('解鎖失敗，請重新整理再試一次。'); return false; }
+  drop();
+  user = data.user;
+  renderAll();
+  location.hash = 'rooms';
+  // 捲到那張卡片（被「顯示更多」收起來的話先展開）
+  let el;
+  while (!(el = listEl.querySelector(`.room[data-slug="${CSS.escape(g.slug)}"]`)) && !$('#room-more').hidden) { roomShow += roomStep(); renderRooms(); }
+  setTimeout(() => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+  let dlg = $('#unlock-dlg');
+  if (!dlg) {
+    dlg = document.createElement('dialog');
+    dlg.id = 'unlock-dlg';
+    dlg.className = 'gate';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('click', (ev) => {
+      if (ev.target.closest('[data-unlock-go]')) { dlg.close(); return openGame(ev.target.closest('[data-unlock-go]').dataset.unlockGo); }
+      if (ev.target === dlg || ev.target.closest('[data-close]')) dlg.close();
+    });
+  }
+  dlg.innerHTML = `
+    <div class="gate-inner">
+      <button class="gate-x" data-close type="button" aria-label="關閉">×</button>
+      ${g.cover_url ? `<img class="invite-cover" src="${escapeHTML(thumb(g.cover_url))}" data-full="${escapeHTML(g.cover_url)}" alt="">` : `<div class="gate-door">${LOGO_SVG}</div>`}
+      <h2>已解鎖《${escapeHTML(g.title)}》</h2>
+      <p>到 <b style="color:var(--gold)">${fmtDate(new Date(until).toLocaleDateString('sv-SE', { timeZone: 'Asia/Taipei' }))}</b> 之前，它會像其他密室一樣出現在你的大廳，隨時都能進來玩。</p>
+      <div class="gate-actions">
+        <button class="btn btn-gold" type="button" data-unlock-go="${escapeHTML(g.slug)}">進入密室 →</button>
+        <button class="btn btn-ghost" type="button" data-close>先逛逛大廳</button>
+      </div>
+    </div>`;
+  dlg.showModal();
+  return true;
+}
 (() => {
   const q = new URLSearchParams(location.search), slug = q.get('pass');
   if (!slug) return;
@@ -4083,17 +4135,6 @@ const PASS_KEY = 'nv-pass';
   q.delete('pass');
   history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash);
 })();
-function tryPass(ask = false) {
-  let p = null;
-  try { p = JSON.parse(localStorage.getItem(PASS_KEY)); } catch (_) {}
-  if (!p?.slug || Date.now() - p.at > 864e5) { try { localStorage.removeItem(PASS_KEY); } catch (_) {} return false; }
-  const g = retiredGames.find(x => x.slug === p.slug);
-  if (!g?.play_url) return false;
-  if (!isPlayer()) { if (ask && !user) showGate(g.title); return false; }   // 已登入沒角色：上面已經帶去建立角色，存完會自動進去
-  try { localStorage.removeItem(PASS_KEY); } catch (_) {}
-  goPlay(g.play_url);
-  return true;
-}
 $('#retired-list').addEventListener('click', (e) => {
   const card = e.target.closest('.room');
   if (!card) return;
@@ -4363,7 +4404,7 @@ if (user && !profile && !['login', 'signup', 'character'].includes(location.hash
 }
 booted = true;
 route();
-const passing = tryPass(true);   // 寄信索取的通行連結（?pass=…）
+const passing = await tryPass(true);   // 寄信索取的通行連結（?pass=…）
 
 // 從密室按「上一頁」回來時，重新讀取最新紀錄
 window.addEventListener('pageshow', (e) => { if (e.persisted) location.reload(); });
