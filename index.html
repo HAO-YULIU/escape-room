@@ -320,6 +320,8 @@ body:not(.home) { padding-top: 68px; }
 .how-sub { text-align: center; color: var(--muted); margin: 0 0 22px; }
 /* 迷霧：全服目標、本週站長 */
 .mist-live:empty { display: none; }
+.ml-name { font-weight: 700; }
+.ml-name.rainbow { background: linear-gradient(90deg, #ff6b6b, #ffd34d, #4cd9a0, #5ac8fa, #b388ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .mist-live { display: grid; gap: 10px; margin: 10px 0; }
 .mist-live .ml-goal, .mist-live .ml-masters { padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .05); display: grid; gap: 4px; }
 .mist-live .ml-bar { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .12); overflow: hidden; }
@@ -2195,7 +2197,7 @@ async function loadAuth() {
 
 // 迷霧的排行榜：本期擁有最多車站的站長（每週一 20:00 換期時更新）
 async function loadMistTop() {
-  const { data } = await supabase.rpc('get_mist_master_board', { lim: 20 });
+  const { data } = await supabase.rpc('get_mist_master_board2', { lim: 20 });   // 新版多了彩色名牌
   mistTop = data ?? [];
 }
 async function loadStats() {

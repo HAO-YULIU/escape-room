@@ -20,7 +20,7 @@ window.MistLive = (() => {
     // 玩家得標的站列出來；沒人得標、由管理員預設管理（0 元）的合併成一行
     const all = ms && ms.masters ? Object.entries(ms.masters) : [], dflt = all.filter(([, m]) => !m.price);
     const masters = all.filter(([, m]) => m.price > 0).sort((a, b) => b[1].price - a[1].price).slice(0, 20);
-    if (ms) out += `<div class="ml-masters"><b>🏷️ 本週站長${ms.period ? `（第 ${ms.period} 期）` : ''}</b>${masters.length ? `<ol>${masters.map(([s, m]) => `<li>${esc(s)}<span>${esc(m.name)}・${nt(m.price)}</span></li>`).join('')}</ol>` : '<small>這一期還沒有玩家得標。到遊戲裡任何一站大廳的「投標所」出價，就能當下一期的站長。</small>'}${dflt.length ? `<small>其餘 ${dflt.length} 站由 ${esc(dflt[0][1].name)} 管理，等你來投標。</small>` : ''}</div>`;
+    if (ms) out += `<div class="ml-masters"><b>🏷️ 本週站長${ms.period ? `（第 ${ms.period} 期）` : ''}</b>${masters.length ? `<ol>${masters.map(([s, m]) => `<li>${esc(s)}<span>${plate(m.name, m.color)}・${nt(m.price)}</span></li>`).join('')}</ol>` : '<small>這一期還沒有玩家得標。到遊戲裡任何一站大廳的「投標所」出價，就能當下一期的站長。</small>'}${dflt.length ? `<small>其餘 ${dflt.length} 站由 ${esc(dflt[0][1].name)} 管理，等你來投標。</small>` : ''}</div>`;
     return out;
   }
   async function load(supabase) {
@@ -29,10 +29,13 @@ window.MistLive = (() => {
       return html(cs, ms);
     } catch (e) { return ''; }
   }
+  // 彩色名牌：只接受遊戲裡那 8 種顏色（跟 js/stationmaster.js 的 NAME_COLORS 一致）
+  const COLORS = ['#f2c94c', '#ff7aa8', '#5ac8fa', '#4cd9a0', '#b388ff', '#ff8a5c', '#d8dde6', 'rainbow'];
+  const plate = (name, c) => !COLORS.includes(c) ? esc(name) : c === 'rainbow' ? `<span class="ml-name rainbow">✨${esc(name)}</span>` : `<span class="ml-name" style="color:${c}">✨${esc(name)}</span>`;
   // 大廳排行榜：本期擁有最多車站的站長（同站數比得標總額）；每週一 20:00 換期時更新
   function boardRows(rows, uid, avatarHTML) {
     if (!rows || !rows.length) return '<li class="mist-empty">這一期還沒有站長。到遊戲裡任何一站大廳的「投標所」出價，得標就能當 7 天站長、登上這個排行榜。</li>';
-    return rows.map((r, i) => `<li class="mist-row${uid && r.user_id === uid ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${esc(r.username || '旅人')}<small>${(r.names || []).slice(0, 4).map(esc).join('、')}${(r.names || []).length > 4 ? ` 等 ${r.names.length} 站` : ''}・得標 ${nt(r.total)}</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
+    return rows.map((r, i) => `<li class="mist-row${uid && r.user_id === uid ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${plate(r.username || '旅人', r.name_color)}<small>${(r.names || []).slice(0, 4).map(esc).join('、')}${(r.names || []).length > 4 ? ` 等 ${r.names.length} 站` : ''}・得標 ${nt(r.total)}</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
   }
-  return { html, load, boardRows };
+  return { html, load, boardRows, plate };
 })();
