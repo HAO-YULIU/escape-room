@@ -318,6 +318,14 @@ body:not(.home) { padding-top: 68px; }
 .how-track span { font-size: 22px; }
 .how-track.rpg-track { margin-top: 48px; color: #9cc8f0; }
 .how-sub { text-align: center; color: var(--muted); margin: 0 0 22px; }
+/* 迷霧：全服目標、本週站長 */
+.mist-live:empty { display: none; }
+.mist-live { display: grid; gap: 10px; margin: 10px 0; }
+.mist-live .ml-goal, .mist-live .ml-masters { padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, .05); display: grid; gap: 4px; }
+.mist-live .ml-bar { height: 8px; border-radius: 999px; background: rgba(255, 255, 255, .12); overflow: hidden; }
+.mist-live .ml-bar i { display: block; height: 100%; background: linear-gradient(90deg, #f2c200, #ff8a3a); }
+.mist-live ol { margin: 4px 0 0; padding-left: 20px; max-height: 180px; overflow: auto; font-size: 14px; }
+.mist-live li span { float: right; opacity: .75; }
 /* 迷霧：探索排行榜、你的旅程 */
 .mist-board { margin-top: 22px; padding: 20px 22px; border-radius: 16px; background: rgba(6,9,18,.78); border: 1px solid rgba(127,180,230,.3); }
 .mist-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
@@ -1777,6 +1785,7 @@ h1, h2, h3 { letter-spacing: .04em; }
   <!-- ===== 管理（只有管理員看得到；資料由資料庫權限保護） ===== -->
   <div id="view-admin" hidden></div>
 
+  <script src="mist-live.js"></script>
   <script type="module">
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.118.0/+esm';
 
@@ -3016,9 +3025,12 @@ function renderMistHub(g) {
     : '你還沒上車。去過的車站越多，排名越前面。';
   const cta = isOpen(g) ? (!isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] ? '繼續旅程 →' : '進入遊戲 →') : '';
   $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>
+    <div id="gh-live" class="mist-live"></div>
     <p class="muted small">比誰去過最多車站，同站數比等級。</p><ol class="mist-list">${mistRows()}</ol>
     ${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}
     <button class="btn btn-ghost gh-play" type="button" data-gshare="${escapeHTML(g.slug)}">🔗 推薦這款遊戲給朋友</button>`;
+  // 全服目標、本週站長（mist-live.js）
+  if (window.MistLive) MistLive.load(supabase).then(h => { const el = $('#gh-live'); if (el) el.innerHTML = h; });
 }
 $('#game-hub').addEventListener('click', (e) => {
   const dlg = e.currentTarget;

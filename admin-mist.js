@@ -48,7 +48,7 @@ export const CSS_MIST = `
 
 export function mountMist(ctx) {
   const { supabase, escapeHTML: esc, avatarHTML, toast } = ctx;
-  const TABS = [['mplayers', '迷霧玩家'], ['reports', '回報處理'], ['ops', '公告與活動'], ['mstats', '迷霧數據']];
+  const TABS = [['mplayers', '迷霧玩家'], ['reports', '回報處理'], ['ops', '公告與活動'], ['mmarket', '站長與募款'], ['mstats', '迷霧數據']];
   const empty = (body, t) => { body.innerHTML = `<p class="adm-empty">${t}</p>`; };
   const fail = (body, e) => empty(body, '讀取失敗：' + esc(e.message || String(e)));
 
@@ -282,5 +282,35 @@ export function mountMist(ctx) {
     body.querySelectorAll('[data-days]').forEach(b => b.onclick = () => { days = +b.dataset.days; stats(body); });
   }
 
-  return { TABS, render: (k, body) => ({ mplayers: players, reports, ops, mstats: stats }[k])(body) };
+  // ---------- 站長與募款（投標所、站長留言、車站設計、全服目標、過濾詞） ----------
+  const GOAL_T = { clock: '停了三十年的老鐘', sunset: '熄掉的夕陽燈', ferry: '渡口的木船', onsen: '湯之庭的木招牌' };
+  const nt = n => 'NT$ ' + Number(n || 0).toLocaleString();
+  async function market(body) {
+    body.innerHTML = '<p class="adm-empty">讀取中……</p>';
+    const { data: M, error } = await supabase.rpc('admin_mist_market');
+    if (error) return fail(body, error);
+    const g = M.goal || {};
+    body.innerHTML = `
+      <div class="adm-card"><h3>全服目標<small>第 ${M.period} 期・每週一 20:00 換期</small></h3>
+        <p>${esc(GOAL_T[g.goal_id] || g.goal_id || '–')}：${nt(g.total)} / ${nt(g.target)}${g.done_at ? `（${dt(g.done_at)} 達標）` : ''}</p>
+        <div class="adm-acts"><input id="mkGoal" type="number" min="1000" step="1000" value="${g.target || 200000}" style="width:140px"> <button class="btn btn-gold btn-sm" data-goal="1">改目標金額</button></div></div>
+      <div class="adm-card"><h3>本期站長<small>${M.masters.length} 站</small></h3>${M.masters.length ? `<div class="adm-scroll"><table class="adm-tbl"><tr><th>車站</th><th>站長</th><th>得標</th><th>留言</th><th></th></tr>${M.masters.map(m => `<tr><td>${esc(m.station)}</td><td>${esc(m.name)}</td><td>${nt(m.price)}</td><td>${esc(m.message || '')}</td><td>${m.message ? `<button class="btn btn-ghost btn-sm" data-delmsg="${esc(m.station)}">刪除留言</button>` : ''}</td></tr>`).join('')}</table></div>` : '<p class="adm-empty">這一期還沒有站長。</p>'}</div>
+      <div class="adm-card"><h3>下一期的領先出價<small>作廢：錢不退，改由次高的出價領先</small></h3>${M.bids.length ? `<div class="adm-scroll"><table class="adm-tbl"><tr><th>車站</th><th>出價者</th><th>金額</th><th>時間</th><th></th></tr>${M.bids.map(b => `<tr><td>${esc(b.station)}</td><td>${esc(b.name)}</td><td>${nt(b.amount)}</td><td>${dt(b.at)}</td><td><button class="btn btn-ghost btn-sm" data-void="${b.id}">作廢</button></td></tr>`).join('')}</table></div>` : '<p class="adm-empty">還沒有人出價。</p>'}</div>
+      <div class="adm-card"><h3>站長改過設計的車站</h3>${M.designs.length ? `<div class="adm-chips">${M.designs.map(d => `<span>${esc(d.station)}（第 ${d.period} 期 ${esc(d.name || '')}） <button class="btn btn-ghost btn-sm" data-reset="${esc(d.station)}">重設</button></span>`).join('')}</div>` : '<p class="adm-empty">還沒有。</p>'}</div>
+      <div class="adm-card"><h3>站長留言的過濾詞<small>${M.words.length} 個（留言裡含有就不能送出）</small></h3>
+        <div class="adm-chips">${M.words.map(w => `<span>${esc(w)} <button class="btn btn-ghost btn-sm" data-unword="${esc(w)}">×</button></span>`).join('')}</div>
+        <div class="adm-acts" style="margin-top:8px"><input id="mkWord" placeholder="新增過濾詞（逗號分隔）" style="flex:1"> <button class="btn btn-gold btn-sm" data-word="1">新增</button></div></div>`;
+    const act = async (fn, args, msg) => { const { error: e } = await supabase.rpc(fn, args); if (e) return toast('失敗：' + e.message); toast(msg); market(body); };
+    body.onclick = e => {
+      const b = e.target.closest('button'); if (!b) return;
+      if (b.dataset.goal) return act('admin_mist_set_goal', { p_target: +body.querySelector('#mkGoal').value }, '目標金額改好了');
+      if (b.dataset.delmsg && confirm(`刪除 ${b.dataset.delmsg} 的站長留言？`)) return act('admin_mist_delete_message', { p_station: b.dataset.delmsg }, '留言刪除了，站長會收到通知');
+      if (b.dataset.void && confirm('作廢這筆出價？錢不會退給出價者。')) return act('admin_mist_void_bid', { p_bid: +b.dataset.void }, '出價作廢了');
+      if (b.dataset.reset && confirm(`把 ${b.dataset.reset} 的設計重設成原本的樣子？`)) return act('admin_mist_reset_design', { p_station: b.dataset.reset }, '設計重設了');
+      if (b.dataset.word) { const add = body.querySelector('#mkWord').value.split(/[,，、\s]+/).filter(Boolean); if (add.length) act('admin_mist_words', { p_add: add, p_remove: [] }, '過濾詞新增了'); return; }
+      if (b.dataset.unword) return act('admin_mist_words', { p_add: [], p_remove: [b.dataset.unword] }, '過濾詞移除了');
+    };
+  }
+
+  return { TABS, render: (k, body) => ({ mplayers: players, reports, ops, mmarket: market, mstats: stats }[k])(body) };
 }
