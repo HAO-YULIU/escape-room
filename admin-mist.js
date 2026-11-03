@@ -283,7 +283,8 @@ export function mountMist(ctx) {
   }
 
   // ---------- 站長與募款（投標所、站長留言、車站設計、全服目標、過濾詞） ----------
-  const GOAL_T = { clock: '停了三十年的老鐘', sunset: '熄掉的夕陽燈', ferry: '渡口的木船', onsen: '湯之庭的木招牌' };
+  const GOAL_T = { clock: '停了三十年的老鐘', sunset: '熄掉的夕陽燈', ferry: '渡口的木船', onsen: '湯之庭的木招牌', ring: '點亮環狀線（全服到站次數）', letters: '一千封感謝信（全服完成任務）', lanterns: '霧裡的提燈（全服讀完霧夜短篇）' };
+  const GOAL_UNIT = { ring: '次', letters: '個', lanterns: '篇' };
   const nt = n => 'NT$ ' + Number(n || 0).toLocaleString();
   async function market(body) {
     body.innerHTML = '<p class="adm-empty">讀取中……</p>';
@@ -292,8 +293,8 @@ export function mountMist(ctx) {
     const g = M.goal || {};
     body.innerHTML = `
       <div class="adm-card"><h3>全服目標<small>第 ${M.period} 期・每週一 20:00 換期</small></h3>
-        <p>${esc(GOAL_T[g.goal_id] || g.goal_id || '–')}：${nt(g.total)} / ${nt(g.target)}${g.done_at ? `（${dt(g.done_at)} 達標）` : ''}</p>
-        <div class="adm-acts"><input id="mkGoal" type="number" min="1000" step="1000" value="${g.target || 200000}" style="width:140px"> <button class="btn btn-gold btn-sm" data-goal="1">改目標金額</button></div></div>
+        <p>${esc(GOAL_T[g.goal_id] || g.goal_id || '–')}：${GOAL_UNIT[g.goal_id] ? `${g.total} / ${g.target} ${GOAL_UNIT[g.goal_id]}` : `${nt(g.total)} / ${nt(g.target)}`}${g.done_at ? `（${dt(g.done_at)} 達標）` : ''}</p>
+        <div class="adm-acts"><input id="mkGoal" type="number" min="1" step="1" value="${g.target || 200000}" style="width:140px"> <button class="btn btn-gold btn-sm" data-goal="1">改目標金額</button></div></div>
       <div class="adm-card"><h3>本期站長<small>${M.masters.length} 站</small></h3>${M.masters.length ? `<div class="adm-scroll"><table class="adm-tbl"><tr><th>車站</th><th>站長</th><th>得標</th><th>留言</th><th></th></tr>${M.masters.map(m => `<tr><td>${esc(m.station)}</td><td>${esc(m.name)}</td><td>${nt(m.price)}</td><td>${esc(m.message || '')}</td><td>${m.message ? `<button class="btn btn-ghost btn-sm" data-delmsg="${esc(m.station)}">刪除留言</button>` : ''}</td></tr>`).join('')}</table></div>` : '<p class="adm-empty">這一期還沒有站長。</p>'}</div>
       <div class="adm-card"><h3>下一期的領先出價<small>作廢：錢不退，改由次高的出價領先</small></h3>${M.bids.length ? `<div class="adm-scroll"><table class="adm-tbl"><tr><th>車站</th><th>出價者</th><th>金額</th><th>時間</th><th></th></tr>${M.bids.map(b => `<tr><td>${esc(b.station)}</td><td>${esc(b.name)}</td><td>${nt(b.amount)}</td><td>${dt(b.at)}</td><td><button class="btn btn-ghost btn-sm" data-void="${b.id}">作廢</button></td></tr>`).join('')}</table></div>` : '<p class="adm-empty">還沒有人出價。</p>'}</div>
       <div class="adm-card"><h3>站長改過設計的車站</h3>${M.designs.length ? `<div class="adm-chips">${M.designs.map(d => `<span>${esc(d.station)}（第 ${d.period} 期 ${esc(d.name || '')}） <button class="btn btn-ghost btn-sm" data-reset="${esc(d.station)}">重設</button></span>`).join('')}</div>` : '<p class="adm-empty">還沒有。</p>'}</div>
