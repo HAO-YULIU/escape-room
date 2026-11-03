@@ -25,5 +25,10 @@ window.MistLive = (() => {
       return html(cs, ms);
     } catch (e) { return ''; }
   }
-  return { html, load };
+  // 大廳排行榜：本期擁有最多車站的站長（同站數比得標總額）；每週一 20:00 換期時更新
+  function boardRows(rows, uid, avatarHTML) {
+    if (!rows || !rows.length) return '<li class="mist-empty">這一期還沒有站長。到遊戲裡任何一站大廳的「投標所」出價，得標就能當 7 天站長、登上這個排行榜。</li>';
+    return rows.map((r, i) => `<li class="mist-row${uid && r.user_id === uid ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${esc(r.username || '旅人')}<small>${(r.names || []).slice(0, 4).map(esc).join('、')}${(r.names || []).length > 4 ? ` 等 ${r.names.length} 站` : ''}・得標 ${nt(r.total)}</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
+  }
+  return { html, load, boardRows };
 })();

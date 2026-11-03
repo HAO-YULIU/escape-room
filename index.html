@@ -2193,8 +2193,9 @@ async function loadAuth() {
   }
 }
 
+// 迷霧的排行榜：本期擁有最多車站的站長（每週一 20:00 換期時更新）
 async function loadMistTop() {
-  const { data } = await supabase.rpc('get_mist_leaderboard', { lim: 10 });
+  const { data } = await supabase.rpc('get_mist_master_board', { lim: 20 });
   mistTop = data ?? [];
 }
 async function loadStats() {
@@ -2553,7 +2554,7 @@ const earlyLeft = (g) => g.slug === 'mist' && !mistEarly.launched ? mistEarly.le
 async function loadEarly() {
   try { const { data } = await supabase.rpc('mist_early_slots'); if (data) mistEarly = data; } catch (_) {}
 }
-// ================= 大型網頁解謎遊戲（不計時、不分難度）：也放進書架（類別：歡樂），排行榜是「去過最多車站」 =================
+// ================= 大型網頁解謎遊戲（不計時、不分難度）：也放進書架（類別：歡樂），排行榜是「本期擁有最多車站的站長」 =================
 const RPGS = [{
   id: 'mist', slug: 'mist', title: '迷霧', subtitle: 'MRT × Mystery × You', tags: ['歡樂'], min_players: 1, max_players: 1, duration_min: null,
   description: '在熟悉的捷運裡，藏著不為人知的真相。從南港展覽館出發，搭遍台北捷運 118 站——每條路線的終點，都留著一件東西。末班車開走以後，月台上還有一班車。',
@@ -2561,9 +2562,9 @@ const RPGS = [{
   // 封面：原圖是正方形（covers/mist.jpg），書架用中間裁成 2:3 的版本
   cover_url: 'covers/mist-book.jpg', play_url: 'https://mrt.noron.workers.dev/', release_date: '2026-10-23', status: 'available',
 }];
-// 迷霧：探索排行榜（去過最多車站的旅人；同站數比等級），顯示在「排行榜」視窗裡
+// 迷霧：站長排行榜（本期擁有最多車站；同站數比得標總額），顯示在「排行榜」視窗裡（mist-live.js 畫）
 function mistRows() {
-  return mistTop.map((r, i) => `<li class="mist-row${user && r.user_id === user.id ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${escapeHTML(r.username || '旅人')}<small>Lv ${r.level}・寶物 ${r.treasures} / 6</small></span><b>${r.stations}<small> 站</small></b></li>`).join('') || '<li class="mist-empty">還沒有旅人上榜。用夜語帳號登入迷霧，去過的車站會自動上榜。</li>';
+  return window.MistLive ? MistLive.boardRows(mistTop, user && user.id, avatarHTML) : '';
 }
 
 // 類別篩選
@@ -3018,15 +3019,15 @@ async function renderHub() {
     if (seq === hubSeq && $('#gh-rank')) $('#gh-rank').innerHTML = html;   // 切換很快時，只放最後一次的結果
   }
 }
-// 迷霧的排行榜：比誰去過最多車站（同站數比等級），上面是自己的旅程
+// 迷霧的排行榜：本期擁有最多車站的站長，上面是自己的旅程
 function renderMistHub(g) {
-  const me = !isPlayer() ? '註冊並建立角色後，用夜語帳號登入迷霧，旅程會自動登上排行榜。'
+  const me = !isPlayer() ? '註冊並建立角色後，用夜語帳號登入迷霧；在遊戲裡投標得標成為站長，就會登上排行榜。'
     : mist ? `我的旅程：Lv ${mist.level}・去過 <b>${mist.stations}</b> 站・寶物 <b>${mist.treasures}</b> / 6${mist.station ? `・目前在 ${escapeHTML(mist.station)}` : ''}`
-    : '你還沒上車。去過的車站越多，排名越前面。';
+    : '你還沒上車。在遊戲裡任何一站的「投標所」出價，得標的車站越多，排名越前面。';
   const cta = isOpen(g) ? (!isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] ? '繼續旅程 →' : '進入遊戲 →') : '';
   $('#gh-body').innerHTML = `<div class="gh-mine">${me}</div>
     <div id="gh-live" class="mist-live"></div>
-    <p class="muted small">比誰去過最多車站，同站數比等級。</p><ol class="mist-list">${mistRows()}</ol>
+    <p class="muted small">🏷️ 擁有最多車站的站長（本期）。同站數比得標總額，每週一 20:00 換期時更新。</p><ol class="mist-list">${mistRows()}</ol>
     ${cta ? `<button class="btn btn-gold gh-play" type="button" data-go="${escapeHTML(g.slug)}">${cta}</button>` : ''}
     <button class="btn btn-ghost gh-play" type="button" data-gshare="${escapeHTML(g.slug)}">🔗 推薦這款遊戲給朋友</button>`;
   // 全服目標、本週站長（mist-live.js）
