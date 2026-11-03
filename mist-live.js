@@ -15,7 +15,7 @@ window.MistLive = (() => {
       out += `<div class="ml-goal"><b>🤝 本週全服目標：${esc(title)}</b>${st ? `<small>（${esc(st)}）</small>` : ''}
         <div class="ml-bar"><i style="width:${pct}%"></i></div>
         <small>${cs.done_at ? '已經達標！' : ''}${amt(cs.total).replace(/ \S+$/, unit ? '' : '$&')} / ${amt(cs.target)}（${pct}%）　${left}</small>
-        ${(cs.top || []).length ? `<small>捐款前三：${cs.top.slice(0, 3).map(t => esc(t.name)).join('、')}</small>` : ''}</div>`;
+        ${(cs.top || []).length ? `<small>${unit ? '貢獻' : '捐款'}前三：${cs.top.slice(0, 3).map(t => esc(t.name)).join('、')}</small>` : ''}</div>`;
     }
     // 玩家得標的站列出來；沒人得標、由管理員預設管理（0 元）的合併成一行
     const all = ms && ms.masters ? Object.entries(ms.masters) : [], dflt = all.filter(([, m]) => !m.price);
@@ -35,7 +35,7 @@ window.MistLive = (() => {
   // 大廳排行榜：本期擁有最多車站的站長（同站數比得標總額）；每週一 20:00 換期時更新
   function boardRows(rows, uid, avatarHTML) {
     if (!rows || !rows.length) return '<li class="mist-empty">這一期還沒有站長。到遊戲裡任何一站大廳的「投標所」出價，得標就能當 7 天站長、登上這個排行榜。</li>';
-    return rows.map((r, i) => `<li class="mist-row${uid && r.user_id === uid ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${plate(r.username || '旅人', r.name_color)}<small>${(r.names || []).slice(0, 4).map(esc).join('、')}${(r.names || []).length > 4 ? ` 等 ${r.names.length} 站` : ''}・得標 ${nt(r.total)}</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
+    return rows.map((r, i) => `<li class="mist-row${uid && r.user_id === uid ? ' mist-mine' : ''}"><span class="mist-no">${i + 1}</span>${avatarHTML(r, 36)}<span class="mist-name">${plate(r.username || '旅人', r.name_color)}<small>${r.total > 0 ? `得標 ${nt(r.total)}・` : '沒人得標的車站由他預設管理・'}${(r.names || []).slice(0, 2).map(esc).join('、')}${(r.names || []).length > 2 ? ` 等 ${r.names.length} 站` : ''}</small></span><b>${r.stations}<small> 站</small></b></li>`).join('');
   }
   return { html, load, boardRows, plate };
 })();
