@@ -2095,9 +2095,13 @@ function toast(msg, type = 'info') {
 }
 
 // 頭像：有上傳圖片就用圖片，沒有就用角色外觀
+// 頭像改走大廳 Worker 的快取（/av/…），不再每次都從 Supabase 下載（以前一天約 180 MB）
+const AV_PREFIX = SUPABASE_URL + '/storage/v1/object/public/avatars/';
+const avSrc = (u) => (typeof u === 'string' && u.startsWith(AV_PREFIX) && /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname) ? '/av/' + u.slice(AV_PREFIX.length) : u);
 function avatarHTML(p, size = 40) {
   if (p?.avatar_url) {
-    return `<img class="avatar-img" src="${escapeHTML(p.avatar_url)}" alt="${escapeHTML(p.username)} 的頭像" width="${size}" height="${size}">`;
+    const src = avSrc(p.avatar_url), back = src !== p.avatar_url ? ` onerror="this.onerror=null;this.src='${escapeHTML(p.avatar_url)}'"` : '';   // 快取拿不到就改回原本的網址
+    return `<img class="avatar-img" src="${escapeHTML(src)}"${back} alt="${escapeHTML(p.username)} 的頭像" width="${size}" height="${size}">`;
   }
   return `<span class="avatar-svg" style="width:${size}px;height:${size}px">${renderAvatar(p?.appearance, { size })}</span>`;
 }
@@ -2196,11 +2200,22 @@ async function loadAuth() {
 }
 
 // 迷霧的排行榜：本期擁有最多車站的站長（每週一 20:00 換期時更新）
+// 大家看到都一樣的大廳資料：一包從大廳 Worker 拿（Cloudflare 快取 60 秒，省 Supabase 流量）；拿不到就照舊各自跟 Supabase 拿
+const PUB = (/^(localhost|127\.)/.test(location.hostname) && !/[?&]pub\b/.test(location.search) ? Promise.resolve(null)   // 本機沒有 Worker；網址加 ?pub 測試
+  : fetch('/api/lobby').then(r => (r.ok ? r.json() : null)).catch(() => null));
 async function loadMistTop() {
+  const pub = await PUB; if (pub?.board) { mistTop = pub.board; return; }
   const { data } = await supabase.rpc('get_mist_master_board2', { lim: 20 });   // 新版多了彩色名牌
   mistTop = data ?? [];
 }
-async function loadStats() {
+async function loadStats(fresh) {
+  const pub = !fresh && await PUB;
+  if (pub?.stats && pub.monthly && pub.escaped) {
+    stats = Object.fromEntries(pub.stats.map(s => [s.game_id, s]));
+    escapedBy = Object.fromEntries(pub.escaped.map(r => [r.game_id, r.escaped]));
+    monthly = pub.monthly;
+    return;
+  }
   const [{ data }, { data: top }, { data: esc }] = await Promise.all([supabase.rpc('get_game_stats'), supabase.rpc('get_monthly_top2', { lim: 3 }), supabase.rpc('get_escaped_counts')]);
   stats = Object.fromEntries((data ?? []).map(s => [s.game_id, s]));
   escapedBy = Object.fromEntries((esc ?? []).map(r => [r.game_id, r.escaped]));
@@ -2554,6 +2569,7 @@ $('#monthly-list').addEventListener('click', onRoomClick);
 let mistEarly = { left: 0, limit: 10 };
 const earlyLeft = (g) => g.slug === 'mist' && !mistEarly.launched ? mistEarly.left : 0;
 async function loadEarly() {
+  const pub = await PUB; if (pub?.early) { mistEarly = pub.early; return; }
   try { const { data } = await supabase.rpc('mist_early_slots'); if (data) mistEarly = data; } catch (_) {}
 }
 // ================= 大型網頁解謎遊戲（不計時、不分難度）：也放進書架（類別：歡樂），排行榜是「本期擁有最多車站的站長」 =================
@@ -2594,8 +2610,9 @@ function applyGames() {
   retiredGames = allGames.filter(g => RETIRED.includes(g.slug) && !isUnlocked(g));
   $('#stat-rooms').textContent = gameRows.filter(g => isOpen(g) && !isHidden(g) && !RETIRED.includes(g.slug)).length; // 只算現在玩得到的密室：不算已下架、還沒開放（時間到會自動加上）、未公開的
 }
-async function loadGames() {
-  const { data, error } = await supabase.from('games').select('*').order('sort_order');
+async function loadGames(fresh) {
+  const pub = !fresh && await PUB;
+  const { data, error } = pub?.games ? { data: pub.games, error: null } : await supabase.from('games').select('*').order('sort_order');
   if (error) {
     listEl.innerHTML = `<p class="empty">讀取密室失敗：${escapeHTML(error.message)}</p>`;
     return;
@@ -2628,10 +2645,12 @@ function updateChipCounts() {
 })();
 
 // ================= 最新消息 =================
-async function loadNews() {
+async function loadNews(fresh) {
   const el = $('#news-list');
   // published_at 在未來的消息先不顯示：可以預先寫好「幾點開放」的消息，時間到了重新整理就看得到
-  const { data, error } = await supabase.from('news').select('*').lte('published_at', new Date().toISOString()).order('published_at', { ascending: false }).limit(30);
+  const pub = !fresh && await PUB;
+  const { data, error } = pub?.news ? { data: pub.news.filter(n => !n.published_at || n.published_at <= new Date().toISOString()), error: null }
+    : await supabase.from('news').select('*').lte('published_at', new Date().toISOString()).order('published_at', { ascending: false }).limit(30);
   if (error || !data?.length) { el.innerHTML = `<p class="empty">${error ? '讀取消息失敗' : '目前還沒有消息。'}</p>`; return; }
   const SHOW = 6;
   // link：game:<slug> 開啟該密室（跟點密室卡片一樣，會帶登入）、#xxx 捲到大廳區塊、一般網址直接開
@@ -2928,7 +2947,7 @@ async function openAdmin() {
     const m = await import('./admin.js?v=7');
     adminUI = m.mountAdmin({
       supabase, root: $('#view-admin'), escapeHTML, avatarHTML, toast,
-      onContentChange: async () => { await loadGames(); await loadNews(); renderAll(); },
+      onContentChange: async () => { await loadGames(true); await loadNews(true); renderAll(); },   // 管理頁改了內容：直接跟 Supabase 拿最新的
     });
   } catch (e) { $('#view-admin').innerHTML = `<p class="container" style="padding-top:100px">管理頁載入失敗：${escapeHTML(e.message)}</p>`; }
 }
@@ -4405,6 +4424,8 @@ $('#install-link').addEventListener('click', doInstall);
 
 readInvite();
 await Promise.all([loadAuth(), loadGames().then(loadNews), loadStats(), loadMistTop().catch(() => {}), loadEarly()]); // 消息要等密室資料，才知道哪些可以點
+// 管理員：人氣、本月暢銷榜有只給管理員看的數字（快取裡沒有），直接跟 Supabase 拿
+if (isAdmin) await loadStats(true).catch(() => {});
 reshuffle();
 renderAll();
 if (RECOVERY && user) showNewPw();   // 保險：萬一沒收到 PASSWORD_RECOVERY 事件
