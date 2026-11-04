@@ -1,6 +1,6 @@
 // 大廳的 Cloudflare Worker：網頁照樣當靜態檔案發佈（assets）；只有下面兩種網址交給這裡，用 Cloudflare 的快取擋在 Supabase 前面，
 // 省 Supabase 的流量（每月約 20 GB 的額度）。Cloudflare 送給玩家的流量不收費。快取要 wrangler.jsonc 的 "cache": { "enabled": true }。
-//   /api/lobby       大家看到都一樣的大廳資料（密室、最新消息、人氣、本月暢銷榜、迷霧站長榜、搶先體驗名額），一包回傳，快取 60 秒
+//   /api/lobby       大家看到都一樣的大廳資料（密室、最新消息、人氣、本月暢銷榜、迷霧站長榜、搶先體驗名額），一包回傳，快取 5 分鐘（新消息最多晚 5 分鐘出現；管理員改完內容自己會直接看到最新的）
 //                    以前每個人打開大廳都各自跟 Supabase 拿一次（一天約 2 萬次）
 //   /av/<路徑>       頭像圖片（Supabase Storage 的 avatars），快取一年：檔名裡有上傳時間，換頭像就是新網址
 //                    以前一天約 180 MB，全部從 Supabase 出去
@@ -29,7 +29,7 @@ async function lobby() {
       rpc('get_mist_master_board2', { lim: 20 }), rpc('mist_early_slots'),
     ]);
     return new Response(JSON.stringify({ at: now, games, news, stats, monthly, escaped, board, early }), {
-      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30, s-maxage=60' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60, s-maxage=300' },
     });
   } catch (e) {
     // 拿不到就不要快取：網頁會改成自己跟 Supabase 拿

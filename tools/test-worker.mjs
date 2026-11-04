@@ -16,7 +16,7 @@ const env = { ASSETS: { fetch: async () => new Response('ASSET') } };
 const get = p => worker.fetch(new Request('https://lobby.example' + p), env);
 
 let r = await get('/api/lobby'), j = await r.json();
-ok(r.status === 200 && /s-maxage=60/.test(r.headers.get('Cache-Control')), '大廳資料：200、快取 60 秒');
+ok(r.status === 200 && /s-maxage=300/.test(r.headers.get('Cache-Control')), '大廳資料：200、快取 5 分鐘');
 ok(j.games?.[0]?.slug === 'x' && j.news?.[0]?.title === '消息' && j.stats && j.monthly && j.escaped && j.board && j.early, '一包裡有密室、消息、人氣、暢銷榜、逃脫人數、站長榜、搶先名額');
 ok(calls.every(c => c[2]), '跟 Supabase 拿資料都有帶 apikey');
 ok(calls.some(c => c[1].includes('news?') && c[1].includes('published_at=lte.')), '消息只拿已經發佈的');
