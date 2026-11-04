@@ -2200,7 +2200,7 @@ async function loadAuth() {
 }
 
 // 迷霧的排行榜：本期擁有最多車站的站長（每週一 20:00 換期時更新）
-// 大家看到都一樣的大廳資料：一包從大廳 Worker 拿（Cloudflare 快取 60 秒，省 Supabase 流量）；拿不到就照舊各自跟 Supabase 拿
+// 大家看到都一樣的大廳資料：一包從大廳 Worker 拿（Cloudflare 快取 5 分鐘，省 Supabase 流量）；拿不到就照舊各自跟 Supabase 拿
 const PUB = (/^(localhost|127\.)/.test(location.hostname) && !/[?&]pub\b/.test(location.search) ? Promise.resolve(null)   // 本機沒有 Worker；網址加 ?pub 測試
   : fetch('/api/lobby').then(r => (r.ok ? r.json() : null)).catch(() => null));
 async function loadMistTop() {
