@@ -166,7 +166,9 @@ const ago = (t) => {
 const dt = (t) => t ? new Date(t).toLocaleString('zh-TW', { ...TZ, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '–';
 const day = (t) => new Date(t).toLocaleDateString('sv-SE', TZ);
 const pct = (a, b) => b ? Math.round(a / b * 100) + '%' : '–';
-const maxT = (...ts) => ts.filter(Boolean).sort().pop() || null;
+// 最新的時間。玩家裝置的時鐘不準（快了幾個小時）時，遊戲存檔的時間會在「未來」→ 以前會一直被當成「在線」；超過現在 5 分鐘的時間不算
+const future = (t) => t && new Date(t) - Date.now() > 5 * 60e3;
+const maxT = (...ts) => ts.filter(t => t && !future(t)).sort((a, b) => new Date(a) - new Date(b)).pop() || null;
 
 const CSS = `
 #view-admin { padding: 92px 0 60px; min-height: 100vh; }
@@ -317,6 +319,7 @@ export function mountAdmin(ctx) {
       x.best = cleared.length ? Math.min(...cleared.map(r => r.clear_time_sec ?? Infinity)) : null;
       x.cleared = cleared.length > 0;
       x.last = maxT(x.save?.updated_at, ...x.recs.map(r => r.updated_at || r.created_at));
+      if (future(x.save?.updated_at)) p.skew = Math.max(p.skew || 0, (new Date(x.save.updated_at) - Date.now()) / 36e5);   // 裝置時鐘快了幾小時
       x.status = x.cleared || x.sum?.done ? 'done' : x.sum ? 'progress' : 'started';
       p.last = maxT(p.last, x.last);
     }
@@ -392,7 +395,7 @@ export function mountAdmin(ctx) {
       const cur = xs[0] && now - new Date(xs[0].last) < (live ? 15 * 60e3 : 864e5) ? xs[0] : null;
       const where = cur ? progLine(cur.slug, cur) + `<br><small>存檔 ${ago(cur.last)}</small>` : live ? '在大廳（最近 15 分鐘沒有遊戲存檔）' : '沒有玩遊戲';
       return `<div class="adm-row">${avatarHTML(p, 40)}<div><b><span class="adm-dot ${live ? '' : 'idle'}"></span>${esc(p.name)}</b>${p.admin ? '<span class="adm-tag">你</span>' : ''}
-        <span class="adm-tag">${ago(p.last)}</span><p>${where}</p></div></div>`;
+        <span class="adm-tag">${ago(p.last)}</span>${p.skew ? `<span class="adm-tag" title="這個玩家的存檔時間在未來，最後上線改用登入紀錄判斷">⏰ 裝置時間快了約 ${Math.round(p.skew)} 小時</span>` : ''}<p>${where}</p></div></div>`;
     };
     body.innerHTML = `
       <div class="adm-card"><h3>現在在線<small>最近 15 分鐘有動作・每 20 秒自動更新</small></h3>${on.map(p => row(p, true)).join('') || '<p class="adm-empty">現在沒有人在線。</p>'}</div>
