@@ -1363,7 +1363,7 @@ h1, h2, h3 { letter-spacing: .04em; }
           <p>這個月最多人翻開的三本</p>
         </div>
         <div class="monthly" id="monthly-list"><p class="empty">正在統計本月人氣…</p></div>
-        <p class="month-note">依本月挑戰的玩家人數排名，每月 1 日重新計算。</p>
+        <p class="month-note">依本月挑戰的玩家人數排名（《迷霧》算本月有遊玩的玩家），每月 1 日重新計算。</p>
       </div>
     </section>
 
@@ -2201,7 +2201,7 @@ async function loadMistTop() {
   mistTop = data ?? [];
 }
 async function loadStats() {
-  const [{ data }, { data: top }, { data: esc }] = await Promise.all([supabase.rpc('get_game_stats'), supabase.rpc('get_monthly_top', { lim: 3 }), supabase.rpc('get_escaped_counts')]);
+  const [{ data }, { data: top }, { data: esc }] = await Promise.all([supabase.rpc('get_game_stats'), supabase.rpc('get_monthly_top2', { lim: 3 }), supabase.rpc('get_escaped_counts')]);
   stats = Object.fromEntries((data ?? []).map(s => [s.game_id, s]));
   escapedBy = Object.fromEntries((esc ?? []).map(r => [r.game_id, r.escaped]));
   monthly = top ?? [];
@@ -4053,7 +4053,8 @@ function renderMonthly() {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Taipei' }));
   $('#monthly-title').textContent = `${now.getMonth() + 1} 月暢銷榜`;
   const byId = Object.fromEntries(monthly.map(r => [r.game_id, r]));
-  const top = monthly.map(r => games.find(g => g.id === r.game_id)).filter(g => g && isOpen(g));
+  // 《迷霧》也算（game_id 是 'mist'，人數＝本月有存檔的玩家）
+  const top = monthly.map(r => games.find(g => g.id === r.game_id) || RPGS.find(g => g.id === r.game_id)).filter(g => g && isOpen(g));
   // 本月還不到三款有人玩：用最新上線的補滿
   for (const g of games.filter(isOpen).sort((a, b) => String(released(b)).localeCompare(String(released(a))))) {
     if (top.length >= 3) break;
@@ -4074,7 +4075,7 @@ function pickCard(g, rank, note) {
         <h4>${escapeHTML(g.title)}</h4>
         ${g.subtitle ? `<p class="sub">${escapeHTML(g.subtitle)}</p>` : ''}
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
-        <div class="pick-facts"><span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span>${diffSpans(g)}</div>
+        <div class="pick-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span>${diffSpans(g)}`}</div>
         <span class="pick-cta">${m?.best != null ? `已逃脫 ${fmtTime(m.best)}・` : ''}${cta}</span>
       </div>
     </button>`;
