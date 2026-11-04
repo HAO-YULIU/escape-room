@@ -2157,7 +2157,7 @@ async function loadAuth() {
     const uid = user.id;
     const [P, R, MS, SV, ADM, ACH, MSG, INV] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
-      supabase.from('play_records').select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending,variant').eq('user_id', uid),
+      supabase.from('play_records').select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending,endings,variant').eq('user_id', uid),
       // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
       supabase.from('game_saves').select('level,station,updated_at,visited:data->visited,items:data->items,name:data->name').eq('user_id', uid).eq('game', 'mist').maybeSingle(),
       supabase.from('game_saves').select('game,updated_at').eq('user_id', uid),
@@ -2182,7 +2182,7 @@ async function loadAuth() {
     if (profile) claimRef().catch(() => {});
     for (const r of myRecs) {
       const m = mine[r.game_id] ??= { plays: 0, clears: 0, best: null, bestRec: null, last: r.created_at, deaths: 0, hints: 0, endings: new Set() };
-      if (r.ending && r.status === 'cleared') m.endings.add(r.ending);
+      if (r.status === 'cleared') for (const e of [r.ending, ...(r.endings || [])]) if (e) m.endings.add(e);
       m.plays++;
       m.deaths += r.deaths ?? 0;
       m.hints += r.hints ?? 0;
@@ -3280,7 +3280,8 @@ function achContext() {
   const cleared = recs.filter(r => r.status === 'cleared' && !SIDE_MODES.has(r.variant));
   const bySlug = {}, endings = {};
   for (const r of recs) (bySlug[r.slug] ??= []).push(r);
-  for (const r of recs) if (r.status === 'cleared' && r.ending) (endings[r.slug] ??= new Set()).add(r.ending);
+  // endings：同一場看過的其他結局（結局後「回到最後的選擇」再選一次，ending 只留最後一個；資料庫的觸發器會把前面的收進 endings）
+  for (const r of recs) if (r.status === 'cleared') for (const e of [r.ending, ...(r.endings || [])]) if (e) (endings[r.slug] ??= new Set()).add(e);
   return { recs, cleared, bySlug, endings, openSlugs: games.filter(isOpen).map(g => g.slug),
     slugs: new Set(cleared.map(r => r.slug)), invited: invited.length, invitedPlayed: invited.filter(f => f.played).length,
     endingTotal: Object.values(endings).reduce((n, x) => n + x.size, 0),
