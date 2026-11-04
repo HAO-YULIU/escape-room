@@ -275,7 +275,7 @@ export function mountAdmin(ctx) {
   if (!document.getElementById('adm-css')) { const st = document.createElement('style'); st.id = 'adm-css'; st.textContent = CSS + CSS_MIST; document.head.appendChild(st); }
   const mist = mountMist(ctx);   // 迷霧專用的分頁（玩家存檔、回報處理、公告與活動、數據）
   let D = null, games = [], tab = 'overview', stuckGame = null, timer = 0, loading = false;
-  const TABS = [['overview', '總覽'], ['live', '即時動態'], ['stuck', '卡關分析'], ...mist.TABS, ['news', '最新消息'], ['games', '遊戲資訊']];
+  const TABS = [['overview', '總覽'], ['live', '即時動態'], ['stuck', '卡關分析'], ...mist.TABS, ['notice', '🚨 大廳公告'], ['news', '最新消息'], ['games', '遊戲資訊']];
 
   root.innerHTML = `<div class="container">
     <div class="adm-head"><h1>🛠 管理</h1><span class="muted" id="adm-upd"></span><button class="btn btn-ghost btn-sm" type="button" id="adm-reload">重新整理</button></div>
@@ -385,7 +385,7 @@ export function mountAdmin(ctx) {
   function render() {
     if (!D) return;
     if (mist.TABS.some(([k]) => k === tab)) return mist.render(tab, body);
-    const fn = { overview, live, stuck, news, gamesTab }[tab === 'games' ? 'gamesTab' : tab];
+    const fn = { overview, live, stuck, notice, news, gamesTab }[tab === 'games' ? 'gamesTab' : tab];
     fn();
   }
 
@@ -500,6 +500,56 @@ export function mountAdmin(ctx) {
       : '<p class="adm-empty">還沒有人玩過這款（不含你自己）。</p>'}
       <p class="adm-note">「已解」只算目前這一段的題目；有些題目要看劇情分支才會出現，所以總數是大約的。已通關的玩家存檔會被遊戲清掉，所以只看得到通關紀錄。</p>`;
     body.querySelector('#adm-stuck-g').addEventListener('change', (e) => { stuckGame = e.target.value; stuck(); });
+  }
+
+  // ---------- 5b. 大廳公告（緊急公告）：直接顯示在大廳最上面，可以設定開始、結束時間 ----------
+  // 存在 game_announcements（game = 'lobby'），level：info＝一般（金色）、urgent＝緊急（紅色）
+  // 大廳從 Worker 的 /api/notice 拿（快取 1 分鐘）、每 2 分鐘再查一次：發布或到開始時間後，最多 1～3 分鐘出現在大家的大廳
+  let noticeEdit = null;
+  async function notice() {
+    body.innerHTML = '<p class="adm-empty">讀取中…</p>';
+    const { data: list, error } = await supabase.from('game_announcements').select('*').eq('game', 'lobby').order('starts_at', { ascending: false }).limit(50);
+    if (error) { body.innerHTML = `<p class="adm-empty">讀取失敗：${esc(error.message)}</p>`; return; }
+    const a = noticeEdit ? list.find(x => String(x.id) === String(noticeEdit)) : null;
+    const now = Date.now(), state = (x) => !x.active ? ['停用', ''] : new Date(x.starts_at) > now ? ['還沒開始', 'warn'] : x.ends_at && new Date(x.ends_at) <= now ? ['已結束', ''] : ['顯示中', 'ok'];
+    const end = (h) => localInput(new Date(Date.now() + h * 3600e3));
+    body.innerHTML = `
+      <div class="adm-card"><h3>${a ? '修改大廳公告' : '發一則大廳公告'}<small>直接顯示在大廳最上面（所有人，包含沒登入的）；發布後 1～3 分鐘內出現，不用重新整理</small></h3>
+        <form class="adm-form" id="adm-nt-f">
+          <label>標題<input name="title" required maxlength="80" placeholder="例如：今晚 23:00～23:30 系統維護" value="${esc(a?.title || '')}"></label>
+          <label>內容（選填，網址會變成連結）<textarea name="body" maxlength="1000">${esc(a?.body || '')}</textarea></label>
+          <label>等級<select name="level"><option value="urgent"${!a || a.level === 'urgent' ? ' selected' : ''}>🚨 緊急（紅色）</option><option value="info"${a && a.level !== 'urgent' ? ' selected' : ''}>📢 一般（金色）</option></select></label>
+          <div class="two"><label>開始時間<input type="datetime-local" name="starts_at" value="${localInput(a?.starts_at || new Date())}"></label><label>結束時間（留空＝一直顯示）<input type="datetime-local" name="ends_at" value="${a?.ends_at ? localInput(a.ends_at) : ''}"></label></div>
+          <div class="acts" style="font-size:13px"><span class="muted">結束時間快速設定：</span>${[[1, '1 小時後'], [3, '3 小時後'], [24, '明天這時候'], [168, '一週後']].map(([h, t]) => `<button class="btn btn-ghost btn-sm" type="button" data-end="${end(h)}">${t}</button>`).join('')}<button class="btn btn-ghost btn-sm" type="button" data-end="">不結束</button></div>
+          <label class="chk"><input type="checkbox" name="active"${!a || a.active ? ' checked' : ''}> 啟用（取消勾選＝馬上收起來）</label>
+          <div class="acts"><button class="btn btn-gold" type="submit">${a ? '儲存修改' : '發布'}</button>${a ? '<button class="btn btn-ghost" type="button" id="adm-nt-x">取消</button>' : ''}</div></form></div>
+      <div class="adm-card"><h3>全部大廳公告<small>${list.length} 則</small></h3>${list.map(x => { const [t, c] = state(x); return `<div class="adm-news"><div><b>${x.level === 'urgent' ? '🚨 ' : '📢 '}${esc(x.title)}</b><span class="adm-tag ${c}">${t}</span>
+        <p>${dt(x.starts_at)} → ${x.ends_at ? dt(x.ends_at) : '不結束'}</p>${x.body ? `<p>${esc(x.body)}</p>` : ''}</div>
+        ${t === '顯示中' ? `<button class="btn btn-ghost" data-nstop="${x.id}">立刻結束</button>` : ''}<button class="btn btn-ghost" data-ne="${x.id}">修改</button><button class="btn btn-ghost" data-nd="${x.id}">刪除</button></div>`; }).join('') || '<p class="adm-empty">還沒有大廳公告。</p>'}</div>`;
+    const f = body.querySelector('#adm-nt-f');
+    body.querySelectorAll('[data-end]').forEach(b => b.onclick = () => { f.ends_at.value = b.dataset.end; });
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      const v = Object.fromEntries(new FormData(f));
+      const st = v.starts_at ? new Date(v.starts_at) : new Date(), en = v.ends_at ? new Date(v.ends_at) : null;
+      if (en && en <= st) return toast('結束時間要比開始時間晚', 'error');
+      const row = { game: 'lobby', title: v.title.trim(), body: v.body.trim() || null, level: v.level === 'urgent' ? 'urgent' : 'info', starts_at: st.toISOString(), ends_at: en ? en.toISOString() : null, active: !!v.active };
+      const { error: e2 } = noticeEdit ? await supabase.from('game_announcements').update(row).eq('id', noticeEdit) : await supabase.from('game_announcements').insert(row);
+      if (e2) return toast('儲存失敗：' + e2.message, 'error');
+      toast(noticeEdit ? '公告已更新' : '公告已發布，1～3 分鐘內會出現在大廳', 'ok'); noticeEdit = null; notice();
+      window.dispatchEvent(new Event('lobby-notice-changed'));
+    };
+    body.querySelector('#adm-nt-x')?.addEventListener('click', () => { noticeEdit = null; notice(); });
+    body.querySelectorAll('[data-ne]').forEach(b => b.onclick = () => { noticeEdit = b.dataset.ne; notice(); scrollTo({ top: 0, behavior: 'smooth' }); });
+    body.querySelectorAll('[data-nstop]').forEach(b => b.onclick = async () => {
+      const { error: e2 } = await supabase.from('game_announcements').update({ ends_at: new Date().toISOString() }).eq('id', b.dataset.nstop);
+      if (e2) return toast('失敗：' + e2.message, 'error'); toast('已結束，1～3 分鐘內從大廳消失'); notice(); window.dispatchEvent(new Event('lobby-notice-changed'));
+    });
+    body.querySelectorAll('[data-nd]').forEach(b => b.onclick = async () => {
+      if (!confirm('確定要刪除這則公告嗎？')) return;
+      const { error: e2 } = await supabase.from('game_announcements').delete().eq('id', b.dataset.nd);
+      if (e2) return toast('刪除失敗：' + e2.message, 'error'); toast('已刪除'); notice(); window.dispatchEvent(new Event('lobby-notice-changed'));
+    });
   }
 
   // ---------- 5a. 最新消息 ----------

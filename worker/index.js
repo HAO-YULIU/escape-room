@@ -2,6 +2,7 @@
 // 省 Supabase 的流量（每月約 20 GB 的額度）。Cloudflare 送給玩家的流量不收費。快取要 wrangler.jsonc 的 "cache": { "enabled": true }。
 //   /api/lobby       大家看到都一樣的大廳資料（密室、最新消息、人氣、本月暢銷榜、迷霧站長榜、搶先體驗名額），一包回傳，快取 5 分鐘（新消息最多晚 5 分鐘出現；管理員改完內容自己會直接看到最新的）
 //                    以前每個人打開大廳都各自跟 Supabase 拿一次（一天約 2 萬次）
+//   /api/notice      大廳公告（管理頁「大廳公告」發的，game_announcements 的 game='lobby'），快取 1 分鐘：緊急公告不能等 5 分鐘
 //   /av/<路徑>       頭像圖片（Supabase Storage 的 avatars），快取一年：檔名裡有上傳時間，換頭像就是新網址
 //                    以前一天約 180 MB，全部從 Supabase 出去
 const SB = 'https://umlnwzpmjxktfzjvcbts.supabase.co';
@@ -37,6 +38,16 @@ async function lobby() {
   }
 }
 
+async function notice() {
+  try {
+    // 資料庫的權限只讓大家讀到「啟用中、已經開始、還沒結束」的公告
+    const list = await rest("game_announcements?select=id,title,body,level,starts_at,ends_at&game=eq.lobby&order=starts_at.desc&limit=5");
+    return new Response(JSON.stringify(list), { headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=30, s-maxage=60' } });
+  } catch (e) {
+    return new Response('[]', { status: 502, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } });
+  }
+}
+
 async function avatar(path) {
   if (!/^[\w-]+\/[\w.-]+$/.test(path)) return new Response('bad path', { status: 400 });
   let r; try { r = await fetch(`${SB}/storage/v1/object/public/avatars/${path}`); } catch (e) { return new Response('upstream error', { status: 502, headers: { 'Cache-Control': 'no-store' } }); }
@@ -50,6 +61,7 @@ export default {
   async fetch(req, env) {
     const url = new URL(req.url);
     if (req.method === 'GET' && url.pathname === '/api/lobby') return lobby();
+    if (req.method === 'GET' && url.pathname === '/api/notice') return notice();
     if (req.method === 'GET' && url.pathname.startsWith('/av/')) return avatar(url.pathname.slice(4));
     return env.ASSETS.fetch(req);
   },

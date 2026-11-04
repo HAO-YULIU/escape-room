@@ -1288,10 +1288,28 @@ h1, h2, h3 { letter-spacing: .04em; }
   .header-right { gap: 6px; }
 }
 @media (max-width: 360px) { .logo { font-size: 13px; } }
+
+/* ===== 大廳公告（管理頁「大廳公告」發的；緊急＝紅色） ===== */
+.notice { position: fixed; top: 76px; left: 50%; translate: -50% 0; z-index: 40; width: min(640px, calc(100% - 32px)); display: grid; gap: 8px; }
+.notice[hidden] { display: none; }
+.nt-card { position: relative; padding: 14px 44px 14px 16px; border-radius: 14px; background: rgba(28,20,13,.96); border: 1px solid var(--gold-dark); color: var(--parchment); box-shadow: 0 14px 40px rgba(0,0,0,.45); backdrop-filter: blur(8px); }
+.nt-card b { display: block; font: 700 16px/1.4 var(--sans); color: var(--gold); margin-bottom: 2px; }
+.nt-card p { margin: 0; font-size: 14px; line-height: 1.7; white-space: normal; overflow-wrap: anywhere; }
+.nt-card p a { color: var(--gold); }
+.nt-card small { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+.nt-card.urgent { background: rgba(58,14,12,.97); border-color: #E2584A; box-shadow: 0 0 0 1px rgba(226,88,74,.3), 0 14px 40px rgba(0,0,0,.5); }
+.nt-card.urgent b { color: #FFB4A8; }
+.nt-card.urgent b::before { content: '🚨 '; }
+.nt-x { position: absolute; top: 8px; right: 8px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); font-size: 18px; cursor: pointer; }
+.nt-x:hover { color: var(--parchment); background: rgba(255,255,255,.08); }
+.nt-pill { justify-self: center; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--gold-dark); background: rgba(28,20,13,.92); color: var(--gold); font: 700 13px var(--sans); cursor: pointer; box-shadow: 0 6px 18px rgba(0,0,0,.35); }
+.nt-pill.urgent { border-color: #E2584A; color: #FFB4A8; background: rgba(58,14,12,.95); }
+@media (max-width: 520px) { .notice { top: 66px; } .nt-card { padding: 12px 40px 12px 14px; } }
   </style>
 </head>
 <body class="home" id="top">
   <header id="site-header"></header>
+  <div id="notice" class="notice" hidden aria-live="polite"></div>
 
   <!-- ===== 大廳 ===== -->
   <div id="view-home">
@@ -2199,6 +2217,51 @@ async function loadAuth() {
   }
 }
 
+// ===== 大廳公告：管理頁「大廳公告」發的（game_announcements，game='lobby'）。從大廳 Worker 拿（快取 1 分鐘），每 2 分鐘再查一次，不用重新整理
+// 按 ✕ 收成小按鈕（記在這台裝置；同一則公告改過內容會再展開）
+const Notice = (() => {
+  const el = document.getElementById('notice'), KEY = 'lobby-notice-hidden';
+  let list = [], timer = null, peek = false, peekY = 0, lastC = null;   // peek：捲下去後按小按鈕暫時展開
+  const local = /^(localhost|127\.)/.test(location.hostname) && !/[?&]pub\b/.test(location.search);
+  const sig = (n) => n.id + ':' + (n.title + '|' + (n.body || '') + '|' + n.level).length + ':' + (n.title + (n.body || '')).slice(0, 40);
+  const hidden = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+  const setHidden = (a) => { try { localStorage.setItem(KEY, JSON.stringify(a.slice(-30))); } catch (e) { /* 無法存取 */ } };
+  const text = (t) => escapeHTML(t || '').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g, '<br>');
+  const until = (t) => t ? '到 ' + new Date(t).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
+  async function fetchList(direct) {
+    if (!local && !direct) { try { const r = await fetch('/api/notice', { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) { /* 改成直接問 Supabase */ } }
+    const { data } = await supabase.from('game_announcements').select('id,title,body,level,starts_at,ends_at,active').eq('game', 'lobby').order('starts_at', { ascending: false }).limit(20);
+    return data || [];
+  }
+  function draw() {
+    const now = Date.now();
+    const cur = list.filter(n => n.active !== false && new Date(n.starts_at) <= now && (!n.ends_at || new Date(n.ends_at) > now))   // 快取最多晚 1 分鐘：時間到了這裡先收起來
+      .sort((a, b) => (b.level === 'urgent') - (a.level === 'urgent'));
+    // 管理頁不顯示（管理頁有「大廳公告」分頁）；首頁最上面才展開，捲下去或在其他頁面只留小按鈕，免得擋住內容
+    if (!cur.length || location.hash === '#admin') { el.hidden = true; el.innerHTML = ''; return; }
+    const compact = !peek && (!document.body.classList.contains('home') || scrollY > 160);
+    const hid = hidden(), open = compact ? [] : cur.filter(n => !hid.includes(sig(n))), shut = cur.length - open.length;
+    el.innerHTML = open.map(n => `<div class="nt-card ${n.level === 'urgent' ? 'urgent' : ''}" role="${n.level === 'urgent' ? 'alert' : 'status'}"><b>${escapeHTML(n.title)}</b>${n.body ? `<p>${text(n.body)}</p>` : ''}${n.ends_at ? `<small>${until(n.ends_at)}</small>` : ''}<button class="nt-x" type="button" data-nx="${escapeHTML(sig(n))}" aria-label="收起公告">✕</button></div>`).join('')
+      + (shut ? `<button class="nt-pill ${cur.some(n => n.level === 'urgent' && !open.includes(n)) ? 'urgent' : ''}" type="button" data-nopen>📢 公告${shut > 1 ? '（' + shut + '）' : ''}</button>` : '');
+    el.hidden = false;
+  }
+  el.addEventListener('click', (e) => {
+    const x = e.target.closest('[data-nx]'); if (x) { setHidden([...hidden(), x.dataset.nx]); draw(); return; }
+    if (e.target.closest('[data-nopen]')) { const s = list.map(sig); setHidden(hidden().filter(h => !s.includes(h))); peek = true; peekY = scrollY; lastC = false; draw(); }
+  });
+  addEventListener('scroll', () => { if (peek && Math.abs(scrollY - peekY) > 240) peek = false; const c = !peek && scrollY > 160; if (c !== lastC) { lastC = c; if (list.length) draw(); } }, { passive: true });
+  addEventListener('hashchange', () => { peek = false; setTimeout(draw, 50); });
+  async function refresh(direct) { try { list = await fetchList(direct); } catch (e) { /* 下次再試 */ } draw(); }
+  function start() {
+    refresh();
+    clearInterval(timer); timer = setInterval(() => { if (!document.hidden) refresh(); else draw(); }, 120000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
+  }
+  return { start, refresh };
+})();
+Notice.start();
+addEventListener('lobby-notice-changed', () => Notice.refresh(true));   // 管理員自己改完，自己的大廳馬上更新
+
 // 迷霧的排行榜：本期擁有最多車站的站長（每週一 20:00 換期時更新）
 // 大家看到都一樣的大廳資料：一包從大廳 Worker 拿（Cloudflare 快取 5 分鐘，省 Supabase 流量）；拿不到就照舊各自跟 Supabase 拿
 const PUB = (/^(localhost|127\.)/.test(location.hostname) && !/[?&]pub\b/.test(location.search) ? Promise.resolve(null)   // 本機沒有 Worker；網址加 ?pub 測試
@@ -2944,7 +3007,7 @@ let adminUI = null;
 async function openAdmin() {
   if (adminUI) return adminUI.refresh();
   try {
-    const m = await import('./admin.js?v=7');
+    const m = await import('./admin.js?v=8');
     adminUI = m.mountAdmin({
       supabase, root: $('#view-admin'), escapeHTML, avatarHTML, toast,
       onContentChange: async () => { await loadGames(true); await loadNews(true); renderAll(); },   // 管理頁改了內容：直接跟 Supabase 拿最新的
