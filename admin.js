@@ -1,4 +1,4 @@
-import { mountMist, CSS_MIST } from './admin-mist.js?v=1';
+import { mountMist, CSS_MIST } from './admin-mist.js?v=2';
 // 夜語・管理頁（只有管理員登入後才會載入）
 // 資料都靠資料庫權限保護：admin_dump() 不是管理員會直接被拒絕；最新消息、遊戲資訊的修改也只有管理員能寫入。
 // 這個檔案本身沒有任何秘密，就算被人看到也拿不到資料。
@@ -47,10 +47,15 @@ const ENDING_NAMES = {
     'never-ending-night': '暮兒之夜：永不熄滅的夜', forgotten: '暮兒之夜：被遺忘的人', 'last-page': '暮兒之夜：最後一頁', 'still-searching': '暮兒之夜：她還在找人',
     'all-vanished': '失敗：全隊的名字都消失', 'hell-fail': '失敗：全隊成為病患（地獄版）', 'no-handover': '失敗：沒有人接班（地獄版）' },
   hotel1: { rescue: '救出皇后', secret: '救出皇后＋看到 B3 的祕密（隱藏）' },
+  heart: { diva: '影后結局', busted: '穿幫結局', coco: 'Coco 結局', g12k: '彩蛋：遊戲儲值 NT$12,000' },
+  fanmian: { front: '正面', back: '反面', shard: '碎片', fifth: '第五個人（隱藏）', lost: '時間到（失敗）' },
   arg: { E1: '未完成', E2: '交接', E3: '記錄者', E4: '停止計算', E5: '沉默', E6: '第八位收件人', E7: '被遺忘的權利', E8: '你不知道' },
 };
 const BANG_CH = [['序章', '台北車站', 8], ['第一章', '故宮', 11], ['第二章', '台北市立美術館', 11], ['第三章', '九份', 11], ['第四章', '十分', 11],
   ['第五章', '台北 101', 11], ['第六章', '淡水老街', 11], ['第七章', '西門町', 11], ['第八章', '饒河夜市', 11], ['第九章', '大安森林公園', 12]];
+// 《別讓他知道》《反面》：資料庫只存數字（_admin_key：n＝已解題數、nc＝反面每章解幾題、pl＝玩家名字）
+const HEART_CH = ['序章', '第一章', '第二章', '第三章', '第四章', '第五章', '終章'];
+const FANMIAN_CH = [['序章', '老街'], ['第一章', '一樓・門市', 13], ['第二章', '一樓後面・暗房', 12], ['第三章', '二樓・林家', 12], ['第四章', '鏡子的兩邊', 12], ['第五章', '三樓・攝影棚', 13]];
 const SEA_PARTS = ['第一部分・殘燭初燃', '第二部分・暗潮浮影', '第三部分・燭影照罪'];
 const SEA_SOLO = [['gate', '雨夜請柬', 1], ['dinner', '沈家的晚宴', 1], ['before', '十點之前', 1], ['murder', '書房命案', 1], ['testimony', '證詞與謊言', 2], ['clinic', '醫師的判斷', 2],
   ['kitchen', '吳媽的鑰匙', 2], ['phone', '電話間的空白', 2], ['restudy', '重新勘查書房', 3], ['office', '帳目與鑰匙', 3], ['final', '最後的證詞', 3], ['timeline', '重建案發時間', 3]];
@@ -102,6 +107,22 @@ function summarize(game, save) {
       solved: ids ? ids.filter(x => x.startsWith('c' + ch + '_') || x.startsWith('m' + ch + '_')).length : null,
       total: BANG_CH[ch][2] + (multi && ch >= 1 && ch <= 8 ? 1 : 0), all: cnt(G.solved), time: G.t, deaths: G.deaths, hints: G.hints,
       endings: ends, done, fail: G.phase === 'fail', note: multi ? `${G.players.length} 人連線：${G.players.map(p => p.name).join('、')}` : '單人' };
+  }
+  if (game === 'heart' || game === 'fanmian') {
+    const G = J(k[game + '_g']), ends = endList(game, J(k[game + '_end']));
+    const pn = game === 'heart' ? HEART_CH.length : FANMIAN_CH.length + 1;
+    if (!G) return ends.length ? { done: true, endings: ends, part: '已完成', pi: pn, pn } : null;
+    const ch = Math.max(0, G.ch | 0), done = G.phase === 'end' && G.ending !== 'lost', fail = G.ending === 'lost';
+    const names = Array.isArray(G.pl) ? G.pl : [], multi = G.mode === 'multi' && names.length >= 2;
+    const fin = game === 'heart' && G.phase === 'finale';
+    if (game === 'heart') return { part: done ? '已完成' : fin ? '終章・最後的任務' : HEART_CH[Math.min(ch, HEART_CH.length - 1)], pi: done ? pn : Math.min(ch, pn - 1), pn,
+      scene: null, solved: G.n ?? null, total: 45, all: G.n ?? null, time: G.clearT ?? G.t, hints: G.hintN, endings: ends, done, fail,
+      note: [multi ? `${names.length} 人連線：${names.join('、')}` : '單人', G.wrongs ? `答錯 ${G.wrongs}` : ''].filter(Boolean).join('・') };
+    const c = FANMIAN_CH[Math.min(ch, FANMIAN_CH.length - 1)];
+    const left = G.budget ? Math.max(0, G.budget - (G.used || 0)) : null;
+    return { part: done ? '已完成' : fail ? '時間到' : c[0], pi: done ? pn : Math.min(ch, pn - 1), pn, scene: c[1],
+      solved: c[2] ? (G.nc?.[ch] ?? 0) : null, total: c[2] || null, all: G.n ?? null, time: G.clearT ?? G.t, deaths: G.deaths, hints: G.hintN, endings: ends, done, fail,
+      note: [multi ? `${names.length} 人連線：${names.join('、')}` : '單人', G.lives != null ? `相機 ${G.lives} / 7` : '', left != null && !done ? `時間池剩 ${Math.floor(left / 3600)} 小時 ${Math.floor(left % 3600 / 60)} 分` : '', G.wrongs ? `答錯 ${G.wrongs}` : ''].filter(Boolean).join('・') };
   }
   if (game === 'sea') {
     const G = J(k.sea_g), ends = endList(game, J(k.sea_end));
@@ -263,9 +284,37 @@ export function mountAdmin(ctx) {
   root.querySelector('#adm-reload').addEventListener('click', () => load(true));
 
   // full：整包重抓（第一次、按「重新整理」）；不然只抓上次之後有變化的部分再合併（即時動態每 20 秒一次，整包約 5 MB，會吃掉 Supabase 的流量額度）
+  // 這台裝置上記住上次的資料（IndexedDB）：重新打開管理頁只抓有變化的部分，不用每次整包約 10 MB 重抓。
+  // 超過 12 小時、或按「重新整理」才整包重抓（期間被刪掉的資料要整包重抓才會消失）。
+  const CACHE_MAX = 12 * 3600e3;
+  const idb = (mode, fn) => new Promise((res) => {
+    try {
+      const rq = indexedDB.open('yeyu-admin', 1);
+      rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+      rq.onerror = () => res(null);
+      rq.onsuccess = () => { try { const tx = rq.result.transaction('kv', mode), r = fn(tx.objectStore('kv')); tx.oncomplete = () => { res(r && r.result); rq.result.close(); }; tx.onerror = tx.onabort = () => { res(null); rq.result.close(); }; } catch (e) { res(null); } };
+    } catch (e) { res(null); }
+  });
+  let cachedAt = 0, savedAt = 0;
+  async function fromCache() {
+    const c = await idb('readonly', (st) => st.get('dump'));
+    if (!c || !c.D || !c.D.now || Date.now() - c.at > CACHE_MAX) return false;
+    D = c.D; games = c.games || []; cachedAt = c.at; return true;
+  }
+  function toCache(full) {
+    // 整包抓完一定存；只抓變化的話最多 5 分鐘存一次（存的是整份資料，太常存會讓手機變慢）
+    if (!full && Date.now() - savedAt < 5 * 60e3) return;
+    savedAt = Date.now();
+    const at = full ? Date.now() : (cachedAt || Date.now());   // 12 小時從上次整包重抓算起
+    if (full) cachedAt = at;
+    idb('readwrite', (st) => st.put({ D, games, at }, 'dump'));
+  }
+
   async function load(full = false) {
     if (loading) return; loading = true;
     try {
+      if (full) cachedAt = 0;
+      else if (!D && await fromCache()) { prep(); render(); }   // 先用記住的資料畫出來，再去抓變化
       const since = !full && D?.now ? new Date(new Date(D.now).getTime() - 60000).toISOString() : null;   // 多抓 1 分鐘，避免漏掉
       // 偶爾逾時或網路不穩：自動再試一次
       let res;
@@ -278,6 +327,7 @@ export function mountAdmin(ctx) {
       if (error) throw error;
       if (g.error) throw g.error;
       D = since ? merge(D, data) : data; games = g.data || [];
+      toCache(!since);
       prep();
       root.querySelector('#adm-upd').textContent = '更新於 ' + new Date().toLocaleTimeString('zh-TW', { ...TZ, hour12: false });
       render();
@@ -543,5 +593,6 @@ export function mountAdmin(ctx) {
 
   show('overview');
   load();
-  return { refresh: () => load(true), stop: () => clearInterval(timer) };
+  // 從大廳回到管理頁：只抓變化（以前每次都整包重抓約 10 MB）；要整包重抓按「重新整理」
+  return { refresh: () => load(), stop: () => clearInterval(timer) };
 }
