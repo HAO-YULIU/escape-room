@@ -206,6 +206,7 @@ const CSS = `
 .adm-kpi b { display: block; font: 700 28px var(--serif); color: var(--gold); }
 .adm-kpi span { font-size: 13px; color: var(--muted); }
 .adm-kpi.live b { color: #8FE3B0; }
+.adm-kpi.warn b { color: #FFB86B; }
 .adm-card { background: var(--wall); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; }
 .adm-card h3 { font: 700 17px var(--serif); margin: 0 0 12px; color: var(--parchment); }
 .adm-card h3 small { font: 400 12px var(--sans); color: var(--muted); margin-left: 6px; }
@@ -287,8 +288,8 @@ export function mountAdmin(ctx) {
 
   // full：整包重抓（第一次、按「重新整理」）；不然只抓上次之後有變化的部分再合併（即時動態每 20 秒一次，整包約 5 MB，會吃掉 Supabase 的流量額度）
   // 這台裝置上記住上次的資料（IndexedDB）：重新打開管理頁只抓有變化的部分，不用每次整包約 10 MB 重抓。
-  // 超過 12 小時、或按「重新整理」才整包重抓（期間被刪掉的資料要整包重抓才會消失）。
-  const CACHE_MAX = 12 * 3600e3;
+  // 超過 3 天、或按「重新整理」才整包重抓（期間被刪掉的資料要整包重抓才會消失）。
+  const CACHE_MAX = 72 * 3600e3;   // 3 天才整包重抓一次（整包約 10 MB；平常只抓變化的部分）
   const idb = (mode, fn) => new Promise((res) => {
     try {
       const rq = indexedDB.open('yeyu-admin', 1);
@@ -307,7 +308,7 @@ export function mountAdmin(ctx) {
     // 整包抓完一定存；只抓變化的話最多 5 分鐘存一次（存的是整份資料，太常存會讓手機變慢）
     if (!full && Date.now() - savedAt < 5 * 60e3) return;
     savedAt = Date.now();
-    const at = full ? Date.now() : (cachedAt || Date.now());   // 12 小時從上次整包重抓算起
+    const at = full ? Date.now() : (cachedAt || Date.now());   // 3 天從上次整包重抓算起
     if (full) cachedAt = at;
     idb('readwrite', (st) => st.put({ D, games, at }, 'dump'));
   }
@@ -351,7 +352,7 @@ export function mountAdmin(ctx) {
       players: upd(old.players, x => x.id, add.players).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))),
       records: upd(old.records, x => x.id, add.records),
       saves: upd(old.saves, x => x.user_id + '|' + x.game, add.saves),
-      bugs: old.bugs };
+      bugs: add.bugs || old.bugs };   // 回報每次都重抓（只有還沒處理的，很小）
   }
 
   // 整理資料：每位玩家、每款遊戲的狀態
@@ -424,16 +425,16 @@ export function mountAdmin(ctx) {
     const mist = ps.filter(p => p.games.mist).length;
     const recent = ps.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at))).slice(0, 8);
     body.innerHTML = `
-      <div class="adm-kpis">${kpi(ps.length, '註冊玩家')}${kpi(newToday, '今天新增')}${kpi(new7, '最近 7 天新增')}${kpi(on15, '現在在線（15 分鐘內）', 'live')}${kpi(act24, '今天來過（24 小時內）')}${kpi(playedAny, '至少玩過一款')}${kpi(D.bugs.length, 'Bug 回報')}</div>
+      <div class="adm-kpis">${kpi(ps.length, '註冊玩家')}${kpi(newToday, '今天新增')}${kpi(new7, '最近 7 天新增')}${kpi(on15, '現在在線（15 分鐘內）', 'live')}${kpi(act24, '今天來過（24 小時內）')}${kpi(playedAny, '至少玩過一款')}${kpi(D.bugs.length, '待處理回報', D.bugs.length ? 'warn' : '')}${D.db_bytes ? kpi(Math.round(D.db_bytes / 1048576) + ' MB', '資料庫（免費上限 500 MB）', D.db_bytes > 450 * 1048576 ? 'warn' : '') : ''}</div>
       <div class="adm-card"><h3>每款遊戲<small>不含你自己的紀錄</small></h3><div class="adm-scroll"><table class="adm-tbl">
         <tr><th>遊戲</th><th>玩過</th><th>通關</th><th>通關率</th><th>玩到一半</th><th>只按開始</th><th>平均通關</th><th>最快</th></tr>${rows}
         ${mist ? `<tr><td>迷霧</td><td class="n">${mist}</td><td colspan="6" class="adm-note">開放世界，沒有通關</td></tr>` : ''}</table></div></div>
       <div class="adm-card"><h3>最近 14 天註冊</h3><div class="adm-bars">${days.map(d => `<div><b>${byDay[d] || ''}</b><i style="height:${byDay[d] / mx * 70}px"></i><em>${d.slice(8)}</em></div>`).join('')}</div></div>
       <div class="adm-card"><h3>最新註冊的玩家</h3>${recent.map(p => `<div class="adm-row">${avatarHTML(p, 40)}<div><b>${esc(p.name)}</b>
         <p>${dt(p.created_at)} 註冊・最後上線 ${ago(p.last)}・${esc(p.email || '')}</p></div></div>`).join('') || '<p class="adm-empty">還沒有玩家。</p>'}</div>
-      <div class="adm-card"><h3>Bug 回報<small>最近 50 筆</small></h3>${D.bugs.length ? D.bugs.map(b => `<div class="adm-row"><div><b>${esc(gameBySlug[b.game]?.title || b.game || '大廳')}</b>
+      <div class="adm-card"><h3>待處理的回報<small>處理請到「回報處理」分頁</small></h3>${D.bugs.length ? D.bugs.map(b => `<div class="adm-row"><div><b>${esc(gameBySlug[b.game]?.title || b.game || '大廳')}</b>
         <span class="adm-tag">${dt(b.created_at)}</span>${b.user_id && P[b.user_id] ? `<span class="adm-tag">${esc(P[b.user_id].name)}</span>` : ''}
-        <p class="prog">${esc(b.message || '')}</p>${b.station ? `<p>位置：${esc(b.station)}</p>` : ''}</div></div>`).join('') : '<p class="adm-empty">目前沒有回報。</p>'}</div>`;
+        <p class="prog">${esc(b.message || '')}</p>${b.station ? `<p>位置：${esc(b.station)}</p>` : ''}</div></div>`).join('') : '<p class="adm-empty">目前沒有待處理的回報。</p>'}</div>`;
   }
 
   // ---------- 2. 即時動態 ----------
