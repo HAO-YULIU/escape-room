@@ -1,0 +1,11 @@
+// 大廳的資料 Worker（lobby-api）：https://lobby-api.noron.workers.dev/
+// /api/lobby、/api/notice、/av/<頭像> 用 Cloudflare 的快取擋在 Supabase 前面（程式在 ../worker/index.js）
+// 大廳網頁本身是另一個 Worker（lobby，只有靜態檔案，設定在根目錄的 wrangler.jsonc）
+// 部署：在這個資料夾裡 npx wrangler deploy（改了 worker/index.js 才需要）
+{
+  "name": "lobby-api",
+  "main": "../worker/index.js",
+  "compatibility_date": "2026-10-01",
+  "workers_dev": true,
+  "cache": { "enabled": true }
+}

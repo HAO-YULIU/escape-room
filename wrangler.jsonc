@@ -1,11 +1,10 @@
 // 大廳發佈在 Cloudflare Workers（lobby）：https://lobby.noron.workers.dev/
-// 把 repo 根目錄當成靜態檔案發佈；不發佈的檔案列在 .assetsignore
-// worker/index.js：/api/lobby（大廳共用資料）、/av/<路徑>（頭像）用 Cloudflare 的快取擋在 Supabase 前面，省 Supabase 流量
-// 部署：git archive origin/main 解到暫存資料夾，在那裡 npx wrangler deploy（要用這個檔案，才會帶上 Worker 和快取設定）
+// 只有靜態檔案（不經過程式、不算 Cloudflare 每天的請求額度）：把 repo 根目錄當成靜態檔案發佈；不發佈的檔案列在 .assetsignore
+// 大廳共用資料、公告、頭像在另一個 Worker（lobby-api，設定在 api/wrangler.jsonc，程式在 worker/index.js）
+// 部署：git archive origin/main 解到暫存資料夾，在那裡 npx wrangler deploy；改了 worker/index.js 時，也在暫存資料夾的 api/ 裡 npx wrangler deploy
+// 不要在這裡加回 "main" 或 "cache"：Worker 開了快取，連網頁、圖片的每一次請求都會算進 Cloudflare 每天 10 萬次的額度（11/5 一天 1.7 萬次）
 {
   "name": "lobby",
-  "main": "worker/index.js",
   "compatibility_date": "2026-10-01",
-  "assets": { "directory": ".", "binding": "ASSETS" },
-  "cache": { "enabled": true }
+  "assets": { "directory": "." }
 }
