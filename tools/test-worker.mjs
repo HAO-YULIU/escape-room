@@ -12,11 +12,11 @@ globalThis.fetch = async (url, opt = {}) => {
   if (url.includes('rpc/mist_early_slots')) return Response.json({ left: 0, limit: 10 });
   return Response.json([{ n: 1 }]);
 };
-const env = { ASSETS: { fetch: async () => new Response('ASSET') } };
-const get = p => worker.fetch(new Request('https://lobby.example' + p), env);
+const get = p => worker.fetch(new Request('https://lobby-api.example' + p));
 
 let r = await get('/api/lobby'), j = await r.json();
-ok(r.status === 200 && /s-maxage=300/.test(r.headers.get('Cache-Control')), '大廳資料：200、快取 5 分鐘');
+ok(r.status === 200 && /s-maxage=300/.test(r.headers.get('Cache-Control')) && /max-age=300/.test(r.headers.get('Cache-Control')), '大廳資料：200、Cloudflare 和瀏覽器都快取 5 分鐘');
+ok(r.headers.get('Access-Control-Allow-Origin') === '*', '大廳網頁在另一個網址：允許跨網址讀取');
 ok(j.games?.[0]?.slug === 'x' && j.news?.[0]?.title === '消息' && j.stats && j.monthly && j.escaped && j.board && j.early, '一包裡有密室、消息、人氣、暢銷榜、逃脫人數、站長榜、搶先名額');
 ok(calls.every(c => c[2]), '跟 Supabase 拿資料都有帶 apikey');
 ok(calls.some(c => c[1].includes('news?') && c[1].includes('published_at=lte.')), '消息只拿已經發佈的');
@@ -29,5 +29,7 @@ ok(r.status === 400, '頭像路徑不合法：400');
 r = await get('/av/u1/none.jpg');
 ok(r.status === 404, '頭像不存在：404');
 r = await get('/index.html');
-ok((await r.text()) === 'ASSET', '其他網址照樣是靜態檔案');
+ok(r.status === 404 && r.headers.get('Access-Control-Allow-Origin') === '*', '其他網址：404（大廳網頁是另一個只有靜態檔案的 Worker）');
+r = await get('/av/u1/a.jpg');
+ok(r.headers.get('Access-Control-Allow-Origin') === '*', '頭像也允許跨網址');
 console.log(fail ? `${fail} failed` : 'all passed'); process.exit(fail ? 1 : 0);
