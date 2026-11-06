@@ -2134,7 +2134,7 @@ let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）�
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
 const RETIRED = ['love'];
 // 還沒公開的遊戲：只有開發者看得到（卡片標「未公開」），一般玩家在大廳、排行榜、推薦、成就都看不到；要公開時把代號拿掉
-const HIDDEN = [];
+const HIDDEN = ['dynasty'];   // 不存在的王朝：封面、網址還沒好（製作人 11/6）
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
 const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '20:00', fanmian: '00:30' };
@@ -3038,7 +3038,23 @@ async function teamRows(slug, variant, size) {
     </li>`;
   }).join('');
 }
+// 收集型的排行榜（不比時間）：《不存在的王朝》先比通過了幾組，再比一共完成幾個結局（時間到不算）
+const COLLECT_RANK = { dynasty: { rpc: 'get_dynasty_leaderboard', note: '先比通過了幾組，再比一共完成了幾個結局；一樣多的，先達成的排前面。時間到（任務失敗）不算。' } };
+async function collectRows(slug) {
+  const { data, error } = await supabase.rpc(COLLECT_RANK[slug].rpc, { p_limit: 10 });
+  if (error) return `<li class="rank-empty">讀取排行榜失敗：${escapeHTML(error.message)}</li>`;
+  if (!data.length) return '<li class="rank-empty">還沒有宿主通過任何一組。第一個名字，會是你嗎？</li>';
+  return data.map(r => `
+    <li class="rank-row ${profile && r.username === profile.username ? 'me-row' : ''}">
+      <span class="rank-no">${MEDALS[r.rank - 1] ?? r.rank}</span>
+      ${avatarHTML(r, 40)}
+      <span class="rank-name">${escapeHTML(r.username)}<small class="rank-meta">結局 ${r.endings} 個</small></span>
+      <span class="rank-date">${new Date(r.last_at).toLocaleDateString('zh-TW')}</span>
+      <span class="rank-time">${r.pairs} 組</span>
+    </li>`).join('');
+}
 async function rankRows(slug, variant, size) {
+  if (COLLECT_RANK[slug]) return collectRows(slug);
   if (size) return teamRows(slug, variant, size);
   const { data, error } = variant
     ? await supabase.rpc('get_leaderboard_v', { p_slug: slug, p_variant: variant, p_limit: 10 })
@@ -3083,17 +3099,19 @@ async function renderHub() {
   const ach = ACH.filter(a => a.game === g.slug), k = isPlayer() ? ach.filter(got).length : 0;
   if (!ach.length) hubTab = 'rank';
   const me = !isPlayer() ? '註冊並建立角色後，逃脫時間會登上排行榜，成就也會幫你記下來。'
+    : m && COLLECT_RANK[g.slug] ? `我的紀錄：挑戰 ${m.plays} 次・通過 <b>${new Set([...m.endings].filter(e => e.includes(':') && !e.endsWith(':lost')).map(e => e.split(':')[0])).size}</b> 組・結局 <b>${[...m.endings].filter(e => !e.endsWith(':lost')).length}</b> / ${ends}${ach.length ? `・成就 <b>${k}</b> / ${ach.length}` : ''}`
     : m ? `我的紀錄：挑戰 ${m.plays} 次・${m.best != null ? `最佳 <b>${fmtTime(m.best)}</b>` : '尚未逃脫'}${ends ? `・結局 <b>${m.endings.size}</b> / ${ends}` : ''}${ach.length ? `・成就 <b>${k}</b> / ${ach.length}` : ''}`
     : '你還沒挑戰過這款。逃出來的時間會登上這裡的排行榜。';
   const tabs = `<div class="gh-tabs"><button class="chip" type="button" data-ght="rank" aria-pressed="${hubTab === 'rank'}">🏆 排行榜</button>${ach.length ? `<button class="chip" type="button" data-ght="ach" aria-pressed="${hubTab === 'ach'}">🎖 成就 ${isPlayer() ? `${k}/${ach.length}` : ach.length}</button>` : ''}</div>`;
   const vs = VARIANTS[g.slug], variant = vs ? (rankVariant[g.slug] ??= vs[0][0]) : null;
-  const team = isTeamGame(g), sizes = team ? teamSizes(g) : [], size = team ? (rankSize[g.slug] = sizes.includes(rankSize[g.slug]) ? rankSize[g.slug] : sizes[0]) : null;
+  const collect = COLLECT_RANK[g.slug];
+  const team = isTeamGame(g) && !collect, sizes = team ? teamSizes(g) : [], size = team ? (rankSize[g.slug] = sizes.includes(rankSize[g.slug]) ? rankSize[g.slug] : sizes[0]) : null;
   const body = hubTab === 'ach'
     ? `<div class="ach-bar"><i style="width:${ach.length ? k / ach.length * 100 : 0}%"></i></div><div class="ach-grid">${ach.map(a => achItem(a, isPlayer() && got(a))).join('')}</div>`
     : `${vs ? `<div class="rank-variants" role="group" aria-label="選擇版本">${vs.map(([v, name]) => `<button class="chip" type="button" data-ghv="${v}" aria-pressed="${v === variant}">${escapeHTML(name)}</button>`).join('')}</div>` : ''}
       ${team ? `<div class="rank-variants" role="group" aria-label="選擇人數">${sizes.map(n => `<button class="chip" type="button" data-ghs="${n}" aria-pressed="${n === size}">${n} 人</button>`).join('')}</div>` : ''}
       <p class="gh-escaped">🚪 已有 <b>${(escapedBy[g.id] ?? 0).toLocaleString()}</b> 位玩家成功逃脫${team ? '<small>多人一組時，每位隊員各算一人</small>' : ''}</p>
-      <p class="muted small">${team ? '依人數分開排名，同一組隊員只取最快的一次。' : '每位玩家只取最快的一次。'}</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
+      <p class="muted small">${collect ? collect.note : team ? '依人數分開排名，同一組隊員只取最快的一次。' : '每位玩家只取最快的一次。'}</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
   const cta = !isOpen(g) ? '' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   const share = (isPlayer() && m ? `<button class="btn btn-ghost gh-play" type="button" data-share="${escapeHTML(g.slug)}">📤 分享我的紀錄，看誰比較快</button>` : '')
     + `<button class="btn btn-ghost gh-play" type="button" data-gshare="${escapeHTML(g.slug)}">🔗 推薦這款遊戲給朋友</button>`;
@@ -3150,7 +3168,7 @@ function runMeta(r, slug) {
 
 // ================= 成就 =================
 // 有 test 的成就由大廳從遊玩紀錄算出；沒有 test 的成就由遊戲本身寫入 user_achievements。
-const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2, fanmian: 4, heart: 3 };
+const ENDING_COUNT = { 'qianchan-school': 4, school2: 7, school3: 7, love: 7, bang: 11, sea: 2, arg: 8, 'qianshan-night': 12, hotel1: 2, fanmian: 4, heart: 3, dynasty: 75 };   // dynasty：15 組 × 5 個結局（含隱藏結局）
 // 高難度：資料庫難度 4.5 以上的密室；千山夜錄只算地獄版（普通版 3.5）
 const isHardClear = (r) => r.slug === 'qianshan-night' ? r.variant === 'hell' : Number(allGames.find(g => g.slug === r.slug)?.difficulty) >= 4.5;
 const ACH = [
@@ -3593,7 +3611,9 @@ function renderContinue() {
 // 名次只看前 100 名；多人遊戲依人數分開排、分版本的遊戲依版本分開排，取名次最好的那個
 async function rankOf(g) {
   const me = profile.username, vs = VARIANTS[g.slug]?.map(v => v[0]) ?? [null];
-  const asks = isTeamGame(g)
+  const asks = COLLECT_RANK[g.slug]   // 收集型（不存在的王朝）：用它自己的排行榜（比通過幾組、幾個結局）
+    ? [['', supabase.rpc(COLLECT_RANK[g.slug].rpc, { p_limit: 50 }), r => r.username === me]]
+    : isTeamGame(g)
     ? vs.flatMap(v => teamSizes(g).map(n => [`${n} 人${v ? '・' + VARIANTS[g.slug].find(x => x[0] === v)[1] : ''}`, supabase.rpc('get_team_leaderboard', { p_slug: g.slug, p_size: n, p_variant: v, p_limit: 100 }), r => (r.members ?? []).some(x => x.username === me)]))
     : vs.map(v => [v ? VARIANTS[g.slug].find(x => x[0] === v)[1] : '', v ? supabase.rpc('get_leaderboard_v', { p_slug: g.slug, p_variant: v, p_limit: 100 }) : supabase.rpc('get_leaderboard', { p_slug: g.slug, p_limit: 100 }), r => r.username === me]);
   let best = null;
