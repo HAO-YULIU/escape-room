@@ -262,6 +262,27 @@ const CSS = `
 .adm-game summary::-webkit-details-marker { display: none; }
 .adm-game .adm-form { padding: 0 14px 14px; }
 .adm-empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+.adm-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+.adm-seg { display: inline-flex; border: 1px solid rgba(239,230,210,.2); border-radius: 10px; overflow: hidden; }
+.adm-seg button { font: 13px var(--sans); padding: 7px 12px; border: 0; background: transparent; color: var(--muted); cursor: pointer; }
+.adm-seg button[aria-pressed="true"] { background: rgba(255,200,119,.16); color: var(--parchment); }
+.adm-legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--parchment); margin-bottom: 6px; }
+.adm-legend i { display: inline-block; width: 14px; height: 3px; border-radius: 2px; vertical-align: 4px; margin-right: 6px; }
+.adm-legend b { font-variant-numeric: tabular-nums; }
+.adm-chart { position: relative; }
+.adm-chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.adm-chart text { fill: var(--muted); font: 11px var(--sans); }
+.adm-tip { position: absolute; pointer-events: none; background: #120D08; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; font-size: 12px; color: var(--parchment); white-space: nowrap; box-shadow: 0 6px 18px rgba(0,0,0,.5); transform: translate(-50%, -100%); z-index: 2; }
+.adm-tip[hidden] { display: none; }
+.adm-tip i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.adm-heat { display: grid; grid-template-columns: 28px repeat(24, minmax(0, 1fr)); gap: 2px; font-size: 11px; color: var(--muted); }
+.adm-heat span { text-align: center; }
+.adm-heat .c { aspect-ratio: 1; border-radius: 3px; background: rgba(255,200,119,.04); cursor: default; }
+.adm-heat .c.max { outline: 2px solid var(--parchment); outline-offset: -2px; }
+.adm-heat .h { font-size: 10px; }
+.adm-scale { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--muted); margin-top: 8px; }
+.adm-scale i { width: 16px; height: 10px; border-radius: 2px; display: inline-block; }
+.adm-dl { display: flex; gap: 8px; flex-wrap: wrap; }
 .adm-note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
 @media (max-width: 760px) {
   #view-admin { padding-top: 76px; }
@@ -269,6 +290,8 @@ const CSS = `
   .adm-fun { grid-template-columns: 1fr; gap: 4px; }
   .adm-form .two { grid-template-columns: 1fr; }
   .adm-tbl { font-size: 13px; }
+  .adm-heat { grid-template-columns: 22px repeat(24, minmax(0, 1fr)); gap: 1px; }
+  .adm-heat .h:nth-child(odd) { visibility: hidden; }
 }`;
 
 export function mountAdmin(ctx) {
@@ -276,7 +299,7 @@ export function mountAdmin(ctx) {
   if (!document.getElementById('adm-css')) { const st = document.createElement('style'); st.id = 'adm-css'; st.textContent = CSS + CSS_MIST; document.head.appendChild(st); }
   const mist = mountMist(ctx);   // 迷霧專用的分頁（玩家存檔、回報處理、公告與活動、數據）
   let D = null, games = [], tab = 'overview', stuckGame = null, timer = 0, loading = false;
-  const TABS = [['overview', '總覽'], ['live', '即時動態'], ['stuck', '卡關分析'], ...mist.TABS, ['notice', '🚨 大廳公告'], ['news', '最新消息'], ['games', '遊戲資訊']];
+  const TABS = [['overview', '總覽'], ['live', '即時動態'], ['stuck', '卡關分析'], ['trend', '📈 趨勢'], ...mist.TABS, ['notice', '🚨 大廳公告'], ['news', '最新消息'], ['games', '遊戲資訊']];
 
   root.innerHTML = `<div class="container">
     <div class="adm-head"><h1>🛠 管理</h1><span class="muted" id="adm-upd"></span><button class="btn btn-ghost btn-sm" type="button" id="adm-reload">重新整理</button></div>
@@ -380,13 +403,14 @@ export function mountAdmin(ctx) {
     tab = k;
     root.querySelectorAll('.adm-tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === k));
     clearInterval(timer);
-    if (k === 'live') timer = setInterval(() => { if (!document.hidden && root.isConnected && !root.hidden) load(); }, 20000);
+    // 即時動態開著時每 1 分鐘更新一次（以前 20 秒；開著不關也會一直累積 Supabase 的用量）
+    if (k === 'live') timer = setInterval(() => { if (!document.hidden && root.isConnected && !root.hidden) load(); }, 60000);
     render();
   }
   function render() {
     if (!D) return;
     if (mist.TABS.some(([k]) => k === tab)) return mist.render(tab, body);
-    const fn = { overview, live, stuck, notice, news, gamesTab }[tab === 'games' ? 'gamesTab' : tab];
+    const fn = { overview, live, stuck, trend, notice, news, gamesTab }[tab === 'games' ? 'gamesTab' : tab];
     fn();
   }
 
@@ -451,8 +475,117 @@ export function mountAdmin(ctx) {
     const rows = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([slug, n]) => `<tr><td>${esc(gameBySlug[slug]?.title || (slug === 'mist' ? '迷霧' : slug))}</td><td class="n">${n} 人</td></tr>`).join('');
     body.innerHTML = `
       <div class="adm-kpis"><div class="adm-kpi live"><b>${total}</b><span>現在正在玩遊戲的人</span></div></div>
-      ${total ? `<div class="adm-card"><h3>在玩哪一款<small>每 20 秒自動更新</small></h3><div class="adm-scroll"><table class="adm-tbl"><tr><th>遊戲</th><th>人數</th></tr>${rows}</table></div></div>` : '<p class="adm-empty">現在沒有人在玩遊戲。</p>'}
+      ${total ? `<div class="adm-card"><h3>在玩哪一款<small>每 1 分鐘自動更新，要馬上看按右上角「重新整理」</small></h3><div class="adm-scroll"><table class="adm-tbl"><tr><th>遊戲</th><th>人數</th></tr>${rows}</table></div></div>` : '<p class="adm-empty">現在沒有人在玩遊戲。</p>'}
       <p class="adm-note">算法：最近 15 分鐘內有遊戲存檔的玩家（不含你自己）。遊戲裡一有進度，最多 10 秒就會存到雲端；打開遊戲但完全沒動作的人算不到。每個人的進度在「卡關分析」。</p>`;
+  }
+
+  // ---------- 3b. 趨勢：每天開局／通關、玩家幾點來玩、下載 CSV ----------
+  // 全部用已經抓下來的資料（D.records、D.players）算，不會多問 Supabase。不含管理員自己的紀錄。
+  // 「開局」＝遊玩紀錄建立的時間；「通關」＝狀態是已通關的紀錄最後更新的時間。時間都用台灣時間。
+  let trendGame = 'all', trendDays = 30;
+  const C_START = '#4F95D9', C_CLEAR = '#BD8020';   // 已用 dataviz 的檢查跑過（深色底、色盲可分）
+  const twParts = (t) => { const o = {}; for (const x of new Intl.DateTimeFormat('en-US', { ...TZ, weekday: 'short', hour: 'numeric', hour12: false }).formatToParts(new Date(t))) o[x.type] = x.value; return o; };
+  const WD = { Mon: 0, Tue: 1, Wed: 2, Thu: 3, Fri: 4, Sat: 5, Sun: 6 }, WD_ZH = ['一', '二', '三', '四', '五', '六', '日'];
+  function trendRecs() {
+    const gid = trendGame === 'all' ? null : gameBySlug[trendGame]?.id;
+    return D.records.filter(r => !admins.has(r.user_id) && (!gid || r.game_id === gid));
+  }
+  function trend() {
+    const now = Date.now(), days = [...Array(trendDays)].map((_, i) => day(now - (trendDays - 1 - i) * 864e5)), from = days[0];
+    const recs = trendRecs();
+    const st = Object.fromEntries(days.map(d => [d, 0])), cl = Object.fromEntries(days.map(d => [d, 0]));
+    for (const r of recs) {
+      const a = day(r.created_at); if (a in st) st[a]++;
+      if (r.status === 'cleared') { const c = day(r.updated_at || r.created_at); if (c in cl) cl[c]++; }
+    }
+    const S = days.map(d => st[d]), C = days.map(d => cl[d]), sumS = S.reduce((a, b) => a + b, 0), sumC = C.reduce((a, b) => a + b, 0);
+    // 熱度圖：同一段時間的開局，星期 × 小時
+    const heat = [...Array(7)].map(() => Array(24).fill(0));
+    for (const r of recs) { if (day(r.created_at) < from) continue; const p = twParts(r.created_at); const w = WD[p.weekday], h = +p.hour % 24; if (w != null) heat[w][h]++; }
+    const hmax = Math.max(0, ...heat.flat()), byHour = Array(24).fill(0); heat.forEach(row => row.forEach((v, h) => byHour[h] += v));
+    const topH = byHour.indexOf(Math.max(...byHour));
+    // 折線圖（SVG）
+    // 圖的寬度跟著畫面（手機上字不會縮得太小）
+    const W = Math.round(Math.max(320, Math.min(720, (body.clientWidth || 720) - 40))), H = W < 500 ? 200 : 220, L = 34, R = 10, T = 10, B = 26, mx = Math.max(4, ...S, ...C), step = Math.pow(10, Math.floor(Math.log10(mx))) * (mx / Math.pow(10, Math.floor(Math.log10(mx))) > 5 ? 2 : 1);
+    const top = Math.ceil(mx / step) * step, x = (i) => L + (W - L - R) * (days.length === 1 ? .5 : i / (days.length - 1)), y = (v) => T + (H - T - B) * (1 - v / top);
+    const ticks = []; for (let v = 0; v <= top; v += step) ticks.push(v);
+    const path = (A) => A.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+    const every = Math.ceil(days.length / (W < 500 ? 4 : 8)), xl = days.map((d, i) => (i % every === 0 || i === days.length - 1) && !(i !== days.length - 1 && days.length - 1 - i < every / 2) ? `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${+d.slice(5, 7)}/${+d.slice(8)}</text>` : '').join('');
+    const svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="每天開局和通關的局數">
+      ${ticks.map(v => `<line x1="${L}" x2="${W - R}" y1="${y(v)}" y2="${y(v)}" stroke="rgba(239,230,210,${v ? .07 : .2})"/><text x="${L - 6}" y="${y(v) + 4}" text-anchor="end">${v}</text>`).join('')}
+      ${xl}
+      <line id="tr-x" y1="${T}" y2="${H - B}" stroke="rgba(239,230,210,.35)" visibility="hidden"/>
+      <path d="${path(S)}" fill="none" stroke="${C_START}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="${path(C)}" fill="none" stroke="${C_CLEAR}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      <circle id="tr-ds" r="4" fill="${C_START}" stroke="var(--wall)" stroke-width="2" visibility="hidden"/><circle id="tr-dc" r="4" fill="${C_CLEAR}" stroke="var(--wall)" stroke-width="2" visibility="hidden"/>
+      <rect id="tr-hit" x="${L}" y="0" width="${W - L - R}" height="${H}" fill="transparent"/></svg>`;
+    const list = games.filter(g => g.play_url);
+    const seg = (id, opts, cur) => `<div class="adm-seg" id="${id}">${opts.map(([v, t]) => `<button type="button" data-v="${v}" aria-pressed="${String(v) === String(cur)}">${t}</button>`).join('')}</div>`;
+    const alpha = (v) => v ? .14 + .86 * v / hmax : 0;
+    body.innerHTML = `
+      <div class="adm-filters"><select class="adm-sel" id="tr-g"><option value="all">全部遊戲</option>${list.map(g => `<option value="${esc(g.slug)}"${g.slug === trendGame ? ' selected' : ''}>${esc(g.title)}</option>`).join('')}</select>
+        ${seg('tr-d', [[14, '14 天'], [30, '30 天'], [90, '90 天']], trendDays)}</div>
+      <div class="adm-kpis"><div class="adm-kpi"><b>${sumS}</b><span>開局（${trendDays} 天）</span></div><div class="adm-kpi"><b>${sumC}</b><span>通關（${trendDays} 天）</span></div>
+        <div class="adm-kpi"><b>${pct(sumC, sumS)}</b><span>通關局數 ÷ 開局局數</span></div>${hmax ? `<div class="adm-kpi"><b>${topH}:00</b><span>最多人開局的時段</span></div>` : ''}</div>
+      <div class="adm-card"><h3>每天開局、通關<small>台灣時間・不含你自己</small></h3>
+        <div class="adm-legend"><span><i style="background:${C_START}"></i>開局</span><span><i style="background:${C_CLEAR}"></i>通關</span></div>
+        <div class="adm-chart" id="tr-chart">${svg}<div class="adm-tip" id="tr-tip" hidden></div></div>
+        <details style="margin-top:10px"><summary class="muted" style="cursor:pointer">看數字</summary><div class="adm-scroll"><table class="adm-tbl" style="min-width:0"><tr><th>日期</th><th>開局</th><th>通關</th></tr>
+          ${days.slice().reverse().map(d => `<tr><td>${d}</td><td class="n">${st[d]}</td><td class="n">${cl[d]}</td></tr>`).join('')}</table></div></details></div>
+      <div class="adm-card"><h3>玩家幾點來玩<small>${trendDays} 天內的開局，星期 × 小時（台灣時間）；框起來的是最多的格子</small></h3>
+        ${hmax ? `<div class="adm-heat" id="tr-heat"><span></span>${[...Array(24)].map((_, h) => `<span class="h">${h}</span>`).join('')}
+          ${heat.map((row, w) => `<span>${WD_ZH[w]}</span>${row.map((v, h) => `<i class="c${v === hmax ? ' max' : ''}" data-tip="星期${WD_ZH[w]} ${h}:00–${h}:59：${v} 局" style="${v ? `background:rgba(189,128,32,${alpha(v).toFixed(2)})` : ''}"></i>`).join('')}`).join('')}</div>
+          <div class="adm-scale"><span>少</span>${[.14, .35, .57, .78, 1].map(a => `<i style="background:rgba(189,128,32,${a})"></i>`).join('')}<span>多（最多 ${hmax} 局）</span></div>
+          <div class="adm-scroll" style="margin-top:12px"><table class="adm-tbl" style="min-width:0"><tr><th>時段</th>${[0, 6, 12, 18].map(h => `<th>${h}–${h + 5} 點</th>`).join('')}</tr><tr><td>開局</td>${[0, 6, 12, 18].map(h => `<td class="n">${byHour.slice(h, h + 6).reduce((a, b) => a + b, 0)}</td>`).join('')}</tr></table></div>`
+        : '<p class="adm-empty">這段時間沒有開局。</p>'}</div>
+      <div class="adm-card"><h3>下載資料<small>CSV，Excel、Google 試算表都打得開</small></h3>
+        <div class="adm-dl"><button class="btn btn-ghost btn-sm" type="button" data-csv="players">⬇️ 玩家名單</button><button class="btn btn-ghost btn-sm" type="button" data-csv="records">⬇️ 遊玩紀錄（全部遊戲）</button></div>
+        <p class="adm-note">用的是管理頁已經抓下來的資料，不會多花 Supabase 的用量。玩家名單不含管理員；紀錄含全部（狀態欄看得出來）。</p></div>
+      <p class="adm-note">開局＝按下開始、建立一筆遊玩紀錄；同一個人重玩會再算一局。通關的日期是紀錄最後更新的時間。《迷霧》沒有遊玩紀錄，不在這裡。</p>`;
+    body.querySelector('#tr-g').onchange = (e) => { trendGame = e.target.value; trend(); };
+    body.querySelectorAll('#tr-d button').forEach(b => b.onclick = () => { trendDays = +b.dataset.v; trend(); });
+    body.querySelectorAll('[data-csv]').forEach(b => b.onclick = () => downloadCSV(b.dataset.csv));
+    // 滑過折線圖：直線＋兩個點＋提示框
+    const box = body.querySelector('#tr-chart'), sv = box.querySelector('svg'), tip = box.querySelector('#tr-tip');
+    const hx = sv.querySelector('#tr-x'), ds = sv.querySelector('#tr-ds'), dc = sv.querySelector('#tr-dc');
+    const hide = () => { tip.hidden = true; [hx, ds, dc].forEach(e => e.setAttribute('visibility', 'hidden')); };
+    const move = (ev) => {
+      const rc = sv.getBoundingClientRect(), px = (ev.clientX - rc.left) / rc.width * W;
+      const i = Math.max(0, Math.min(days.length - 1, Math.round((px - L) / (W - L - R) * (days.length - 1))));
+      hx.setAttribute('x1', x(i)); hx.setAttribute('x2', x(i)); ds.setAttribute('cx', x(i)); ds.setAttribute('cy', y(S[i])); dc.setAttribute('cx', x(i)); dc.setAttribute('cy', y(C[i]));
+      [hx, ds, dc].forEach(e => e.setAttribute('visibility', 'visible'));
+      const d = days[i], wd = WD_ZH[(new Date(d + 'T12:00:00+08:00').getUTCDay() + 6) % 7];
+      tip.innerHTML = `<b>${+d.slice(5, 7)}/${+d.slice(8)}（${wd}）</b><br><i style="background:${C_START}"></i>開局 ${S[i]}<br><i style="background:${C_CLEAR}"></i>通關 ${C[i]}`;
+      tip.hidden = false;
+      const bx = box.getBoundingClientRect(), left = x(i) / W * rc.width + rc.left - bx.left;
+      tip.style.left = Math.max(60, Math.min(bx.width - 60, left)) + 'px'; tip.style.top = (Math.min(y(S[i]), y(C[i])) / H * rc.height + rc.top - bx.top - 10) + 'px';
+    };
+    sv.addEventListener('pointermove', move); sv.addEventListener('pointerdown', move); sv.addEventListener('pointerleave', hide);
+    // 熱度圖：滑過或點格子顯示數字
+    const ht = body.querySelector('#tr-heat');
+    if (ht) {
+      const t2 = document.createElement('div'); t2.className = 'adm-tip'; t2.hidden = true; ht.style.position = 'relative'; ht.appendChild(t2);
+      const sh = (ev) => { const c = ev.target.closest('.c'); if (!c) { t2.hidden = true; return; } const a = ht.getBoundingClientRect(), b = c.getBoundingClientRect(); t2.textContent = c.dataset.tip; t2.hidden = false; t2.style.left = Math.max(70, Math.min(a.width - 70, b.left - a.left + b.width / 2)) + 'px'; t2.style.top = (b.top - a.top - 4) + 'px'; };
+      ht.addEventListener('pointerover', sh); ht.addEventListener('pointerdown', sh); ht.addEventListener('pointerleave', () => (t2.hidden = true));
+    }
+  }
+  // CSV：Excel 打開中文不亂碼要加 BOM；時間用台灣時間
+  function downloadCSV(kind) {
+    const tw = (t) => t ? new Date(t).toLocaleString('sv-SE', TZ) : '';
+    const cell = (v) => { const s = v == null ? '' : String(v); return /[",\n\r]/.test(s) || /^[=+\-@]/.test(s) ? '"' + (/^[=+\-@]/.test(s) ? "'" : '') + s.replace(/"/g, '""') + '"' : s; };
+    let rows;
+    if (kind === 'players') {
+      rows = [['名字', 'Email', '註冊時間', '最後上線', '玩過幾款', '通關幾款', '玩過的遊戲']];
+      for (const p of players()) { const gs = Object.values(p.games); rows.push([p.username || '', p.email || '', tw(p.created_at), tw(p.last), gs.length, gs.filter(x => x.status === 'done').length, gs.map(x => gameBySlug[x.slug]?.title || x.slug).join('、')]); }
+    } else {
+      const ST = { started: '進行中', cleared: '通關', failed: '失敗' };
+      rows = [['玩家', '遊戲', '狀態', '開始時間', '最後更新', '通關時間（秒）', '提示', '死亡', '結局', '是管理員']];
+      for (const r of D.records.slice().sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))) rows.push([P[r.user_id]?.name || r.user_id, gameById[r.game_id]?.title || r.game_id, ST[r.status] || r.status, tw(r.created_at), tw(r.updated_at), r.clear_time_sec ?? '', r.hints ?? '', r.deaths ?? '', r.ending ?? '', admins.has(r.user_id) ? '是' : '']);
+    }
+    const blob = new Blob(['﻿' + rows.map(r => r.map(cell).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `夜語_${kind === 'players' ? '玩家名單' : '遊玩紀錄'}_${day(Date.now())}.csv`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+    toast(`已下載 ${rows.length - 1} 筆`);
   }
 
   // ---------- 3. 卡關分析 ----------
