@@ -50,7 +50,7 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
     return { live, stuckH, stuckF, ov, n1, n2, tabErr, stuck };
   });
   const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ✗ ') + m); if (!c) fail++; };
-  ok(/2\s*現在正在玩遊戲的人/.test(r.live) && /別讓他知道\s*1 人/.test(r.live) && /反面\s*1 人/.test(r.live), '即時動態：正在玩的人數（總數＋每款）');
+  ok(/2\s*現在正在玩遊戲的人/.test(r.live) && /別讓他知道\s*1 人/.test(r.live) && /反面\s*1 人/.test(r.live) && /迷霧\s*0 人/.test(r.live), '即時動態：正在玩的人數（總數＋每款）');
   ok(/別讓他知道/.test(r.stuckH) && /第二章/.test(r.stuckH) && /2 人連線：小明、阿嬤/.test(r.stuckH), '別讓他知道的進度看得到');
   ok(/反面/.test(r.stuckF) && /一樓後面・暗房/.test(r.stuckF) && /相機 6 \/ 7/.test(r.stuckF) && /時間池剩 4 小時/.test(r.stuckF), '反面的進度看得到（章節、相機、時間池）');
   ok(!/按了開始，還沒有存檔/.test(r.stuckH + r.stuckF), '不會再顯示「按了開始，還沒有存檔」');

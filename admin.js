@@ -472,10 +472,14 @@ export function mountAdmin(ctx) {
       cnt[cur.slug] = (cnt[cur.slug] || 0) + 1;
     }
     const total = Object.values(cnt).reduce((a, b) => a + b, 0);
-    const rows = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([slug, n]) => `<tr><td>${esc(gameBySlug[slug]?.title || (slug === 'mist' ? '迷霧' : slug))}</td><td class="n">${n} 人</td></tr>`).join('');
+    // 每一款都列出來（沒人在玩的寫 0），人多的排前面
+    const all = [...games.filter(g => g.play_url).map(g => g.slug), 'mist'].filter((v, i, a) => a.indexOf(v) === i);
+    for (const k of Object.keys(cnt)) if (!all.includes(k)) all.push(k);
+    const title = (slug) => esc(gameBySlug[slug]?.title || (slug === 'mist' ? '迷霧' : slug));
+    const rows = all.map(slug => [slug, cnt[slug] || 0]).sort((a, b) => b[1] - a[1]).map(([slug, n]) => `<tr${n ? '' : ' style="opacity:.45"'}><td>${title(slug)}</td><td class="n">${n ? `<b style="color:#8FE3B0">${n} 人</b>` : '0 人'}</td></tr>`).join('');
     body.innerHTML = `
       <div class="adm-kpis"><div class="adm-kpi live"><b>${total}</b><span>現在正在玩遊戲的人</span></div></div>
-      ${total ? `<div class="adm-card"><h3>在玩哪一款<small>每 1 分鐘自動更新，要馬上看按右上角「重新整理」</small></h3><div class="adm-scroll"><table class="adm-tbl"><tr><th>遊戲</th><th>人數</th></tr>${rows}</table></div></div>` : '<p class="adm-empty">現在沒有人在玩遊戲。</p>'}
+      <div class="adm-card"><h3>每款遊戲現在幾人在玩<small>每 1 分鐘自動更新，要馬上看按右上角「重新整理」</small></h3><table class="adm-tbl"><tr><th>遊戲</th><th>人數</th></tr>${rows}</table></div>
       <p class="adm-note">算法：最近 15 分鐘內有遊戲存檔的玩家（不含你自己）。遊戲裡一有進度，最多 10 秒就會存到雲端；打開遊戲但完全沒動作的人算不到。每個人的進度在「卡關分析」。</p>`;
   }
 
