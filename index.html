@@ -2178,9 +2178,14 @@ async function loadAuth() {
   isAdmin = false;
   myMsgs = [];
   if (user) {
-    // 這些彼此無關，同時問（以前一個等一個，要等十幾趟來回，大廳開起來比較慢）
+    // 一次拿完（lobby_me：個人資料、紀錄、存檔、管理員、成就、訊息、邀請）。以前是 8 個請求，每開一次大廳就算 8 筆 Supabase API log（一天十幾萬筆）
     const uid = user.id;
-    const [P, R, MS, SV, ADM, ACH, MSG, INV] = await Promise.all([
+    const one = await supabase.rpc('lobby_me');
+    const d = one.error ? null : one.data;
+    const [P, R, MS, SV, ADM, ACH, MSG, INV] = d ? [
+      { data: d.profile }, { data: d.records }, { data: d.mist }, { data: d.saves },
+      { data: d.admin ? { user_id: uid } : null }, { data: (d.ach || []).map(code => ({ code })) }, { data: d.msgs }, { data: d.invites },
+    ] : await Promise.all([   // lobby_me 失敗時照舊分開問
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase.from('play_records').select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending,endings,variant').eq('user_id', uid),
       // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
