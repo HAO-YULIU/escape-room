@@ -437,21 +437,22 @@ export function mountAdmin(ctx) {
         <p class="prog">${esc(b.message || '')}</p>${b.station ? `<p>位置：${esc(b.station)}</p>` : ''}</div></div>`).join('') : '<p class="adm-empty">目前沒有待處理的回報。</p>'}</div>`;
   }
 
-  // ---------- 2. 即時動態 ----------
+  // ---------- 2. 即時動態：現在有幾個人在玩遊戲 ----------
+  // 「在玩」＝最近 15 分鐘內有遊戲存檔（遊戲裡一有進度，最多 10 秒就會存到雲端）。不含管理員自己。
   function live() {
-    const now = Date.now(), ps = Object.values(P).filter(p => p.last).sort((a, b) => String(b.last).localeCompare(String(a.last)));
-    const on = ps.filter(p => now - new Date(p.last) < 15 * 60e3), day1 = ps.filter(p => !on.includes(p) && now - new Date(p.last) < 864e5);
-    const row = (p, live) => {
-      const xs = Object.values(p.games).filter(x => x.last).sort((a, b) => String(b.last).localeCompare(String(a.last)));
-      const cur = xs[0] && now - new Date(xs[0].last) < (live ? 15 * 60e3 : 864e5) ? xs[0] : null;
-      const where = cur ? progLine(cur.slug, cur) + `<br><small>存檔 ${ago(cur.last)}</small>` : live ? '在大廳（最近 15 分鐘沒有遊戲存檔）' : '沒有玩遊戲';
-      return `<div class="adm-row">${avatarHTML(p, 40)}<div><b><span class="adm-dot ${live ? '' : 'idle'}"></span>${esc(p.name)}</b>${p.admin ? '<span class="adm-tag">你</span>' : ''}
-        <span class="adm-tag">${ago(p.last)}</span>${p.skew ? `<span class="adm-tag" title="這個玩家的存檔時間在未來，最後上線改用登入紀錄判斷">⏰ 裝置時間快了約 ${Math.round(p.skew)} 小時</span>` : ''}<p>${where}</p></div></div>`;
-    };
+    const now = Date.now(), cnt = {};
+    for (const p of players()) {
+      const xs = Object.values(p.games).filter(x => x.last && now - new Date(x.last) < 15 * 60e3);
+      if (!xs.length) continue;
+      const cur = xs.sort((a, b) => String(b.last).localeCompare(String(a.last)))[0];
+      cnt[cur.slug] = (cnt[cur.slug] || 0) + 1;
+    }
+    const total = Object.values(cnt).reduce((a, b) => a + b, 0);
+    const rows = Object.entries(cnt).sort((a, b) => b[1] - a[1]).map(([slug, n]) => `<tr><td>${esc(gameBySlug[slug]?.title || (slug === 'mist' ? '迷霧' : slug))}</td><td class="n">${n} 人</td></tr>`).join('');
     body.innerHTML = `
-      <div class="adm-card"><h3>現在在線<small>最近 15 分鐘有動作・每 20 秒自動更新</small></h3>${on.map(p => row(p, true)).join('') || '<p class="adm-empty">現在沒有人在線。</p>'}</div>
-      <div class="adm-card"><h3>今天來過<small>24 小時內</small></h3>${day1.map(p => row(p, false)).join('') || '<p class="adm-empty">今天還沒有其他人來過。</p>'}</div>
-      <p class="adm-note">「在線」是用登入狀態和遊戲存檔推算的：遊戲裡一有進度，最多 10 秒就會存到雲端；打開遊戲但完全沒動作的人看不出來。</p>`;
+      <div class="adm-kpis"><div class="adm-kpi live"><b>${total}</b><span>現在正在玩遊戲的人</span></div></div>
+      ${total ? `<div class="adm-card"><h3>在玩哪一款<small>每 20 秒自動更新</small></h3><div class="adm-scroll"><table class="adm-tbl"><tr><th>遊戲</th><th>人數</th></tr>${rows}</table></div></div>` : '<p class="adm-empty">現在沒有人在玩遊戲。</p>'}
+      <p class="adm-note">算法：最近 15 分鐘內有遊戲存檔的玩家（不含你自己）。遊戲裡一有進度，最多 10 秒就會存到雲端；打開遊戲但完全沒動作的人算不到。每個人的進度在「卡關分析」。</p>`;
   }
 
   // ---------- 3. 卡關分析 ----------

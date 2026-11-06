@@ -30,6 +30,8 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
     const c1 = ctx(); const a1 = mountAdmin(c1); await sleep(600);
     c1.root.querySelector('[data-tab="live"]').click(); await sleep(200);
     const live = c1.root.innerText;
+    const sel = async (g) => { c1.root.querySelector('[data-tab="stuck"]').click(); await sleep(150); const e = c1.root.querySelector('#adm-stuck-g'); e.value = g; e.dispatchEvent(new Event('change')); await sleep(100); return c1.root.innerText; };
+    const stuckH = await sel('heart'), stuckF = await sel('fanmian');
     a1.stop();
     // 從大廳回到管理頁（同一頁）
     await a1.refresh(); await sleep(400);
@@ -45,12 +47,13 @@ const { chromium } = require('playwright'); const { spawn } = require('child_pro
     const tabErr = [];
     for (const t of ['overview', 'live', 'stuck', 'games']) { try { c2.root.querySelector(`[data-tab="${t}"]`).click(); await sleep(150); } catch (e) { tabErr.push(t + ': ' + e.message); } }
     const stuck = (c2.root.querySelector('[data-tab="stuck"]').click(), await sleep(150), c2.root.innerText);
-    return { live, ov, n1, n2, tabErr, stuck };
+    return { live, stuckH, stuckF, ov, n1, n2, tabErr, stuck };
   });
   const ok = (c, m) => { console.log((c ? '  ✓ ' : '  ✗ ') + m); if (!c) fail++; };
-  ok(/別讓他知道/.test(r.live) && /第二章/.test(r.live) && /2 人連線：小明、阿嬤/.test(r.live), '別讓他知道的進度看得到');
-  ok(/反面/.test(r.live) && /一樓後面・暗房/.test(r.live) && /相機 6 \/ 7/.test(r.live) && /時間池剩 4 小時/.test(r.live), '反面的進度看得到（章節、相機、時間池）');
-  ok(!/按了開始，還沒有存檔/.test(r.live), '不會再顯示「按了開始，還沒有存檔」');
+  ok(/2\s*現在正在玩遊戲的人/.test(r.live) && /別讓他知道\s*1 人/.test(r.live) && /反面\s*1 人/.test(r.live), '即時動態：正在玩的人數（總數＋每款）');
+  ok(/別讓他知道/.test(r.stuckH) && /第二章/.test(r.stuckH) && /2 人連線：小明、阿嬤/.test(r.stuckH), '別讓他知道的進度看得到');
+  ok(/反面/.test(r.stuckF) && /一樓後面・暗房/.test(r.stuckF) && /相機 6 \/ 7/.test(r.stuckF) && /時間池剩 4 小時/.test(r.stuckF), '反面的進度看得到（章節、相機、時間池）');
+  ok(!/按了開始，還沒有存檔/.test(r.stuckH + r.stuckF), '不會再顯示「按了開始，還沒有存檔」');
   ok(r.n1.join(',') === 'full,since,full', '第一次整包、回到管理頁只抓變化、按重新整理才整包：' + r.n1.join(','));
   ok(r.n2.join(',') === 'since', '重新打開網頁：用記住的資料，只抓變化：' + r.n2.join(','));
   ok(/註冊玩家/.test(r.ov), '用記住的資料畫得出總覽');
