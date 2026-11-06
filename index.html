@@ -2137,10 +2137,10 @@ let mist = null, mistTop = [];   // 迷霧：自己的旅程（雲端存檔）�
 // 已下架的遊戲：大廳、排行榜、推薦都不列出，只放在「已下架遊戲」；玩家以前的紀錄和成就照樣保留
 const RETIRED = ['love'];
 // 還沒公開的遊戲：只有開發者看得到（卡片標「未公開」），一般玩家在大廳、排行榜、推薦、成就都看不到；要公開時把代號拿掉
-const HIDDEN = ['dynasty'];   // 不存在的王朝：封面、網址還沒好（製作人 11/6）
+const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
-const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '20:00', fanmian: '00:30' };
+const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '20:00', fanmian: '00:30', dynasty: '16:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
 const MAINT = [];
 const inMaint = (g) => MAINT.includes(g.slug);
@@ -3371,6 +3371,19 @@ const ACH = [
   { code: 'fm_nodeath', game: 'fanmian', icon: '📷', title: '相機都還在', desc: '7 台相機沒有全壞過就通關', test: c => c.cl('fanmian').some(r => !r.deaths) },
   { code: 'fm_nohint', game: 'fanmian', icon: '🤐', title: '不用看背面', desc: '零提示通關', test: c => c.cl('fanmian').some(r => !r.hints) },
   { code: 'fm_perfect', game: 'fanmian', icon: '🎞', title: '一張都沒浪費', desc: '零提示、相機沒有全壞過，而且 240 分鐘內通關', test: c => c.cl('fanmian').some(r => !r.hints && !r.deaths && r.clear_time_sec != null && r.clear_time_sec <= 14400) },
+  // 不存在的王朝（dynasty）：結局寫成「組合:結局」，例如 ni-fang:remember；每組都有 remember／loop／split／stay，還有隱藏的 radish
+  { code: 'dy_clear', game: 'dynasty', icon: '🏮', title: '叮！任務完成', desc: '通過《不存在的王朝》任何一組', test: c => c.cl('dynasty').length > 0 },
+  { code: 'dy_remember', game: 'dynasty', icon: '📜', title: '昭夜有史', desc: '任何一組達成「記住」的結局', test: c => [...(c.endings.dynasty ?? [])].some(e => e.endsWith(':remember')) },
+  { code: 'dy_loop', game: 'dynasty', icon: '🔁', title: '輪迴', desc: '任何一組達成「輪迴」的結局', test: c => [...(c.endings.dynasty ?? [])].some(e => e.endsWith(':loop')) },
+  { code: 'dy_split', game: 'dynasty', icon: '🌗', title: '一人一半', desc: '任何一組達成兩個人選得不一樣的結局', test: c => [...(c.endings.dynasty ?? [])].some(e => e.endsWith(':split')) },
+  { code: 'dy_stay', game: 'dynasty', icon: '🏯', title: '不回去了', desc: '任何一組兩個人都選擇留下', test: c => [...(c.endings.dynasty ?? [])].some(e => e.endsWith(':stay')) },
+  { code: 'dy_radish', game: 'dynasty', icon: '🥢', title: '換一下', desc: '隱藏結局：最後三秒，兩個人同時改了答案', secret: 1, test: c => [...(c.endings.dynasty ?? [])].some(e => e.endsWith(':radish')) },
+  { code: 'dy_ou', game: 'dynasty', icon: '🗡', title: '系統的起源', desc: '跟隱藏角色歐陽妍褣一起通過任何一組', secret: 1, test: c => [...(c.endings.dynasty ?? [])].some(e => e.split(':')[0].split('-').includes('ou')) },
+  { code: 'dy_p5', game: 'dynasty', icon: '👥', title: '換個搭檔', desc: '通過 5 個不同的組合', test: c => new Set([...(c.endings.dynasty ?? [])].map(e => e.split(':')[0])).size >= 5 },
+  { code: 'dy_p15', game: 'dynasty', icon: '👑', title: '十五個昭夜國', desc: '15 個組合全部通過', test: c => new Set([...(c.endings.dynasty ?? [])].map(e => e.split(':')[0])).size >= 15 },
+  { code: 'dy_e30', game: 'dynasty', icon: '📚', title: '三十種結局', desc: '收集 30 個不同的結局', test: c => (c.endings.dynasty?.size ?? 0) >= 30 },
+  { code: 'dy_all', game: 'dynasty', icon: '🌕', title: '每一個昭夜國都被記得', desc: '收集全部 75 個結局', test: c => (c.endings.dynasty?.size ?? 0) >= 75 },
+  { code: 'dy_nohint', game: 'dynasty', icon: '🤐', title: '錦囊沒拆', desc: '零提示通過任何一組', test: c => c.cl('dynasty').some(r => !r.hints) },
   // 別讓他知道（heart_<結局>、heart_g12k 由遊戲自己送進來）
   { code: 'hd_clear', game: 'heart', icon: '🛁', title: '他洗完澡了', desc: '通關別讓他知道（任何一個結局）', test: c => c.cl('heart').length > 0 },
   { code: 'heart_diva', game: 'heart', icon: '🏆', title: '影后', ending: 1, desc: '結局：全部恢復原狀，壽宴上演出最驚訝的表情', test: c => c.end('heart', 'diva') },
