@@ -2141,6 +2141,9 @@ const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
 // 還沒開放就先看得到「排行榜・成就」的遊戲（製作人 11/6：不存在的王朝的排行榜先放上大廳）
 const HUB_EARLY = ['dynasty'];
+// 搶先體驗名單：還沒到開放時間，名單上的帳號（大廳的帳號名字）就能先進去玩；開放之後名單自動沒有作用（製作人 11/6）
+const EARLY_USERS = { dynasty: ['新葉喵'] };
+const isEarlyUser = (g) => !!profile && upcoming(g) && (EARLY_USERS[g.slug] || []).includes(profile.username);
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
 const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '20:00', fanmian: '00:30', dynasty: '16:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
@@ -2477,7 +2480,7 @@ function roomCard(g, rank = 0, note = '') {
     : upcoming(g) ? `<span class="badge soon">⏳ ${cdSpan(openStr(g))}</span>`
     : !open ? '<span class="badge soon">即將開放</span>'
     : isNew(g) ? '<span class="badge new">NEW</span>' : '';
-  const cta = isAdmin && g.play_url && !open ? '🛠 開發者直接進入 →' : inMaint(g) ? '改版維修中' : upcoming(g) ? `${openLabel(g)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
+  const cta = isAdmin && g.play_url && !open ? '🛠 開發者直接進入 →' : inMaint(g) ? '改版維修中' : isEarlyUser(g) ? '🎟 搶先體驗 →' : upcoming(g) ? `${openLabel(g)} 開放` : !open ? '敬請期待' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   // 挑戰人數只給開發者看（資料庫的 get_game_stats 也只回給管理員）
   const challenge = note ? `<p class="challengers">${note}</p>` : isAdmin && st?.players ? `<p class="challengers">👥 ${st.players} 人挑戰過・${st.escaped} 人成功逃脫</p>` : '';
   return `
@@ -2607,6 +2610,7 @@ function openGame(slug, join = null) {
   if (!g) return;
   if (isAdmin && g.play_url) return goPlay(join ? withJoin(g.play_url, join) : g.play_url);   // 開發者：不受開放時間、維修、搶先體驗名額限制
   if (inMaint(g)) return toast(`「${g.title}」正在改版維修中，全新版本敬請期待！`);
+  if (isEarlyUser(g)) return goPlay(join ? withJoin(g.play_url, join) : g.play_url);   // 搶先體驗名單上的帳號
   if (upcoming(g) && earlyLeft(g)) return isPlayer() ? goPlay(g.play_url) : showGate(g.title);   // 搶先體驗：名額由遊戲那邊向伺服器領
   if (upcoming(g)) return toast(`「${g.title}」將在 ${openLabel(g)} 開放，敬請期待。`);
   if (!isOpen(g)) return toast(`「${g.title}」還在佈置中，開放後就能進入。`);
