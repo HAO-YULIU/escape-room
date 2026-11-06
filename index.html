@@ -2139,6 +2139,8 @@ const RETIRED = ['love'];
 // 還沒公開的遊戲：只有開發者看得到（卡片標「未公開」），一般玩家在大廳、排行榜、推薦、成就都看不到；要公開時把代號拿掉
 const HIDDEN = [];
 const isHidden = (g) => HIDDEN.includes(g.slug);
+// 還沒開放就先看得到「排行榜・成就」的遊戲（製作人 11/6：不存在的王朝的排行榜先放上大廳）
+const HUB_EARLY = ['dynasty'];
 // 不是 00:00 開放的遊戲：上線日期那天的幾點幾分（台灣時間）才開放
 const OPEN_TIME = { 'qianshan-night': '20:00', mist: '20:00', heart: '20:00', school3: '20:00', milner: '20:00', fanmian: '00:30', dynasty: '16:00' };
 // 改版維修中：大廳照樣顯示，但不能進入
@@ -2494,7 +2496,7 @@ function roomCard(g, rank = 0, note = '') {
         <p class="desc">${escapeHTML(g.description ?? '')}</p>
         ${challenge}
         <div class="room-facts">${RPGS.includes(g) ? '<span>🗺️ 大型網頁解謎</span><span>⏱ 不限時間</span><span>📱 手機・電腦</span>' : `<span>👥 ${players(g)}</span><span>⏱ ${dur(g)}</span>${diffSpans(g)}`}</div>
-        ${open || g.play_url ? `<div class="room-acts">${open ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 ${RPGS.includes(g) ? '排行榜' : '排行榜・成就'}</span>` : ''}${isUnlocked(g) ? '' : gshareBtn(g)}</div>` : ''}
+        ${open || g.play_url ? `<div class="room-acts">${open || HUB_EARLY.includes(g.slug) ? `<span class="room-hub" role="button" tabindex="0" data-hub="${escapeHTML(g.slug)}">🏆 ${RPGS.includes(g) ? '排行榜' : '排行榜・成就'}</span>` : ''}${isUnlocked(g) ? '' : gshareBtn(g)}</div>` : ''}
         <div class="room-foot">${g.release_date ? `<p class="room-date">📅 ${fmtDate(g.release_date)}</p>` : '<span></span>'}<div class="room-cta">${cta}</div></div>
       </div>
     </button>`;
@@ -3106,7 +3108,7 @@ async function renderHub() {
   const c = achContext(), got = a => achCodes.has(a.code) || (a.test && a.test(c));
   const ach = ACH.filter(a => a.game === g.slug), k = isPlayer() ? ach.filter(got).length : 0;
   if (!ach.length) hubTab = 'rank';
-  const me = !isPlayer() ? '註冊並建立角色後，逃脫時間會登上排行榜，成就也會幫你記下來。'
+  const me = !isPlayer() ? (COLLECT_RANK[g.slug] ? '註冊並建立角色後，通過的組數和結局會登上排行榜，成就也會幫你記下來。' : '註冊並建立角色後，逃脫時間會登上排行榜，成就也會幫你記下來。')
     : m && COLLECT_RANK[g.slug] ? `我的紀錄：挑戰 ${m.plays} 次・通過 <b>${new Set([...m.endings].filter(e => e.includes(':') && !e.endsWith(':lost')).map(e => e.split(':')[0])).size}</b> 組・結局 <b>${[...m.endings].filter(e => !e.endsWith(':lost')).length}</b> / ${ends}${ach.length ? `・成就 <b>${k}</b> / ${ach.length}` : ''}`
     : m ? `我的紀錄：挑戰 ${m.plays} 次・${m.best != null ? `最佳 <b>${fmtTime(m.best)}</b>` : '尚未逃脫'}${ends ? `・結局 <b>${m.endings.size}</b> / ${ends}` : ''}${ach.length ? `・成就 <b>${k}</b> / ${ach.length}` : ''}`
     : '你還沒挑戰過這款。逃出來的時間會登上這裡的排行榜。';
@@ -3118,7 +3120,7 @@ async function renderHub() {
     ? `<div class="ach-bar"><i style="width:${ach.length ? k / ach.length * 100 : 0}%"></i></div><div class="ach-grid">${ach.map(a => achItem(a, isPlayer() && got(a))).join('')}</div>`
     : `${vs ? `<div class="rank-variants" role="group" aria-label="選擇版本">${vs.map(([v, name]) => `<button class="chip" type="button" data-ghv="${v}" aria-pressed="${v === variant}">${escapeHTML(name)}</button>`).join('')}</div>` : ''}
       ${team ? `<div class="rank-variants" role="group" aria-label="選擇人數">${sizes.map(n => `<button class="chip" type="button" data-ghs="${n}" aria-pressed="${n === size}">${n} 人</button>`).join('')}</div>` : ''}
-      <p class="gh-escaped">🚪 已有 <b>${(escapedBy[g.id] ?? 0).toLocaleString()}</b> 位玩家成功逃脫${team ? '<small>多人一組時，每位隊員各算一人</small>' : ''}</p>
+      <p class="gh-escaped">${collect ? '🏮' : '🚪'} 已有 <b>${(escapedBy[g.id] ?? 0).toLocaleString()}</b> 位${collect ? '宿主通過' : '玩家成功逃脫'}${team ? '<small>多人一組時，每位隊員各算一人</small>' : ''}</p>
       <p class="muted small">${collect ? collect.note : team ? '依人數分開排名，同一組隊員只取最快的一次。' : '每位玩家只取最快的一次。'}</p><ol class="rank-list" id="gh-rank"><li class="rank-empty">讀取中…</li></ol>`;
   const cta = !isOpen(g) ? '' : !isPlayer() ? '註冊後即可遊玩 →' : saves[g.slug] && m?.best == null ? '繼續玩 →' : m ? '再次挑戰 →' : '進入密室 →';
   const share = (isPlayer() && m ? `<button class="btn btn-ghost gh-play" type="button" data-share="${escapeHTML(g.slug)}">📤 分享我的紀錄，看誰比較快</button>` : '')
