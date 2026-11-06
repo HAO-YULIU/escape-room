@@ -1,5 +1,7 @@
-// 大廳的 Cloudflare Worker：網頁照樣當靜態檔案發佈（assets）；只有下面兩種網址交給這裡，用 Cloudflare 的快取擋在 Supabase 前面，
-// 省 Supabase 的流量（每月約 20 GB 的額度）。Cloudflare 送給玩家的流量不收費。快取要 wrangler.jsonc 的 "cache": { "enabled": true }。
+// 大廳的資料 Worker（lobby-api：https://lobby-api.noron.workers.dev/，設定在 api/wrangler.jsonc）：用 Cloudflare 的快取擋在 Supabase 前面，
+// 省 Supabase 的流量（每月約 20 GB 的額度）。Cloudflare 送給玩家的流量不收費。快取要 api/wrangler.jsonc 的 "cache": { "enabled": true }。
+// 大廳網頁本身（lobby）只是靜態檔案，不經過這裡：Worker 開了快取以後，連網頁、圖片的每一次請求都算進 Cloudflare 每天 10 萬次的額度，
+// 所以 11/6 把這個 Worker 分出來，只有下面這三種網址會算（以前網頁和這裡同一個 Worker，大廳一天 1.7 萬次，大多是網頁和圖片）。
 //   /api/lobby       大家看到都一樣的大廳資料（密室、最新消息、人氣、本月暢銷榜、迷霧站長榜、搶先體驗名額），一包回傳，快取 5 分鐘（新消息最多晚 5 分鐘出現；管理員改完內容自己會直接看到最新的）
 //                    以前每個人打開大廳都各自跟 Supabase 拿一次（一天約 2 萬次）
 //   /api/notice      大廳公告（管理頁「大廳公告」發的，game_announcements 的 game='lobby'），快取 1 分鐘：緊急公告不能等 5 分鐘
@@ -30,7 +32,7 @@ async function lobby() {
       rpc('get_mist_master_board2', { lim: 20 }), rpc('mist_early_slots'),
     ]);
     return new Response(JSON.stringify({ at: now, games, news, stats, monthly, escaped, board, early }), {
-      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=60, s-maxage=300' },
+      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'public, max-age=300, s-maxage=300' },
     });
   } catch (e) {
     // 拿不到就不要快取：網頁會改成自己跟 Supabase 拿
@@ -57,12 +59,15 @@ async function avatar(path) {
   });
 }
 
+// 大廳網頁在另一個網址（lobby.noron.workers.dev），所以每個回應都要允許跨網址讀取
+function cors(r) { const h = new Headers(r.headers); h.set('Access-Control-Allow-Origin', '*'); return new Response(r.body, { status: r.status, headers: h }); }
+async function route(req) {
+  const url = new URL(req.url);
+  if (req.method === 'GET' && url.pathname === '/api/lobby') return lobby();
+  if (req.method === 'GET' && url.pathname === '/api/notice') return notice();
+  if (req.method === 'GET' && url.pathname.startsWith('/av/')) return avatar(url.pathname.slice(4));
+  return new Response('not found', { status: 404, headers: { 'Cache-Control': 'public, max-age=3600' } });
+}
 export default {
-  async fetch(req, env) {
-    const url = new URL(req.url);
-    if (req.method === 'GET' && url.pathname === '/api/lobby') return lobby();
-    if (req.method === 'GET' && url.pathname === '/api/notice') return notice();
-    if (req.method === 'GET' && url.pathname.startsWith('/av/')) return avatar(url.pathname.slice(4));
-    return env.ASSETS.fetch(req);
-  },
+  async fetch(req) { return cors(await route(req)); },
 };

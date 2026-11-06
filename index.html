@@ -2115,7 +2115,10 @@ function toast(msg, type = 'info') {
 // 頭像：有上傳圖片就用圖片，沒有就用角色外觀
 // 頭像改走大廳 Worker 的快取（/av/…），不再每次都從 Supabase 下載（以前一天約 180 MB）
 const AV_PREFIX = SUPABASE_URL + '/storage/v1/object/public/avatars/';
-const avSrc = (u) => (typeof u === 'string' && u.startsWith(AV_PREFIX) && /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname) ? '/av/' + u.slice(AV_PREFIX.length) : u);
+// 大廳共用資料、公告、頭像：另一個 Worker（lobby-api，有 Cloudflare 快取）。大廳網頁本身只是靜態檔案，不算 Cloudflare 每天的請求額度（11/6）
+// 本機測試（localhost）用同一個網址，由測試程式攔下來
+const API = /^(localhost|127\.)/.test(location.hostname) || location.protocol === 'file:' ? '' : 'https://lobby-api.noron.workers.dev';
+const avSrc = (u) => (typeof u === 'string' && u.startsWith(AV_PREFIX) && /^https?:$/.test(location.protocol) && !/^(localhost|127\.)/.test(location.hostname) ? API + '/av/' + u.slice(AV_PREFIX.length) : u);
 function avatarHTML(p, size = 40) {
   if (p?.avatar_url) {
     const src = avSrc(p.avatar_url), back = src !== p.avatar_url ? ` onerror="this.onerror=null;this.src='${escapeHTML(p.avatar_url)}'"` : '';   // 快取拿不到就改回原本的網址
@@ -2175,9 +2178,14 @@ async function loadAuth() {
   isAdmin = false;
   myMsgs = [];
   if (user) {
-    // 這些彼此無關，同時問（以前一個等一個，要等十幾趟來回，大廳開起來比較慢）
+    // 一次拿完（lobby_me：個人資料、紀錄、存檔、管理員、成就、訊息、邀請）。以前是 8 個請求，每開一次大廳就算 8 筆 Supabase API log（一天十幾萬筆）
     const uid = user.id;
-    const [P, R, MS, SV, ADM, ACH, MSG, INV] = await Promise.all([
+    const one = await supabase.rpc('lobby_me');
+    const d = one.error ? null : one.data;
+    const [P, R, MS, SV, ADM, ACH, MSG, INV] = d ? [
+      { data: d.profile }, { data: d.records }, { data: d.mist }, { data: d.saves },
+      { data: d.admin ? { user_id: uid } : null }, { data: (d.ach || []).map(code => ({ code })) }, { data: d.msgs }, { data: d.invites },
+    ] : await Promise.all([   // lobby_me 失敗時照舊分開問
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase.from('play_records').select('game_id,status,clear_time_sec,created_at,updated_at,deaths,hints,borrows,ending,endings,variant').eq('user_id', uid),
       // 迷霧的雲端存檔：只拿需要的欄位（等級、所在站、去過的站、寶物）
@@ -2229,7 +2237,7 @@ const Notice = (() => {
   const text = (t) => escapeHTML(t || '').replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g, '<br>');
   const until = (t) => t ? '到 ' + new Date(t).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }) : '';
   async function fetchList(direct) {
-    if (!local && !direct) { try { const r = await fetch('/api/notice', { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) { /* 改成直接問 Supabase */ } }
+    if (!local && !direct) { try { const r = await fetch(API + '/api/notice', { cache: 'no-cache' }); if (r.ok) return await r.json(); } catch (e) { /* 改成直接問 Supabase */ } }
     const { data } = await supabase.from('game_announcements').select('id,title,body,level,starts_at,ends_at,active').eq('game', 'lobby').order('starts_at', { ascending: false }).limit(20);
     return data || [];
   }
@@ -2265,7 +2273,7 @@ addEventListener('lobby-notice-changed', () => Notice.refresh(true));   // 管�
 // 迷霧的排行榜：本期擁有最多車站的站長（每週一 20:00 換期時更新）
 // 大家看到都一樣的大廳資料：一包從大廳 Worker 拿（Cloudflare 快取 5 分鐘，省 Supabase 流量）；拿不到就照舊各自跟 Supabase 拿
 const PUB = (/^(localhost|127\.)/.test(location.hostname) && !/[?&]pub\b/.test(location.search) ? Promise.resolve(null)   // 本機沒有 Worker；網址加 ?pub 測試
-  : fetch('/api/lobby').then(r => (r.ok ? r.json() : null)).catch(() => null));
+  : fetch(API + '/api/lobby').then(r => (r.ok ? r.json() : null)).catch(() => null));
 async function loadMistTop() {
   const pub = await PUB; if (pub?.board) { mistTop = pub.board; return; }
   const { data } = await supabase.rpc('get_mist_master_board2', { lim: 20 });   // 新版多了彩色名牌
