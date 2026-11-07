@@ -49,11 +49,17 @@ const ENDING_NAMES = {
   hotel1: { rescue: '救出皇后', secret: '救出皇后＋看到 B3 的祕密（隱藏）' },
   heart: { diva: '影后結局', busted: '穿幫結局', coco: 'Coco 結局', g12k: '彩蛋：遊戲儲值 NT$12,000' },
   fanmian: { front: '正面', back: '反面', shard: '碎片', fifth: '第五個人（隱藏）', lost: '時間到（失敗）' },
+  dynasty: { remember: '記住', loop: '輪迴', split: '一人一半', stay: '留下', radish: '換一下（隱藏）', lost: '時間到（失敗）' },
   arg: { E1: '未完成', E2: '交接', E3: '記錄者', E4: '停止計算', E5: '沉默', E6: '第八位收件人', E7: '被遺忘的權利', E8: '你不知道' },
 };
 const BANG_CH = [['序章', '台北車站', 8], ['第一章', '故宮', 11], ['第二章', '台北市立美術館', 11], ['第三章', '九份', 11], ['第四章', '十分', 11],
   ['第五章', '台北 101', 11], ['第六章', '淡水老街', 11], ['第七章', '西門町', 11], ['第八章', '饒河夜市', 11], ['第九章', '大安森林公園', 12]];
 // 《別讓他知道》《反面》：資料庫只存數字（_admin_key：n＝已解題數、nc＝反面每章解幾題、pl＝玩家名字）
+// 《不存在的王朝》（dynasty）：2 人連線、15 組角色組合，每組的謎題不一樣（題數來自 jojoab 的 js/content）；序章（第 0 天）＋七天
+const DY_NAMES = { ni: '倪芮彤', fang: '方采洺', fan: '樊資詠', su: '蘇宇凱', li: '黎思晴', ou: '歐陽妍褣' };
+const DY_PZ = { 'fan-li': 42, 'fan-ou': 42, 'fan-su': 41, 'fang-fan': 43, 'fang-li': 45, 'fang-ou': 43, 'fang-su': 43, 'li-ou': 43, 'ni-fan': 42, 'ni-fang': 41, 'ni-li': 45, 'ni-ou': 42, 'ni-su': 43, 'su-li': 41, 'su-ou': 42 };
+const DY_SCENE = { modern: '現代・你的房間', wake: '陌生的房間', palace: '昭夜國・宮中', court: '昭夜國・朝堂', archive: '史館', temple: '城外小廟', gate: '城門', tower: '天機閣', beacon: '雁門關・烽火台', clinic: '太醫署', pharmacy: '回春堂', mirrorhall: '欽天監・照星鏡殿', cliff: '斷劍崖', pavilion: '湖心棋亭', prison: '天牢', hill: '陵山', tomb: '昭夜長公主陵・墓室', throne: '垂簾殿', workshop: '龍椅底下的機關房', teahouse: '聽雨茶樓', bamboo: '竹林', forge: '樊家鑄劍坊', blade: '劍裡的世界', pawnshop: '存義當', caravan: '商隊營地', altar: '昭夜國・祭壇', oracle: '貞人卜室' };
+const dyPair = (p) => p ? String(p).split('-').map(x => DY_NAMES[x] || x).join(' × ') : '';
 const HEART_CH = ['序章', '第一章', '第二章', '第三章', '第四章', '第五章', '終章'];
 const FANMIAN_CH = [['序章', '老街'], ['第一章', '一樓・門市', 13], ['第二章', '一樓後面・暗房', 12], ['第三章', '二樓・林家', 12], ['第四章', '鏡子的兩邊', 12], ['第五章', '三樓・攝影棚', 13]];
 const SEA_PARTS = ['第一部分・殘燭初燃', '第二部分・暗潮浮影', '第三部分・燭影照罪'];
@@ -124,6 +130,22 @@ function summarize(game, save) {
       solved: c[2] ? (G.nc?.[ch] ?? 0) : null, total: c[2] || null, all: G.n ?? null, time: G.clearT ?? G.t, deaths: G.deaths, hints: G.hintN, endings: ends, done, fail,
       note: [multi ? `${names.length} 人連線：${names.join('、')}` : '單人', G.lives != null ? `相機 ${G.lives} / 7` : '', left != null && !done ? `時間池剩 ${Math.floor(left / 3600)} 小時 ${Math.floor(left % 3600 / 60)} 分` : '', G.wrongs ? `答錯 ${G.wrongs}` : ''].filter(Boolean).join('・') };
   }
+  if (game === 'dynasty') {
+    // 資料庫只留（_admin_key）：pair、day、shi、scene、phase、ending、used、budget、pen；n＝解開幾題、hn＝提示、wr＝答錯、np＝人數
+    // 結局（dynasty_endings）是「組合:結局」的陣列，例如 fang-su:remember
+    const G = J(k.dynasty_g), raw = J(k.dynasty_endings);
+    const ends = (Array.isArray(raw) ? raw : []).map(e => { const [pr, en] = String(e).split(':'); return `${dyPair(pr)}：${ENDING_NAMES.dynasty[en] || en}`; });
+    if (!G) return ends.length ? { done: true, endings: ends, part: '已完成', pi: 8, pn: 8 } : null;
+    const day = Math.max(0, Math.min(7, G.day | 0)), done = !!G.ending && G.ending !== 'lost', fail = G.ending === 'lost';
+    const left = G.budget ? Math.max(0, G.budget - (G.used || 0)) / 1000 : null;
+    const mine = done ? `${dyPair(G.pair)}：${ENDING_NAMES.dynasty[G.ending] || G.ending}` : null;
+    return { part: done ? '已完成' : fail ? '時間到' : !G.pair ? '序章・還沒選角色' : day ? `第 ${day} 天` + (G.shi ? `・${G.shi}時` : '') : '序章',
+      pi: done ? 8 : day, pn: 8, scene: DY_SCENE[G.scene] || G.scene || null,
+      solved: G.n ?? null, total: DY_PZ[G.pair] || null, time: G.used != null ? G.used / 1000 : null, hints: G.hn ?? null,
+      endings: mine && !ends.includes(mine) ? [...ends, mine] : ends, done, fail,
+      note: [G.pair ? dyPair(G.pair) : '還沒選角色', G.np ? `${G.np} 人連線` : '', G.wr ? `答錯 ${G.wr}` : '', G.pen ? `提示罰時 ${Math.round(G.pen / 60000)} 分` : '',
+        left != null && !done && !fail ? `剩 ${Math.floor(left / 3600)} 小時 ${Math.floor(left % 3600 / 60)} 分` : ''].filter(Boolean).join('・') };
+  }
   if (game === 'sea') {
     const G = J(k.sea_g), ends = endList(game, J(k.sea_end));
     if (!G) return ends.length ? { done: true, endings: ends, part: '已完成', pi: 3, pn: 3 } : null;
@@ -144,8 +166,10 @@ function summarize(game, save) {
       time: R.playSec > 0 ? R.playSec : null, hints, endings: ends, done: p2 >= 21, note: `碎片 ${cnt(R.frags)} / 7` };
   }
   if (game === 'mist') {
-    const s = cnt(d.visited);
-    return { part: `Lv ${save.level || 1}`, pi: 0, pn: 1, scene: save.station, solved: s, total: 118, note: `寶物 ${cnt(d.items)} / 6` };
+    // 交出六件寶物後會開放桃園機場捷運：路網從 118 站變成 137 站（多 19 站），機場線終點也算一件（items 是每條線的終點各一件）
+    const s = cnt(d.visited), n = cnt(d.items), air = s > 118 || n > 6;
+    return { part: `Lv ${save.level || 1}`, pi: 0, pn: 1, scene: save.station, solved: s, total: air ? 137 : 118,
+      note: `寶物 ${Math.min(n, 6)} / 6${air ? '・已開放機場捷運' : ''}${n > 6 ? '・機場線終點也到了' : ''}` };
   }
   if (game === 'qianshan-night') {
     // 存檔：unlocks、endings（陣列）、current（玩到一半的這一場：房號、模式、難度、章節、解開幾題、已玩秒數、提示、角色、地點、剩幾顆藥）
